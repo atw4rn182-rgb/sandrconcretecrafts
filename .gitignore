@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Local preview screenshots
+preview*.png
+*-preview.png
+concrete-preview.png
+demo-preview.png
+header-preview.png
+
+# Vercel
+.vercel/

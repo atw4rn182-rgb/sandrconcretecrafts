@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S &amp; R Crafts Concrete Creations — Handmade Concrete Decor</title>
+  <meta name="description" content="S & R Crafts Concrete Creations — small-batch, hand-cast concrete homeware. Planters, candle holders, vases, and earthy decor made by hand." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="#products" class="brand" aria-label="S &amp; R Crafts Concrete Art — home">
+        <img class="brand-logo" src="assets/logo-crop.png" alt="S &amp; R Crafts Concrete Art" />
+      </a>
+      <ul class="nav-links">
+        <li><a href="#products">Shop</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+      <button class="cart-btn" id="cartOpen" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" />
+          <path d="M2.5 3h2.2l2.1 11.4a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21.5 7H6" />
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Products -->
+  <section id="products" class="products">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-eyebrow">The Collection</p>
+        <h2>Cast in concrete</h2>
+        <p class="section-lead">Tap any piece for a closer look.</p>
+      </div>
+      <div class="product-grid" id="productGrid"><!-- injected by JS --></div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="about">
+    <div class="container about-inner">
+      <div class="about-media" aria-hidden="true">
+        <div class="about-photo"></div>
+        <span class="about-badge">Est. <strong>2021</strong></span>
+      </div>
+      <div class="about-copy">
+        <p class="section-eyebrow">About S &amp; R Crafts</p>
+        <h2>Raw material, made warm</h2>
+        <p>Welcome to S &amp; R Crafts Concrete Creations. We create unique concrete art for
+          your yard and home — from pavers and planters to garden figurines and custom
+          pieces. Each item is handcrafted from cement, cement-all, or plaster of Paris.
+          Choose from our selection of unpainted or beautifully finished painted pieces.
+          Custom orders are welcome. We're at the Farmer's Market every Saturday, and we
+          also offer local delivery and meetups. It's not your grandma's ceramics!</p>
+        <ul class="about-stats">
+          <li><span class="stat-num">1.2k+</span><span class="stat-label">Pieces poured</span></li>
+          <li><span class="stat-num">100%</span><span class="stat-label">Hand-cast</span></li>
+          <li><span class="stat-num">5 yrs</span><span class="stat-label">In the studio</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span class="footer-brand">S &amp; R Crafts Concrete Creations</span>
+      <p class="footer-note">Hand-cast in small batches · © 2026 S &amp; R Crafts · Demo store</p>
+      <ul class="footer-social">
+        <li><a href="#">Instagram</a></li>
+        <li><a href="#">Pinterest</a></li>
+        <li><a href="#">Etsy</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- ===== Quick View Modal ===== -->
+  <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="Close quick view">&times;</button>
+      <div class="modal-media"><img id="modalImg" src="" alt="" /></div>
+      <div class="modal-body">
+        <span class="modal-tag" id="modalTag"></span>
+        <h3 id="modalTitle"></h3>
+        <p class="modal-price" id="modalPrice"></p>
+        <p class="modal-desc" id="modalDesc"></p>
+        <div class="modal-qty">
+          <span>Qty</span>
+          <div class="qty-control">
+            <button id="modalMinus" aria-label="Decrease quantity">−</button>
+            <span id="modalQty">1</span>
+            <button id="modalPlus" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+        <button class="btn btn-primary modal-add" id="modalAdd">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Cart Sidebar ===== -->
+  <div class="cart-backdrop" id="cartBackdrop"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+    <div class="cart-head">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cartClose" aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems"><!-- injected --></div>
+    <div class="cart-empty" id="cartEmpty">
+      <p>Your cart is feeling light.</p>
+      <span>Add a hand-cast piece to get started.</span>
+    </div>
+    <div class="cart-foot" id="cartFoot">
+      <div class="cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
+      <button class="btn btn-primary cart-checkout" id="cartCheckout">Checkout</button>
+      <p class="cart-note">Free shipping on orders over $50 · Demo only</p>
+    </div>
+  </aside>
+
+  <!-- ===== Checkout Overlay ===== -->
+  <div class="checkout" id="checkout" aria-hidden="true">
+    <div class="checkout-inner">
+      <button class="checkout-close" id="checkoutClose" aria-label="Close checkout">&times;</button>
+      <div class="checkout-grid">
+        <form class="checkout-form" id="checkoutForm">
+          <h2>Checkout</h2>
+          <p class="checkout-sub">This is a demo — no payment is processed.</p>
+          <fieldset>
+            <legend>Contact</legend>
+            <label>Full name<input type="text" required placeholder="Sam Rivera" /></label>
+            <label>Email<input type="email" required placeholder="sam@example.com" /></label>
+          </fieldset>
+          <fieldset>
+            <legend>Shipping</legend>
+            <label>Address<input type="text" required placeholder="14 Foundry Street" /></label>
+            <div class="form-row">
+              <label>City<input type="text" required placeholder="Portland" /></label>
+              <label>ZIP<input type="text" required placeholder="97201" /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Payment</legend>
+            <label>Card number<input type="text" inputmode="numeric" required placeholder="4242 4242 4242 4242" /></label>
+            <div class="form-row">
+              <label>Expiry<input type="text" required placeholder="12/28" /></label>
+              <label>CVC<input type="text" required placeholder="123" /></label>
+            </div>
+          </fieldset>
+          <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay">Pay <span id="checkoutPayAmt"></span></button>
+        </form>
+        <aside class="checkout-summary">
+          <h3>Order summary</h3>
+          <div class="summary-items" id="summaryItems"></div>
+          <div class="summary-line"><span>Subtotal</span><span id="sumSubtotal">$0.00</span></div>
+          <div class="summary-line"><span>Shipping</span><span id="sumShipping">$0.00</span></div>
+          <div class="summary-line summary-total"><span>Total</span><span id="sumTotal">$0.00</span></div>
+        </aside>
+      </div>
+
+      <!-- Success state -->
+      <div class="checkout-success" id="checkoutSuccess" hidden>
+        <div class="success-check" aria-hidden="true">
+          <svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="24" fill="none" stroke="#a8612f" stroke-width="3"/><path fill="none" stroke="#a8612f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M15 27l8 8 15-16"/></svg>
+        </div>
+        <h2>Thank you, friend!</h2>
+        <p>Your order <strong id="orderNum"></strong> is confirmed. Your hand-cast piece is on its way. 🪨</p>
+        <button class="btn btn-primary" id="successDone">Keep shopping</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
