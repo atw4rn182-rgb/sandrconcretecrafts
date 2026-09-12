@@ -17,7 +17,11 @@
   <header class="site-header">
     <nav class="nav container" aria-label="Primary">
       <a href="#top" class="brand" aria-label="S&amp;R Concrete Crafts — home">
-        <img class="brand-logo" src="assets/sandrlogo.jpg" alt="S&amp;R Concrete Crafts logo" width="48" height="48" />
+        <img class="brand-logo" src="assets/sandrlogo.jpg" alt="" width="48" height="48" />
+        <span class="brand-text">
+          <span class="brand-name">S&amp;R Concrete Crafts</span>
+          <span class="brand-tag">Handmade concrete decor</span>
+        </span>
       </a>
 
       <button
@@ -35,6 +39,7 @@
 
       <div class="nav-panel" id="primaryNav">
         <ul class="nav-links">
+          <li><a href="#top">Home</a></li>
           <li><a href="#products">Shop</a></li>
           <li><a href="#about">About</a></li>
         </ul>
@@ -50,8 +55,20 @@
     </nav>
   </header>
 
-  <!-- Hero -->
+  <!-- Hero — full-bleed background -->
   <section class="hero" id="top" aria-labelledby="heroTitle">
+    <div class="hero-bg" aria-hidden="true">
+      <img
+        class="hero-bg-img"
+        src="assets/hero-porch-fullbleed.jpg"
+        alt=""
+        width="1920"
+        height="1080"
+        fetchpriority="high"
+      />
+      <div class="hero-scrim"></div>
+    </div>
+
     <div class="container hero-inner">
       <div class="hero-copy">
         <p class="hero-brand">S&amp;R Concrete Crafts</p>
@@ -61,16 +78,12 @@
           <a class="btn btn-primary" href="#products">Shop the Collection</a>
         </div>
       </div>
-      <figure class="hero-media">
-        <img
-          class="hero-lifestyle"
-          src="assets/hero-succulent-skull-porch.png"
-          alt="Succulent Skull Planter staged on a sunlit porch with terracotta tile and a teal door"
-          width="1600"
-          height="1200"
-          fetchpriority="high"
-        />
-      </figure>
+    </div>
+
+    <div class="hero-wave" aria-hidden="true">
+      <svg viewBox="0 0 1440 96" preserveAspectRatio="none" focusable="false">
+        <path fill="currentColor" d="M0 64c120-36 240-54 360-48 180 9 260 54 420 54s240-45 420-54c120-6 180 6 240 24V96H0V64z"/>
+      </svg>
     </div>
   </section>
 
@@ -137,29 +150,55 @@
 
   <!-- Trust row -->
   <section class="trust-row" aria-label="Why shop with us">
+    <div class="trust-desert" aria-hidden="true">
+      <svg class="trust-mesas" viewBox="0 0 1440 280" preserveAspectRatio="none" focusable="false">
+        <path fill="rgba(160,74,40,0.18)" d="M0 280V140c160-50 300-80 460-60 140 18 220 70 360 65 160-6 250-70 400-60 120 8 160 40 220 55v140H0z"/>
+        <path fill="rgba(160,74,40,0.28)" d="M0 280V180c180-40 320-70 480-50 150 18 240 55 380 50 170-6 260-55 420-45 90 6 120 25 160 40v105H0z"/>
+        <path fill="rgba(90,52,34,0.35)" d="M0 280v-55c200-25 360-50 540-35 160 14 260 40 420 35 180-6 280-40 480-28v83H0z"/>
+      </svg>
+    </div>
     <div class="container">
       <ul class="trust-grid">
         <li>
           <span class="trust-ico" aria-hidden="true">
-            <svg viewBox="0 0 40 40" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M6 30 L14 16 L20 24 L26 12 L34 30"/><circle cx="26" cy="14" r="2.4" fill="currentColor"/></svg>
+            <svg viewBox="0 0 48 48" focusable="false">
+              <circle cx="24" cy="24" r="5" fill="currentColor"/>
+              <g fill="currentColor">
+                <rect x="22.2" y="4" width="1.6" height="12" rx="0.6"/><rect x="24.6" y="4" width="1.6" height="12" rx="0.6"/>
+                <rect x="22.2" y="32" width="1.6" height="12" rx="0.6"/><rect x="24.6" y="32" width="1.6" height="12" rx="0.6"/>
+                <rect x="4" y="22.2" width="12" height="1.6" rx="0.6"/><rect x="4" y="24.6" width="12" height="1.6" rx="0.6"/>
+                <rect x="32" y="22.2" width="12" height="1.6" rx="0.6"/><rect x="32" y="24.6" width="12" height="1.6" rx="0.6"/>
+              </g>
+            </svg>
           </span>
           <span>Southwestern New Mexico</span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
-            <svg viewBox="0 0 40 40" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M12 22c0-5 4-9 8-9s8 4 8 9c2 1 4 3 4 6H12c-3-2-2-5 0-6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M16 18c1-3 3-5 4-5s3 2 4 5"/></svg>
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M14 26c0-6 4.5-11 10-11s10 5 10 11c2.5 1 5 3.5 5 7.5H14c-3.5-2.5-2.5-6 0-7.5z"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M19 21c1.2-3.5 3.5-6 5-6s3.8 2.5 5 6"/>
+              <path fill="currentColor" d="M24 30.5c-1.2 0-2 .7-2 1.6 0 1.6 2 3.4 2 3.4s2-1.8 2-3.4c0-.9-.8-1.6-2-1.6z"/>
+            </svg>
           </span>
           <span>Handcrafted in Small Batches</span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
-            <svg viewBox="0 0 40 40" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M10 14h20v16H10z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M14 14V10h12v4M16 22h8"/></svg>
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M24 8l14 6v10c0 9-6.5 15.5-14 18-7.5-2.5-14-9-14-18V14l14-6z"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M18 24l4.5 4.5L31 20"/>
+            </svg>
           </span>
           <span>Durable Concrete Made to Last</span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
-            <svg viewBox="0 0 40 40" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M20 30s-10-7-10-14a6 6 0 0 1 10-4 6 6 0 0 1 10 4c0 7-10 14-10 14z"/></svg>
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M24 38V22"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M24 24c-4-6-10-8-12-6 2 4 6 7 12 8 6-1 10-4 12-8-2-2-8 0-12 6z"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.8" d="M16 38h16"/>
+            </svg>
           </span>
           <span>Local Roots Thoughtful Goods</span>
         </li>
@@ -169,6 +208,12 @@
 
   <!-- Footer -->
   <footer class="site-footer">
+    <div class="footer-desert" aria-hidden="true">
+      <svg viewBox="0 0 1440 160" preserveAspectRatio="none" focusable="false">
+        <path fill="rgba(90,52,34,0.45)" d="M0 160V70c180-30 340-50 520-35 160 14 260 40 400 35 180-6 280-40 520-25v115H0z"/>
+        <path fill="rgba(58,42,34,0.55)" d="M0 160v-40c220-20 400-40 600-28 180 11 280 32 440 28 200-5 300-30 400-20v60H0z"/>
+      </svg>
+    </div>
     <div class="container footer-inner">
       <div class="footer-brand-block">
         <span class="footer-brand">S&amp;R Concrete Crafts</span>
