@@ -179,16 +179,31 @@ img { max-width: 100%; display: block; }
   background: linear-gradient(165deg, #f8e7d2 0%, #f0d2b0 38%, #e8b888 72%, #d98a58 100%);
   border-bottom: 1px solid rgba(143, 63, 36, 0.18);
 }
-.hero-sky { position: absolute; inset: 0; pointer-events: none; }
+.hero-sky { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .hero-mesas {
   position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(42%, 220px);
 }
-.hero-sun {
-  position: absolute; right: 8%; top: 12%;
-  width: clamp(70px, 12vw, 120px); height: clamp(70px, 12vw, 120px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffe2b8, var(--evening) 55%, transparent 72%);
-  opacity: 0.85;
+/* Single decorative accents (not wallpaper, not interactive) */
+.accent {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.accent-zia {
+  top: 4%;
+  right: max(1.5rem, 3vw);
+  width: clamp(68px, 8vw, 104px);
+  height: auto;
+  color: rgba(201, 168, 122, 0.38);
+}
+.accent-roadrunner {
+  /* Mesa band, clear of copy column and product mosaic */
+  left: 26%;
+  bottom: 2.5%;
+  width: clamp(100px, 11vw, 148px);
+  height: auto;
+  color: rgba(143, 63, 36, 0.15);
 }
 .hero-arch {
   position: absolute; border: 2px solid rgba(143, 63, 36, 0.18);
@@ -629,6 +644,19 @@ img { max-width: 100%; display: block; }
   .hero-copy h1 { max-width: none; }
   .hero-mosaic { min-height: 200px; }
   .hero-tile img { max-height: 240px; }
+  .accent-zia {
+    top: 2.5%;
+    right: 3%;
+    width: 64px;
+    color: rgba(201, 168, 122, 0.32);
+  }
+  .accent-roadrunner {
+    left: auto;
+    right: 5%;
+    bottom: 2.5%;
+    width: 92px;
+    color: rgba(143, 63, 36, 0.13);
+  }
   .about-inner { grid-template-columns: 1fr; }
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
   .modal { grid-template-columns: 1fr; }
@@ -663,7 +691,19 @@ img { max-width: 100%; display: block; }
   .hero-tile:nth-child(2),
   .hero-tile:nth-child(3) { border-radius: 16px; max-height: 120px; }
   .hero-tile img { max-height: 170px; padding: 0.4rem; }
-  .hero-sun { opacity: 0.55; top: 6%; }
+  .accent-zia {
+    top: 3%;
+    right: 3%;
+    width: 56px;
+    color: rgba(201, 168, 122, 0.34);
+  }
+  .accent-roadrunner {
+    left: auto;
+    right: 4%;
+    bottom: 4%;
+    width: 78px;
+    color: rgba(143, 63, 36, 0.13);
+  }
   .hero-arch { display: none; }
   .card-body h3 { font-size: 1.15rem; }
   .footer-inner { flex-direction: column; }
