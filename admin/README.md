@@ -5,8 +5,8 @@ Private owner tools for S & R Concrete Crafts.
 ## Pages
 
 - `/admin/login.html` — email/password sign in
-- `/admin/` — dashboard
-- `/admin/products.html` — product list
+- `/admin/` — dashboard (exact catalog counts, recent products, inventory attention)
+- `/admin/products.html` — product list (`?status=draft|published|sold_out|hidden`, optional `q`, `category`)
 - `/admin/product-edit.html` — add/edit product + live preview
 - `/admin/categories.html` — create/rename/activate categories
 
@@ -46,4 +46,5 @@ Keep **`USE_LIVE_CATALOG` unset or `false`** until migrations 07–08 are applie
 - Imported legacy products use `source_key` like `legacy:cow` and start with **inventory not tracked**.
 - Item # is editable on the product form.
 - Canceling an edit does **not** delete existing photos.
-- Checkout on the public site remains a **demo** (no real order / payment).
+- Checkout on the public site remains a **demo** (no real order / payment). The dashboard does not show Orders/Revenue metrics until a real payment path exists.
+- Dashboard counts use Supabase `count: exact` (not a truncated product list). Inventory attention only includes **published** products with **track_inventory** and **quantity 0**.

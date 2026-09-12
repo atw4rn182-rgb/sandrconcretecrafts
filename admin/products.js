@@ -164,6 +164,43 @@
     }
   }
 
+  function applyFiltersFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    var statusRaw = params.get("status");
+    var status = SRCatalog.normalizeProductStatusFilter(statusRaw);
+    var search = params.get("q") || params.get("search") || "";
+    var category = params.get("category") || params.get("category_id") || "";
+
+    if (statusRaw != null && statusRaw !== "" && status === null) {
+      showFlash("That status filter isn’t valid. Showing all products.", "err");
+      status = "";
+    }
+
+    document.getElementById("statusFilter").value = status || "";
+    document.getElementById("searchInput").value = search;
+    if (category) {
+      document.getElementById("categoryFilter").value = category;
+    }
+  }
+
+  function syncFiltersToUrl() {
+    var params = new URLSearchParams();
+    var status = document.getElementById("statusFilter").value;
+    var search = (document.getElementById("searchInput").value || "").trim();
+    var category = document.getElementById("categoryFilter").value;
+    if (status) params.set("status", status);
+    if (search) params.set("q", search);
+    if (category) params.set("category", category);
+    var next = params.toString();
+    var url = window.location.pathname + (next ? "?" + next : "");
+    window.history.replaceState({}, "", url);
+  }
+
+  function onFilterChange() {
+    syncFiltersToUrl();
+    renderList();
+  }
+
   async function load() {
     var state = document.getElementById("listState");
     try {
@@ -188,6 +225,16 @@
             );
           })
           .join("");
+      applyFiltersFromUrl();
+      // Drop invalid category ids after options exist
+      var catVal = document.getElementById("categoryFilter").value;
+      var catParam =
+        new URLSearchParams(window.location.search).get("category") ||
+        new URLSearchParams(window.location.search).get("category_id");
+      if (catParam && !catVal) {
+        showFlash("That category filter isn’t available. Showing all categories.", "err");
+        syncFiltersToUrl();
+      }
       renderList();
     } catch (err) {
       state.hidden = false;
@@ -217,8 +264,8 @@
     if (params.get("saved") === "1") showFlash("Product saved.", "ok");
     if (params.get("created") === "1") showFlash("Product created.", "ok");
     ["searchInput", "statusFilter", "categoryFilter"].forEach(function (id) {
-      document.getElementById(id).addEventListener("input", renderList);
-      document.getElementById(id).addEventListener("change", renderList);
+      document.getElementById(id).addEventListener("input", onFilterChange);
+      document.getElementById(id).addEventListener("change", onFilterChange);
     });
     load();
   });

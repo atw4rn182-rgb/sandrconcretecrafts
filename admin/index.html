@@ -25,15 +25,7 @@
         </div>
       </div>
 
-      <nav class="sidebar-nav" aria-label="Sections">
-        <a class="nav-link is-active" href="/admin/"><span class="nav-ico" aria-hidden="true">◆</span> Dashboard</a>
-        <a class="nav-link" href="/admin/products.html"><span class="nav-ico" aria-hidden="true">▣</span> Products</a>
-        <a class="nav-link" href="/admin/categories.html"><span class="nav-ico" aria-hidden="true">▤</span> Categories</a>
-        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">☰</span> Orders</a>
-        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">☺</span> Customers</a>
-        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">◈</span> Appearance</a>
-        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</a>
-      </nav>
+      <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
 
       <div class="sidebar-foot">
         <div class="account-chip">
@@ -49,42 +41,48 @@
         <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
-        <div>
-          <h1>Dashboard</h1>
-          <p>A quick look at your shop. Manage products from the Products page.</p>
+        <div class="topbar-row">
+          <div>
+            <h1>Dashboard</h1>
+            <p>Live catalog summary for your S &amp; R Concrete Crafts shop.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="dashboardRefresh">Refresh</button>
         </div>
       </header>
 
-      <section class="stats-grid" aria-label="Shop overview placeholders">
-        <article class="stat-card">
-          <div class="stat-label">Products</div>
-          <div class="stat-value">—</div>
-          <div class="stat-note">Coming soon</div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-label">Published Products</div>
-          <div class="stat-value">—</div>
-          <div class="stat-note">Coming soon</div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-label">Orders</div>
-          <div class="stat-value">—</div>
-          <div class="stat-note">Coming soon</div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-label">Revenue</div>
-          <div class="stat-value">—</div>
-          <div class="stat-note">Coming soon</div>
-        </article>
-      </section>
+      <div id="dashboardError" class="form-error" role="alert" hidden></div>
 
-      <section class="panel">
-        <h2>Welcome to your shop manager</h2>
-        <p>
-          This is your private admin area for S &amp; R Concrete Crafts. Next we’ll add tools so you can
-          add products, photos, prices, and more — without touching code.
+      <div id="dashboardLoading" class="state-box" aria-live="polite">Loading catalog summary…</div>
+
+      <div id="dashboardContent" hidden>
+        <section class="dash-shortcuts" aria-label="Quick actions">
+          <a class="btn btn-primary" href="/admin/product-edit.html">Add Product</a>
+          <a class="btn btn-ghost" href="/admin/categories.html">Manage Categories</a>
+          <a class="btn btn-ghost" href="/admin/products.html">All Products</a>
+        </section>
+
+        <section class="stats-grid" id="statsGrid" aria-label="Catalog counts"></section>
+
+        <p class="dash-secondary-note" id="ordersNote">
+          Real ordering and payments are not connected yet. Demo checkout on the public site does not create sales.
         </p>
-      </section>
+
+        <section class="panel dash-panel" id="inventoryPanel" hidden>
+          <div class="panel-head">
+            <h2>Inventory attention</h2>
+            <p class="panel-sub">Published products with inventory tracking on and zero stock.</p>
+          </div>
+          <div id="inventoryList"></div>
+        </section>
+
+        <section class="panel dash-panel">
+          <div class="panel-head">
+            <h2>Recently updated</h2>
+            <p class="panel-sub">Latest changes in your catalog.</p>
+          </div>
+          <div id="recentList"></div>
+        </section>
+      </div>
     </main>
   </div>
 
@@ -92,74 +90,8 @@
   <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="/js/supabase-client.js" onerror="window.__SR_ADMIN_SCRIPT_ERROR__='supabase-client'"></script>
   <script src="/admin/admin-auth.js" onerror="window.__SR_ADMIN_SCRIPT_ERROR__='admin-auth'"></script>
-  <script>
-    (function () {
-      const app = document.getElementById("adminApp");
-      const gate = document.getElementById("adminGate");
-      const emailEl = document.getElementById("ownerEmail");
-      const signOutBtn = document.getElementById("signOutBtn");
-      const menuToggle = document.getElementById("menuToggle");
-      const backdrop = document.getElementById("sidebarBackdrop");
-
-      const safety = setTimeout(function () {
-        if (gate && gate.dataset.resolved !== "1") {
-          gate.textContent =
-            (window.SRAdminAuth && SRAdminAuth.MISSING_CONFIG_MESSAGE) ||
-            "Admin setup is incomplete. Supabase configuration is missing.";
-          gate.dataset.resolved = "1";
-        }
-      }, 12000);
-
-      function setNavOpen(open) {
-        app.classList.toggle("nav-open", open);
-        menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
-        backdrop.hidden = !open;
-      }
-
-      menuToggle.addEventListener("click", function () {
-        setNavOpen(!app.classList.contains("nav-open"));
-      });
-      backdrop.addEventListener("click", function () { setNavOpen(false); });
-
-      signOutBtn.addEventListener("click", async function () {
-        signOutBtn.disabled = true;
-        signOutBtn.textContent = "Signing out…";
-        await SRAdminAuth.signOut();
-        window.location.replace(SRAdminAuth.LOGIN_PATH);
-      });
-
-      if (typeof SRAdminAuth === "undefined") {
-        gate.textContent = window.__SR_ENV_LOAD_ERROR__
-          ? "Admin setup is incomplete. Supabase configuration is missing."
-          : "Admin tools failed to load. Please refresh the page. If this keeps happening, open /admin/ (with the slash) or contact your web helper.";
-        gate.dataset.resolved = "1";
-        clearTimeout(safety);
-        return;
-      }
-
-      SRAdminAuth.watchAuth(function (event) {
-        if (event === "SIGNED_OUT") {
-          window.location.replace(SRAdminAuth.LOGIN_PATH);
-        }
-      });
-
-      SRAdminAuth.requireAdminPage({ gateId: "adminGate" })
-        .then(function (check) {
-          clearTimeout(safety);
-          if (!check || !check.ok) return;
-          gate.hidden = true;
-          gate.dataset.resolved = "1";
-          app.hidden = false;
-          emailEl.textContent = (check.session.user && check.session.user.email) || "Owner";
-        })
-        .catch(function () {
-          clearTimeout(safety);
-          if (gate.dataset.resolved !== "1") {
-            gate.textContent = SRAdminAuth.MISSING_CONFIG_MESSAGE;
-            gate.dataset.resolved = "1";
-          }
-        });
-    })();
-  </script>
+  <script src="/admin/admin-shell.js"></script>
+  <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/dashboard.js"></script>
 </body>
 </html>

@@ -583,19 +583,121 @@
     return result.data;
   }
 
+  async function countProducts(filter) {
+    var supabase = await client();
+    var q = supabase.from("products").select("id", { count: "exact", head: true });
+    if (filter && filter.status) {
+      q = q.eq("status", filter.status);
+    }
+    if (filter && filter.track_inventory === true) {
+      q = q.eq("track_inventory", true);
+    }
+    if (filter && filter.quantity === 0) {
+      q = q.eq("quantity", 0);
+    }
+    var result = await q;
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load product counts."));
+    }
+    return typeof result.count === "number" ? result.count : 0;
+  }
+
+  async function getDashboardCounts() {
+    var statuses = ["draft", "published", "sold_out", "hidden"];
+    var results = await Promise.all(
+      [countProducts({})].concat(
+        statuses.map(function (status) {
+          return countProducts({ status: status });
+        })
+      )
+    );
+    return {
+      total: results[0],
+      draft: results[1],
+      published: results[2],
+      sold_out: results[3],
+      hidden: results[4],
+    };
+  }
+
+  async function listRecentProducts(limit) {
+    var supabase = await client();
+    var lim = Math.min(Math.max(Number(limit) || 8, 1), 20);
+    var result = await supabase
+      .from("products")
+      .select(
+        "id, title, slug, price, sale_price, status, quantity, track_inventory, updated_at, product_images(id, image_url, alt_text, sort_order, is_primary)"
+      )
+      .order("updated_at", { ascending: false })
+      .limit(lim);
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load recent products."));
+    }
+    return (result.data || []).map(normalizeProductRow);
+  }
+
+  /**
+   * Published products that track inventory and currently have zero stock.
+   * Untracked inventory is never returned here.
+   */
+  async function listInventoryAttention(limit) {
+    var supabase = await client();
+    var lim = Math.min(Math.max(Number(limit) || 12, 1), 40);
+    var result = await supabase
+      .from("products")
+      .select(
+        "id, title, slug, price, sale_price, status, quantity, track_inventory, updated_at, product_images(id, image_url, alt_text, sort_order, is_primary)"
+      )
+      .eq("status", "published")
+      .eq("track_inventory", true)
+      .eq("quantity", 0)
+      .order("updated_at", { ascending: false })
+      .limit(lim);
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load inventory alerts."));
+    }
+    return (result.data || []).map(normalizeProductRow);
+  }
+
+  async function countInventoryAttention() {
+    return countProducts({
+      status: "published",
+      track_inventory: true,
+      quantity: 0,
+    });
+  }
+
+  var PRODUCT_STATUS_FILTERS = ["draft", "published", "sold_out", "hidden"];
+
+  function normalizeProductStatusFilter(raw) {
+    var value = String(raw || "")
+      .trim()
+      .toLowerCase();
+    if (!value || value === "all" || value === "total") return "";
+    if (PRODUCT_STATUS_FILTERS.indexOf(value) === -1) return null;
+    return value;
+  }
+
   global.SRCatalog = {
     BUCKET: BUCKET,
     MAX_BYTES: MAX_BYTES,
     ALLOWED_TYPES: ALLOWED_TYPES,
+    PRODUCT_STATUS_FILTERS: PRODUCT_STATUS_FILTERS,
     slugify: slugify,
     money: money,
     escapeHtml: escapeHtml,
     friendlyDbError: friendlyDbError,
     primaryImage: primaryImage,
+    normalizeProductStatusFilter: normalizeProductStatusFilter,
     listProducts: listProducts,
     getProduct: getProduct,
     listCategories: listCategories,
     listBadges: listBadges,
+    countProducts: countProducts,
+    getDashboardCounts: getDashboardCounts,
+    listRecentProducts: listRecentProducts,
+    listInventoryAttention: listInventoryAttention,
+    countInventoryAttention: countInventoryAttention,
     validateProductInput: validateProductInput,
     createProduct: createProduct,
     updateProduct: updateProduct,

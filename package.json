@@ -4,7 +4,8 @@
   "description": "S & R Concrete Crafts static storefront + admin",
   "scripts": {
     "build": "node scripts/write-public-env.js",
-    "verify:step4": "node scripts/verify-step4-local.js"
+    "verify:step4": "node scripts/verify-step4-local.js",
+    "verify:dashboard": "node scripts/verify-dashboard-local.js"
   },
   "engines": {
     "node": ">=18"
