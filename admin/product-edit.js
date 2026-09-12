@@ -721,8 +721,15 @@
       var el = $(id);
       if (el) el.disabled = isBusy;
     });
-    if (isBusy) $("saveBtn").textContent = "Saving…";
-    else $("saveBtn").textContent = "Save";
+    if (isBusy) {
+      $("publishBtn").textContent = "Publishing…";
+      $("saveDraftBtn").textContent = "Saving…";
+      $("saveBtn").textContent = "Saving…";
+    } else {
+      $("publishBtn").textContent = "Publish";
+      $("saveDraftBtn").textContent = "Save Draft";
+      $("saveBtn").textContent = "Save (keep status)";
+    }
   }
 
   function bindForm() {
