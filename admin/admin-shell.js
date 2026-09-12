@@ -178,11 +178,10 @@
     var safety = setTimeout(function () {
       if (gate && gate.dataset.resolved !== "1") {
         gate.textContent =
-          (global.SRAdminAuth && SRAdminAuth.MISSING_CONFIG_MESSAGE) ||
-          "Admin setup is incomplete. Supabase configuration is missing.";
+          "Checking your access timed out. Please refresh the page or sign in again.";
         gate.dataset.resolved = "1";
       }
-    }, 12000);
+    }, 15000);
 
     function setNavOpen(open) {
       if (!app || !menuToggle || !backdrop) return;
@@ -222,12 +221,8 @@
       return Promise.resolve(null);
     }
 
-    SRAdminAuth.watchAuth(function (event) {
-      if (event === "SIGNED_OUT") {
-        window.location.replace(SRAdminAuth.LOGIN_PATH);
-      }
-    });
-
+    // IMPORTANT: finish getSession / admin_users checks BEFORE binding onAuthStateChange.
+    // Registering the watcher first can deadlock supabase-js and cause session timeouts.
     return SRAdminAuth.requireAdminPage({ gateId: "adminGate" })
       .then(function (check) {
         clearTimeout(safety);
@@ -241,12 +236,18 @@
           emailEl.textContent =
             (check.session.user && check.session.user.email) || "Owner";
         }
+        SRAdminAuth.watchAuth(function (event) {
+          if (event === "SIGNED_OUT") {
+            window.location.replace(SRAdminAuth.LOGIN_PATH);
+          }
+        });
         return check;
       })
       .catch(function () {
         clearTimeout(safety);
         if (gate && gate.dataset.resolved !== "1") {
-          gate.textContent = SRAdminAuth.MISSING_CONFIG_MESSAGE;
+          gate.textContent =
+            "Checking your access timed out. Please refresh the page or sign in again.";
           gate.dataset.resolved = "1";
         }
         return null;

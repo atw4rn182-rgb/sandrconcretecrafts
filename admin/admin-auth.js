@@ -9,9 +9,21 @@
 (function (global) {
   "use strict";
 
-  var ACCESS_CHECK_MS = 10000;
+  var ACCESS_CHECK_MS = 12000;
   var MISSING_CONFIG_MESSAGE =
     "Admin setup is incomplete. Supabase configuration is missing.";
+
+  function log(stage, detail) {
+    try {
+      if (detail !== undefined) {
+        console.info("[SRAdminAuth]", stage, detail);
+      } else {
+        console.info("[SRAdminAuth]", stage);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
 
   function adminPath(fileName) {
     var hosted =
@@ -23,8 +35,8 @@
 
   var LOGIN_PATH = adminPath("login.html");
   var DASHBOARD_PATH = adminPath("index.html");
-
   var clientPromise = null;
+  var authWatcherBound = false;
 
   function withTimeout(promise, ms, message) {
     return new Promise(function (resolve, reject) {
@@ -36,7 +48,6 @@
         err.code = "TIMEOUT";
         reject(err);
       }, ms);
-
       Promise.resolve(promise).then(
         function (value) {
           if (settled) return;
@@ -63,25 +74,25 @@
       return "Sign-in is taking too long. Please check your connection and try again.";
     }
     if (error.code === "SDK_MISSING") {
-      return "We couldn’t load the sign-in tools. Please refresh the page.";
+      return "We couldn't load the sign-in tools. Please refresh the page.";
     }
 
     var msg = String(error.message || error.error_description || "").toLowerCase();
     var status = error.status || error.code;
 
     if (msg.includes("invalid login") || msg.includes("invalid credentials") || status === 400) {
-      return "That email or password doesn’t look right. Please try again.";
+      return "That email or password doesn't look right. Please try again.";
     }
     if (msg.includes("email not confirmed")) {
       return "Please confirm your email in Supabase before signing in.";
     }
     if (msg.includes("network") || msg.includes("fetch")) {
-      return "We couldn’t reach the sign-in service. Check your internet connection.";
+      return "We couldn't reach the sign-in service. Check your internet connection.";
     }
     if (msg.includes("not configured") || msg.includes("env")) {
       return MISSING_CONFIG_MESSAGE;
     }
-    return "We couldn’t sign you in right now. Please try again in a moment.";
+    return "We couldn't sign you in right now. Please try again in a moment.";
   }
 
   function getCreateClient() {
@@ -125,7 +136,23 @@
 
     clientPromise = Promise.resolve()
       .then(function () {
-        if (!isEnvConfigured()) throw missingConfigError();
+        if (!isEnvConfigured()) {
+          log("public config missing");
+          throw missingConfigError();
+        }
+
+        var env = readEnv();
+        log("public config loaded", {
+          host: String(env.url || "")
+            .replace(/^https?:\/\//, "")
+            .split("/")[0],
+          keyKind:
+            String(env.anonKey || "").indexOf("sb_publishable") === 0
+              ? "sb_publishable"
+              : String(env.anonKey || "").indexOf("eyJ") === 0
+                ? "jwt-anon"
+                : "other",
+        });
 
         var createClient = getCreateClient();
         if (!createClient) {
@@ -134,8 +161,7 @@
           throw sdkErr;
         }
 
-        var env = readEnv();
-        return createClient(env.url, env.anonKey, {
+        var client = createClient(env.url, env.anonKey, {
           auth: {
             persistSession: true,
             autoRefreshToken: true,
@@ -143,6 +169,8 @@
             storageKey: "sr-admin-auth",
           },
         });
+        log("Supabase client created");
+        return client;
       })
       .catch(function (err) {
         clientPromise = null;
@@ -152,16 +180,29 @@
     return clientPromise;
   }
 
+  /**
+   * Read session once from an existing client (no nested client/timeout wrappers).
+   */
+  function readSession(supabase) {
+    log("getSession started");
+    return supabase.auth.getSession().then(function (result) {
+      log("getSession completed", {
+        ok: !result.error,
+        hasSession: !!(result.data && result.data.session),
+        hasUser: !!(result.data && result.data.session && result.data.session.user),
+      });
+      if (result.error) throw result.error;
+      return result.data.session || null;
+    });
+  }
+
   function getSession() {
     return getClient().then(function (supabase) {
       return withTimeout(
-        supabase.auth.getSession(),
+        readSession(supabase),
         ACCESS_CHECK_MS,
         "Checking your session timed out."
-      ).then(function (result) {
-        if (result.error) throw result.error;
-        return result.data.session || null;
-      });
+      );
     });
   }
 
@@ -173,44 +214,63 @@
     return withTimeout(
       (async function () {
         var supabase = await getClient();
-        var session = await getSession();
+        var session = await readSession(supabase);
 
         if (!session || !session.user) {
+          log("user not found");
           return { ok: false, session: null, profile: null, reason: "unauthenticated" };
         }
 
-        var result = await withTimeout(
-          supabase
-            .from("admin_users")
-            .select("user_id, role, active, created_at")
-            .eq("user_id", session.user.id)
-            .maybeSingle(),
-          ACCESS_CHECK_MS,
-          "Checking admin access timed out."
-        );
+        log("user found", { idPrefix: String(session.user.id || "").slice(0, 8) });
+        log("admin_users check started");
+
+        var result = await supabase
+          .from("admin_users")
+          .select("user_id, role, active, created_at")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
 
         var data = result.data;
         var error = result.error;
 
+        log("admin_users check completed", {
+          ok: !error,
+          hasRow: !!data,
+          active: !!(data && data.active),
+          code: error && error.code ? error.code : null,
+        });
+
         if (error) {
           var code = error.code || "";
           if (code === "42P01" || String(error.message || "").indexOf("does not exist") !== -1) {
-            return { ok: false, session: session, profile: null, reason: "schema_missing", error: error };
+            return {
+              ok: false,
+              session: session,
+              profile: null,
+              reason: "schema_missing",
+              error: error,
+            };
           }
-          return { ok: false, session: session, profile: null, reason: "lookup_failed", error: error };
+          return {
+            ok: false,
+            session: session,
+            profile: null,
+            reason: "lookup_failed",
+            error: error,
+          };
         }
 
         if (!data) {
           return { ok: false, session: session, profile: null, reason: "not_admin" };
         }
-
         if (!data.active) {
           return { ok: false, session: session, profile: data, reason: "inactive" };
         }
 
+        log("dashboard allowed");
         return { ok: true, session: session, profile: data, reason: null };
       })(),
-      ACCESS_CHECK_MS + 2000,
+      ACCESS_CHECK_MS,
       "Checking your access timed out."
     );
   }
@@ -230,7 +290,6 @@
           wrapped.cause = result.error;
           throw wrapped;
         }
-
         return verifyActiveAdmin().then(function (check) {
           if (!check.ok) {
             return supabase.auth.signOut().catch(function () {}).then(function () {
@@ -249,15 +308,15 @@
     switch (reason) {
       case "not_admin":
       case "inactive":
-        return "This account isn’t set up for admin access. Ask your web helper to add you as an active admin.";
+        return "This account isn't set up for admin access. Ask your web helper to add you as an active admin.";
       case "schema_missing":
-        return "Admin access isn’t ready yet. The admin database table still needs to be created in Supabase.";
+        return "Admin access isn't ready yet. The admin database table still needs to be created in Supabase.";
       case "lookup_failed":
-        return "We signed you in, but couldn’t verify admin access. Please try again or contact support.";
+        return "We signed you in, but couldn't verify admin access. Please try again or contact support.";
       case "timeout":
         return "Checking your access timed out. Please refresh and try again.";
       default:
-        return "You don’t have permission to open the admin area.";
+        return "You don't have permission to open the admin area.";
     }
   }
 
@@ -294,6 +353,7 @@
     return withTimeout(
       (async function () {
         if (!isEnvConfigured()) {
+          log("requireAdminPage blocked — config missing");
           setGateMessage(gateEl, MISSING_CONFIG_MESSAGE);
           return null;
         }
@@ -301,12 +361,14 @@
         var check = await verifyActiveAdmin();
 
         if (check.reason === "unauthenticated") {
+          log("redirect to login — no session");
           setGateMessage(gateEl, "Redirecting to sign in…");
           go(LOGIN_PATH);
           return null;
         }
 
         if (!check.ok) {
+          log("redirect to login — denied", { reason: check.reason });
           await signOut();
           setGateMessage(gateEl, denyMessage(check.reason));
           go(LOGIN_PATH + "?denied=1");
@@ -317,26 +379,33 @@
           gateEl.hidden = true;
           gateEl.dataset.resolved = "1";
         }
+        log("requireAdminPage complete — access granted");
         return check;
       })(),
-      ACCESS_CHECK_MS + 3000,
+      ACCESS_CHECK_MS + 2000,
       "Checking your access timed out."
     ).catch(function (err) {
       if (err && (err.code === "ENV_MISSING" || err.code === "ENV_LOAD_ERROR")) {
         setGateMessage(gateEl, MISSING_CONFIG_MESSAGE);
         return null;
       }
+
       if (err && err.code === "TIMEOUT") {
+        log("requireAdminPage timed out");
         setGateMessage(
           gateEl,
           "Checking your access timed out. Please refresh the page or sign in again."
         );
-        setTimeout(function () {
-          go(LOGIN_PATH + "?expired=1");
-        }, 1600);
-        return null;
+        // Clear a potentially stuck/corrupt session so the next attempt can succeed.
+        return signOut().then(function () {
+          setTimeout(function () {
+            go(LOGIN_PATH + "?expired=1");
+          }, 1600);
+          return null;
+        });
       }
 
+      log("requireAdminPage error", { code: err && err.code ? err.code : "unknown" });
       return signOut().then(function () {
         setGateMessage(gateEl, "Your session expired. Redirecting to sign in…");
         go(LOGIN_PATH + "?expired=1");
@@ -347,7 +416,7 @@
 
   function redirectIfAdminSession() {
     if (!isEnvConfigured()) return Promise.resolve(false);
-    return withTimeout(verifyActiveAdmin(), ACCESS_CHECK_MS + 2000, "timed out")
+    return withTimeout(verifyActiveAdmin(), ACCESS_CHECK_MS, "timed out")
       .then(function (check) {
         if (check.ok) {
           go(DASHBOARD_PATH);
@@ -365,11 +434,19 @@
       });
   }
 
+  /**
+   * Bind auth watcher AFTER the initial session/admin check finishes.
+   * Registering onAuthStateChange before getSession() can deadlock supabase-js.
+   */
   function watchAuth(onChange) {
     if (!isEnvConfigured()) return;
+    if (authWatcherBound) return;
+    authWatcherBound = true;
+
     getClient()
       .then(function (supabase) {
         supabase.auth.onAuthStateChange(function (event, session) {
+          // Keep this callback synchronous — never await Supabase calls here.
           if (typeof onChange === "function") onChange(event, session);
           if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
             if (!global.location.pathname.endsWith("/login.html")) {
@@ -377,8 +454,11 @@
             }
           }
         });
+        log("auth watcher bound");
       })
-      .catch(function () {});
+      .catch(function () {
+        authWatcherBound = false;
+      });
   }
 
   global.SRAdminAuth = {
