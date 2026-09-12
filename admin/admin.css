@@ -195,8 +195,10 @@ h1, h2, h3 { font-family: var(--serif); color: var(--charcoal); margin: 0; line-
 .login-brand img {
   width: 72px;
   height: 72px;
-  object-fit: cover;
-  border-radius: 16px;
+  object-fit: contain;
+  object-position: center;
+  background: #ffffff;
+  border-radius: 50%;
   box-shadow: var(--shadow-sm);
 }
 .login-brand h1 { font-size: 1.55rem; }
@@ -249,8 +251,10 @@ h1, h2, h3 { font-family: var(--serif); color: var(--charcoal); margin: 0; line-
 .sidebar-brand img {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  object-fit: cover;
+  border-radius: 50%;
+  object-fit: contain;
+  object-position: center;
+  background: #ffffff;
 }
 .sidebar-brand strong {
   display: block;

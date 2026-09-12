@@ -124,8 +124,14 @@ img { max-width: 100%; display: block; }
 }
 .brand { display: flex; align-items: center; z-index: 2; }
 .brand-logo {
-  height: 48px; width: auto; display: block;
-  border-radius: 11px; box-shadow: var(--shadow-sm); background: var(--adobe-50);
+  height: 48px;
+  width: 48px;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
 }
 .brand:hover .brand-logo { transform: translateY(-1px); }
 .nav-panel { display: flex; justify-content: center; }
@@ -708,5 +714,5 @@ img { max-width: 100%; display: block; }
   .card-body h3 { font-size: 1.15rem; }
   .footer-inner { flex-direction: column; }
   .form-row { grid-template-columns: 1fr; }
-  .brand-logo { height: 42px; }
+  .brand-logo { height: 40px; width: 40px; }
 }
