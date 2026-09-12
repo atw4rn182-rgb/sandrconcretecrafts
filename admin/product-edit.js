@@ -13,9 +13,57 @@
   var removedExisting = [];
   var categories = [];
   var badges = [];
+  var creatingCategory = false;
+  var pendingDuplicateCategory = null;
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function selectedCategoryIds() {
+    return Array.prototype.map.call(
+      document.querySelectorAll('input[name="category"]:checked'),
+      function (el) {
+        return el.value;
+      }
+    );
+  }
+
+  function selectedBadgeIds() {
+    return Array.prototype.map.call(
+      document.querySelectorAll('input[name="badge"]:checked'),
+      function (el) {
+        return el.value;
+      }
+    );
+  }
+
+  function normalizeCategoryName(name) {
+    return String(name || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  }
+
+  function findEquivalentCategory(name) {
+    var needle = normalizeCategoryName(name);
+    if (!needle) return null;
+    for (var i = 0; i < categories.length; i++) {
+      if (normalizeCategoryName(categories[i].name) === needle) {
+        return categories[i];
+      }
+    }
+    return null;
+  }
+
+  function sortCategoriesInPlace() {
+    categories.sort(function (a, b) {
+      var so = (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
+      if (so) return so;
+      return String(a.name || "").localeCompare(String(b.name || ""), undefined, {
+        sensitivity: "base",
+      });
+    });
   }
 
   function showFlash(msg, kind) {
@@ -41,14 +89,6 @@
   }
 
   function readForm() {
-    var catIds = Array.prototype.map
-      .call(document.querySelectorAll('input[name="category"]:checked'), function (el) {
-        return el.value;
-      });
-    var badgeIds = Array.prototype.map
-      .call(document.querySelectorAll('input[name="badge"]:checked'), function (el) {
-        return el.value;
-      });
     return {
       title: $("title").value,
       slug: $("slug").value,
@@ -61,8 +101,8 @@
       product_type: $("product_type").value,
       status: $("status").value,
       featured: $("featured").checked,
-      category_ids: catIds,
-      badge_ids: badgeIds,
+      category_ids: selectedCategoryIds(),
+      badge_ids: selectedBadgeIds(),
       imageCount: images.length,
     };
   }
@@ -152,37 +192,248 @@
     $("livePreview").classList.toggle("is-sold-out", data.status === "sold_out");
   }
 
-  function renderChecks() {
-    $("categoryChecks").innerHTML = categories.length
-      ? categories
-          .map(function (c) {
-            return (
-              '<label class="check-item"><input type="checkbox" name="category" value="' +
-              SRCatalog.escapeHtml(c.id) +
-              '" /> ' +
-              SRCatalog.escapeHtml(c.name) +
-              (c.active ? "" : ' <span class="muted">(inactive)</span>') +
-              "</label>"
-            );
-          })
-          .join("")
-      : '<p class="muted">No categories yet. Create some on the Categories page.</p>';
+  function renderCategoryChecks(selectedIds) {
+    var selected = selectedIds || selectedCategoryIds();
+    var wrap = $("categoryChecks");
+    if (!categories.length) {
+      wrap.innerHTML =
+        '<p class="muted">No categories yet. Use Add Category below to create one.</p>';
+      return;
+    }
+    wrap.innerHTML = categories
+      .map(function (c) {
+        var checked = selected.indexOf(c.id) !== -1 ? " checked" : "";
+        return (
+          '<label class="check-item"><input type="checkbox" name="category" value="' +
+          SRCatalog.escapeHtml(c.id) +
+          '"' +
+          checked +
+          " /> " +
+          SRCatalog.escapeHtml(c.name) +
+          (c.active ? "" : ' <span class="muted">(inactive)</span>') +
+          "</label>"
+        );
+      })
+      .join("");
+  }
 
-    $("badgeChecks").innerHTML = badges.length
-      ? badges
-          .map(function (b) {
-            return (
-              '<label class="check-item"><input type="checkbox" name="badge" value="' +
-              SRCatalog.escapeHtml(b.id) +
-              '"' +
-              (b.active ? "" : " disabled") +
-              " /> " +
-              SRCatalog.escapeHtml(b.label || b.name) +
-              "</label>"
-            );
-          })
-          .join("")
-      : '<p class="muted">No badges found. Run the badge seed migration in Supabase.</p>';
+  function renderBadgeChecks(selectedIds) {
+    var selected = selectedIds || selectedBadgeIds();
+    var wrap = $("badgeChecks");
+    if (!badges.length) {
+      wrap.innerHTML =
+        '<p class="muted">No badges found. Run the badge seed migration in Supabase.</p>';
+      return;
+    }
+    wrap.innerHTML = badges
+      .map(function (b) {
+        var checked = selected.indexOf(b.id) !== -1 ? " checked" : "";
+        return (
+          '<label class="check-item"><input type="checkbox" name="badge" value="' +
+          SRCatalog.escapeHtml(b.id) +
+          '"' +
+          (b.active ? "" : " disabled") +
+          checked +
+          " /> " +
+          SRCatalog.escapeHtml(b.label || b.name) +
+          "</label>"
+        );
+      })
+      .join("");
+  }
+
+  function renderChecks(opts) {
+    opts = opts || {};
+    var catIds =
+      opts.categoryIds != null
+        ? opts.categoryIds
+        : opts.preserve
+          ? selectedCategoryIds()
+          : [];
+    var badgeIds =
+      opts.badgeIds != null
+        ? opts.badgeIds
+        : opts.preserve
+          ? selectedBadgeIds()
+          : [];
+    renderCategoryChecks(catIds);
+    renderBadgeChecks(badgeIds);
+  }
+
+  function showInlineCategoryError(msg) {
+    var el = $("addCategoryInlineError");
+    if (!msg) {
+      el.hidden = true;
+      el.textContent = "";
+      return;
+    }
+    el.hidden = false;
+    el.textContent = msg;
+  }
+
+  function clearDuplicateOffer() {
+    pendingDuplicateCategory = null;
+    var offer = $("addCategoryDupOffer");
+    offer.hidden = true;
+    $("addCategoryDupText").textContent = "";
+  }
+
+  function showDuplicateOffer(existing) {
+    pendingDuplicateCategory = existing;
+    clearCreateBusy();
+    showInlineCategoryError("");
+    var offer = $("addCategoryDupOffer");
+    offer.hidden = false;
+    var statusNote = existing.active
+      ? ""
+      : " It is currently inactive and will stay inactive — only selected for this product.";
+    $("addCategoryDupText").textContent =
+      'A category named "' +
+      existing.name +
+      '" already exists.' +
+      statusNote +
+      " Select it instead of creating a duplicate.";
+    $("addCategorySelectExisting").focus();
+  }
+
+  function clearCreateBusy() {
+    creatingCategory = false;
+    $("addCategoryCreateBtn").disabled = false;
+    $("addCategoryCreateBtn").textContent = "Create & Select";
+    $("newCategoryName").disabled = false;
+    $("addCategoryCancelBtn").disabled = false;
+    $("addCategorySelectExisting").disabled = false;
+  }
+
+  function setCreateBusy(busy) {
+    creatingCategory = !!busy;
+    $("addCategoryCreateBtn").disabled = !!busy;
+    $("addCategoryCreateBtn").textContent = busy ? "Creating…" : "Create & Select";
+    $("newCategoryName").disabled = !!busy;
+    $("addCategoryCancelBtn").disabled = !!busy;
+    $("addCategorySelectExisting").disabled = !!busy;
+  }
+
+  function openAddCategoryPanel() {
+    var panel = $("addCategoryPanel");
+    var btn = $("addCategoryBtn");
+    panel.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    showInlineCategoryError("");
+    clearDuplicateOffer();
+    clearCreateBusy();
+    $("addCategoryCancelBtn").disabled = false;
+    $("newCategoryName").focus();
+    $("newCategoryName").select();
+  }
+
+  function closeAddCategoryPanel(opts) {
+    opts = opts || {};
+    var panel = $("addCategoryPanel");
+    var btn = $("addCategoryBtn");
+    panel.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    showInlineCategoryError("");
+    clearDuplicateOffer();
+    clearCreateBusy();
+    $("addCategoryCancelBtn").disabled = false;
+    if (!opts.keepName) $("newCategoryName").value = "";
+    if (opts.returnFocus !== false) btn.focus();
+  }
+
+  function selectExistingCategory(cat) {
+    if (!cat) return;
+    var selected = selectedCategoryIds();
+    if (selected.indexOf(cat.id) === -1) selected.push(cat.id);
+    if (!categories.some(function (c) { return c.id === cat.id; })) {
+      categories.push(cat);
+      sortCategoriesInPlace();
+    }
+    renderCategoryChecks(selected);
+    markDirty();
+    updatePreview();
+    closeAddCategoryPanel();
+  }
+
+  async function createAndSelectCategory() {
+    if (creatingCategory) return;
+    clearDuplicateOffer();
+    showInlineCategoryError("");
+    var name = String($("newCategoryName").value || "").trim().replace(/\s+/g, " ");
+    $("newCategoryName").value = name;
+    if (!name) {
+      showInlineCategoryError("Enter a category name.");
+      $("newCategoryName").focus();
+      return;
+    }
+
+    var existingMatch = findEquivalentCategory(name);
+    if (existingMatch) {
+      showDuplicateOffer(existingMatch);
+      return;
+    }
+
+    setCreateBusy(true);
+    try {
+      var created = await SRCatalog.createCategory({
+        name: name,
+        active: true,
+      });
+      categories.push(created);
+      sortCategoriesInPlace();
+      var selected = selectedCategoryIds();
+      selected.push(created.id);
+      renderCategoryChecks(selected);
+      markDirty();
+      updatePreview();
+      closeAddCategoryPanel();
+      showFlash("Category “" + created.name + "” created and selected. Save the product to keep the assignment.", "ok");
+    } catch (err) {
+      // Keep typed name for retry; do not touch product fields or photos.
+      showInlineCategoryError(err.message || "Couldn’t create that category. Try again.");
+      clearCreateBusy();
+      $("newCategoryName").focus();
+      $("newCategoryName").select();
+    }
+  }
+
+  function bindCategoryCreator() {
+    $("addCategoryBtn").addEventListener("click", function () {
+      if ($("addCategoryPanel").hidden) openAddCategoryPanel();
+      else closeAddCategoryPanel();
+    });
+    $("addCategoryCancelBtn").addEventListener("click", function () {
+      closeAddCategoryPanel();
+    });
+    $("addCategoryCreateBtn").addEventListener("click", function () {
+      createAndSelectCategory();
+    });
+    $("addCategorySelectExisting").addEventListener("click", function () {
+      if (pendingDuplicateCategory) selectExistingCategory(pendingDuplicateCategory);
+    });
+    $("newCategoryName").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        createAndSelectCategory();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        closeAddCategoryPanel();
+      }
+    });
+    $("newCategoryName").addEventListener("input", function () {
+      if (!$("addCategoryDupOffer").hidden || !$("addCategoryInlineError").hidden) {
+        clearDuplicateOffer();
+        showInlineCategoryError("");
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if ($("addCategoryPanel").hidden) return;
+      // Prefer the input handler when the field is focused; still close from elsewhere.
+      if (document.activeElement === $("newCategoryName")) return;
+      e.preventDefault();
+      closeAddCategoryPanel();
+    });
   }
 
   function renderPhotos() {
@@ -511,6 +762,7 @@
       markDirty();
       updatePreview();
     });
+    bindCategoryCreator();
     $("photoInput").addEventListener("change", function (e) {
       onFilesSelected(e.target.files);
     });

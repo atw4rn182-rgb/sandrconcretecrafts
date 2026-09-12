@@ -157,7 +157,42 @@
           <fieldset>
             <legend>Categories</legend>
             <div id="categoryChecks" class="check-grid"></div>
-            <p class="field-hint">Inactive categories stay available here so existing products keep their assignments.</p>
+            <div class="inline-cat-tools">
+              <button type="button" class="btn btn-ghost btn-small" id="addCategoryBtn" aria-expanded="false" aria-controls="addCategoryPanel">
+                Add Category
+              </button>
+              <div
+                id="addCategoryPanel"
+                class="inline-cat-panel"
+                role="dialog"
+                aria-labelledby="addCategoryHeading"
+                aria-describedby="addCategoryNote"
+                hidden
+              >
+                <h3 id="addCategoryHeading" class="inline-cat-title">New category</h3>
+                <p id="addCategoryNote" class="field-hint">
+                  The category is created right away. Assigning it to this product is saved when you save the product.
+                </p>
+                <div class="field">
+                  <label for="newCategoryName">Category name</label>
+                  <input type="text" id="newCategoryName" maxlength="80" autocomplete="off" />
+                </div>
+                <div id="addCategoryInlineError" class="inline-cat-error" role="alert" hidden></div>
+                <div id="addCategoryDupOffer" class="inline-cat-dup" hidden>
+                  <p id="addCategoryDupText"></p>
+                  <button type="button" class="btn btn-ghost btn-small" id="addCategorySelectExisting">
+                    Select existing
+                  </button>
+                </div>
+                <div class="inline-cat-actions">
+                  <button type="button" class="btn btn-primary btn-small" id="addCategoryCreateBtn">
+                    Create &amp; Select
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-small" id="addCategoryCancelBtn">Cancel</button>
+                </div>
+              </div>
+            </div>
+            <p class="field-hint">Inactive categories stay available here so existing products keep their assignments. You can also manage categories on the Categories page.</p>
           </fieldset>
 
           <fieldset>

@@ -636,6 +636,64 @@ a.stat-card:focus-visible {
   font-weight: 500;
 }
 
+.inline-cat-tools {
+  margin-top: 0.75rem;
+}
+.inline-cat-panel {
+  margin-top: 0.75rem;
+  padding: 0.95rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(244, 241, 236, 0.55);
+  max-width: 28rem;
+}
+.inline-cat-title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  margin: 0 0 0.35rem;
+  color: var(--charcoal);
+}
+.inline-cat-panel .field {
+  margin: 0.65rem 0 0.5rem;
+}
+.inline-cat-panel .field label {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.inline-cat-panel input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+.inline-cat-error {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(160, 50, 40, 0.1);
+  border: 1px solid rgba(160, 50, 40, 0.28);
+  color: #7a2e28;
+  font-size: 0.9rem;
+}
+.inline-cat-dup {
+  margin: 0.45rem 0 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(200, 155, 90, 0.14);
+  border: 1px solid rgba(168, 97, 47, 0.25);
+}
+.inline-cat-dup p {
+  margin: 0 0 0.55rem;
+  font-size: 0.9rem;
+  color: var(--charcoal);
+}
+.inline-cat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
 .state-box {
   padding: 1.4rem 1.2rem;
   background: var(--surface);
