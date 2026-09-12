@@ -1,4 +1,4 @@
-# Supabase (S & R Concrete Crafts)
+# Supabase (S&R Concrete Crafts)
 
 Plain HTML / CSS / vanilla JS storefront with Supabase for catalog + admin.
 
@@ -14,6 +14,7 @@ Plain HTML / CSS / vanilla JS storefront with Supabase for catalog + admin.
 | `20260912000006_admin_catalog_policies.sql` | Active-admin catalog writes |
 | `20260912000007_storefront_catalog_fields.sql` | `source_key`, `item_no`, `track_inventory`; public read for **published + sold_out** |
 | `20260912000008_import_legacy_storefront_products.sql` | Idempotent import of 17 original storefront products |
+| `20260912000009_rename_business_sandr_concrete_crafts.sql` | Rename site/business to **S&R Concrete Crafts** |
 
 **Having files in git ≠ applied on your project.** Apply via SQL Editor (or `supabase db push` if linked).
 

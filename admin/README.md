@@ -1,6 +1,6 @@
 # Admin area
 
-Private owner tools for S & R Concrete Crafts.
+Private owner tools for S&R Concrete Crafts.
 
 ## Pages
 

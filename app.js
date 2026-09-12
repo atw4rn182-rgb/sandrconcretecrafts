@@ -1,4 +1,4 @@
-/* ===== S & R Crafts Concrete Creations — storefront (vanilla JS) ===== */
+/* ===== S&R Concrete Crafts — storefront (vanilla JS) ===== */
 (function () {
   "use strict";
 

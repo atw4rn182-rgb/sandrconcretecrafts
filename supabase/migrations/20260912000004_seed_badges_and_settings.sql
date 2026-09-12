@@ -28,8 +28,8 @@ insert into public.site_settings (
   config
 )
 select
-  'S & R Crafts Concrete Creations',
-  'S & R Crafts Concrete Creations',
+  'S&R Concrete Crafts',
+  'S&R Concrete Crafts',
   'southwestern',
   false,
   null,

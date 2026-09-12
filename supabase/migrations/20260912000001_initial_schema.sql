@@ -1,4 +1,4 @@
--- S & R Concrete Crafts — initial catalog schema
+-- S&R Concrete Crafts — initial catalog schema
 -- Step 1 foundation: products, images, categories, badges, site settings
 
 create extension if not exists "pgcrypto";
@@ -149,8 +149,8 @@ create index product_badges_badge_id_idx on public.product_badges (badge_id);
 
 create table public.site_settings (
   id uuid primary key default gen_random_uuid(),
-  site_name text not null default 'S & R Crafts Concrete Creations',
-  business_name text not null default 'S & R Crafts Concrete Creations',
+  site_name text not null default 'S&R Concrete Crafts',
+  business_name text not null default 'S&R Concrete Crafts',
   -- Planned default look; theme CSS comes in a later step
   default_theme text not null default 'southwestern',
   seasonal_themes_enabled boolean not null default false,

@@ -1,5 +1,5 @@
 /**
- * Dormant / shared Supabase browser helpers for S & R Concrete Crafts.
+ * Dormant / shared Supabase browser helpers for S&R Concrete Crafts.
  *
  * Admin pages load:
  *   1. js/env.js          (generated on Vercel from SUPABASE_URL + SUPABASE_ANON_KEY)

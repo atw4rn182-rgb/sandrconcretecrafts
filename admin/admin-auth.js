@@ -1,5 +1,5 @@
 /**
- * S & R Concrete Crafts — admin authentication helpers
+ * S&R Concrete Crafts — admin authentication helpers
  * Uses Supabase Auth (email/password) + admin_users verification.
  * Never place the service-role key here.
  *
