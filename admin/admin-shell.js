@@ -178,10 +178,10 @@
     var safety = setTimeout(function () {
       if (gate && gate.dataset.resolved !== "1") {
         gate.textContent =
-          "Checking your access timed out. Please refresh the page or sign in again.";
+          "Admin authorization service did not respond. Please refresh the page or sign in again.";
         gate.dataset.resolved = "1";
       }
-    }, 15000);
+    }, 22000);
 
     function setNavOpen(open) {
       if (!app || !menuToggle || !backdrop) return;
@@ -247,7 +247,7 @@
         clearTimeout(safety);
         if (gate && gate.dataset.resolved !== "1") {
           gate.textContent =
-            "Checking your access timed out. Please refresh the page or sign in again.";
+            "Admin authorization service did not respond. Please refresh the page or sign in again.";
           gate.dataset.resolved = "1";
         }
         return null;

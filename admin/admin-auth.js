@@ -9,16 +9,18 @@
 (function (global) {
   "use strict";
 
-  var ACCESS_CHECK_MS = 12000;
+  var SESSION_CHECK_MS = 8000;
+  var ADMIN_QUERY_MS = 10000;
+  var ACCESS_CHECK_MS = SESSION_CHECK_MS + ADMIN_QUERY_MS + 2000;
   var MISSING_CONFIG_MESSAGE =
     "Admin setup is incomplete. Supabase configuration is missing.";
 
   function log(stage, detail) {
     try {
       if (detail !== undefined) {
-        console.info("[SRAdminAuth]", stage, detail);
+        console.info("[admin]", stage, detail);
       } else {
-        console.info("[SRAdminAuth]", stage);
+        console.info("[admin]", stage);
       }
     } catch (e) {
       /* ignore */
@@ -38,14 +40,14 @@
   var clientPromise = null;
   var authWatcherBound = false;
 
-  function withTimeout(promise, ms, message) {
+  function withTimeout(promise, ms, message, code) {
     return new Promise(function (resolve, reject) {
       var settled = false;
       var timer = setTimeout(function () {
         if (settled) return;
         settled = true;
         var err = new Error(message || "This is taking too long. Please try again.");
-        err.code = "TIMEOUT";
+        err.code = code || "TIMEOUT";
         reject(err);
       }, ms);
       Promise.resolve(promise).then(
@@ -69,6 +71,12 @@
     if (!error) return "Something went wrong. Please try again.";
     if (error.code === "ENV_MISSING" || error.code === "ENV_LOAD_ERROR") {
       return MISSING_CONFIG_MESSAGE;
+    }
+    if (error.code === "SESSION_TIMEOUT") {
+      return "Admin authorization service did not respond. Please refresh and try again.";
+    }
+    if (error.code === "ADMIN_QUERY_TIMEOUT") {
+      return "Admin authorization service did not respond. Please refresh and try again.";
     }
     if (error.code === "TIMEOUT") {
       return "Sign-in is taking too long. Please check your connection and try again.";
@@ -131,6 +139,11 @@
     return err;
   }
 
+  /**
+   * Single shared admin client. Uses a no-op auth lock so a stuck Navigator
+   * LockManager entry (common multi-tab auth-js failure) cannot freeze
+   * getSession / REST calls. Authz still requires admin_users.
+   */
   function getClient() {
     if (clientPromise) return clientPromise;
 
@@ -165,8 +178,11 @@
           auth: {
             persistSession: true,
             autoRefreshToken: true,
-            detectSessionInUrl: true,
+            detectSessionInUrl: false,
             storageKey: "sr-admin-auth",
+            lock: function (_name, _acquireTimeout, fn) {
+              return fn();
+            },
           },
         });
         log("Supabase client created");
@@ -181,7 +197,8 @@
   }
 
   /**
-   * Read session once from an existing client (no nested client/timeout wrappers).
+   * Read session once. Do not call this from inside onAuthStateChange.
+   * Prefer an already-known session (e.g. from signInWithPassword) instead.
    */
   function readSession(supabase) {
     log("getSession started");
@@ -200,79 +217,134 @@
     return getClient().then(function (supabase) {
       return withTimeout(
         readSession(supabase),
-        ACCESS_CHECK_MS,
-        "Checking your session timed out."
+        SESSION_CHECK_MS,
+        "Admin authorization service did not respond.",
+        "SESSION_TIMEOUT"
       );
     });
+  }
+
+  function queryActiveAdminRow(supabase, userId) {
+    log("querying admin_users");
+    return supabase
+      .from("admin_users")
+      .select("user_id, role, active, created_at")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .maybeSingle()
+      .then(function (result) {
+        log("admin_users query completed", {
+          ok: !result.error,
+          hasRow: !!result.data,
+          active: !!(result.data && result.data.active),
+          code: result.error && result.error.code ? result.error.code : null,
+        });
+        return result;
+      });
   }
 
   /**
    * Returns { ok, session, profile, reason }
    * Authorization is based on admin_users.active — not UI alone.
+   *
+   * @param {object|null} [existingSession] Session already in hand (skip getSession).
    */
-  function verifyActiveAdmin() {
-    return withTimeout(
-      (async function () {
-        var supabase = await getClient();
-        var session = await readSession(supabase);
+  function verifyActiveAdmin(existingSession) {
+    return (async function () {
+      var supabase = await getClient();
+      var session = existingSession || null;
 
-        if (!session || !session.user) {
-          log("user not found");
-          return { ok: false, session: null, profile: null, reason: "unauthenticated" };
+      if (session && session.user) {
+        log("session confirmed", { source: "provided" });
+      } else {
+        session = await withTimeout(
+          readSession(supabase),
+          SESSION_CHECK_MS,
+          "Admin authorization service did not respond.",
+          "SESSION_TIMEOUT"
+        );
+        if (session && session.user) {
+          log("session confirmed", { source: "getSession" });
         }
+      }
 
-        log("user found", { idPrefix: String(session.user.id || "").slice(0, 8) });
-        log("admin_users check started");
+      if (!session || !session.user) {
+        log("user not found");
+        return { ok: false, session: null, profile: null, reason: "unauthenticated" };
+      }
 
-        var result = await supabase
-          .from("admin_users")
-          .select("user_id, role, active, created_at")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+      log("access check started");
 
-        var data = result.data;
-        var error = result.error;
+      var result = await withTimeout(
+        queryActiveAdminRow(supabase, session.user.id),
+        ADMIN_QUERY_MS,
+        "Admin authorization service did not respond.",
+        "ADMIN_QUERY_TIMEOUT"
+      );
 
-        log("admin_users check completed", {
-          ok: !error,
-          hasRow: !!data,
-          active: !!(data && data.active),
-          code: error && error.code ? error.code : null,
-        });
+      var data = result.data;
+      var error = result.error;
 
-        if (error) {
-          var code = error.code || "";
-          if (code === "42P01" || String(error.message || "").indexOf("does not exist") !== -1) {
-            return {
-              ok: false,
-              session: session,
-              profile: null,
-              reason: "schema_missing",
-              error: error,
-            };
-          }
+      if (error) {
+        var code = error.code || "";
+        if (code === "42P01" || String(error.message || "").indexOf("does not exist") !== -1) {
+          log("access denied", { reason: "schema_missing" });
+          return {
+            ok: false,
+            session: session,
+            profile: null,
+            reason: "schema_missing",
+            error: error,
+          };
+        }
+        log("access denied", { reason: "lookup_failed" });
+        return {
+          ok: false,
+          session: session,
+          profile: null,
+          reason: "lookup_failed",
+          error: error,
+        };
+      }
+
+      if (!data) {
+        // Distinguish inactive vs missing: one extra read without active filter.
+        var anyRow = await withTimeout(
+          supabase
+            .from("admin_users")
+            .select("user_id, role, active, created_at")
+            .eq("user_id", session.user.id)
+            .maybeSingle(),
+          ADMIN_QUERY_MS,
+          "Admin authorization service did not respond.",
+          "ADMIN_QUERY_TIMEOUT"
+        );
+        if (anyRow.error) {
+          log("access denied", { reason: "lookup_failed" });
           return {
             ok: false,
             session: session,
             profile: null,
             reason: "lookup_failed",
-            error: error,
+            error: anyRow.error,
           };
         }
-
-        if (!data) {
-          return { ok: false, session: session, profile: null, reason: "not_admin" };
+        if (anyRow.data && anyRow.data.active === false) {
+          log("access denied", { reason: "inactive" });
+          return {
+            ok: false,
+            session: session,
+            profile: anyRow.data,
+            reason: "inactive",
+          };
         }
-        if (!data.active) {
-          return { ok: false, session: session, profile: data, reason: "inactive" };
-        }
+        log("access denied", { reason: "not_admin" });
+        return { ok: false, session: session, profile: null, reason: "not_admin" };
+      }
 
-        log("dashboard allowed");
-        return { ok: true, session: session, profile: data, reason: null };
-      })(),
-      ACCESS_CHECK_MS,
-      "Checking your access timed out."
-    );
+      log("access granted");
+      return { ok: true, session: session, profile: data, reason: null };
+    })();
   }
 
   function signIn(email, password) {
@@ -282,7 +354,7 @@
           email: String(email || "").trim(),
           password: String(password || ""),
         }),
-        ACCESS_CHECK_MS,
+        SESSION_CHECK_MS + 4000,
         "Sign-in timed out."
       ).then(function (result) {
         if (result.error) {
@@ -290,7 +362,11 @@
           wrapped.cause = result.error;
           throw wrapped;
         }
-        return verifyActiveAdmin().then(function (check) {
+
+        // Use the session returned by sign-in — do NOT call getSession() again
+        // (auth-js lock / _useSession can hang right after password grant).
+        var session = result.data && result.data.session;
+        return verifyActiveAdmin(session).then(function (check) {
           if (!check.ok) {
             return supabase.auth.signOut().catch(function () {}).then(function () {
               var denied = new Error(denyMessage(check.reason));
@@ -298,7 +374,7 @@
               throw denied;
             });
           }
-          return { session: result.data.session, profile: check.profile };
+          return { session: session, profile: check.profile };
         });
       });
     });
@@ -308,13 +384,15 @@
     switch (reason) {
       case "not_admin":
       case "inactive":
-        return "This account isn't set up for admin access. Ask your web helper to add you as an active admin.";
+        return "Your account is signed in but is not authorized for admin access.";
       case "schema_missing":
         return "Admin access isn't ready yet. The admin database table still needs to be created in Supabase.";
       case "lookup_failed":
-        return "We signed you in, but couldn't verify admin access. Please try again or contact support.";
+        return "Admin authorization query failed. Please try again or contact support.";
       case "timeout":
-        return "Checking your access timed out. Please refresh and try again.";
+      case "SESSION_TIMEOUT":
+      case "ADMIN_QUERY_TIMEOUT":
+        return "Admin authorization service did not respond. Please refresh and try again.";
       default:
         return "You don't have permission to open the admin area.";
     }
@@ -358,6 +436,7 @@
           return null;
         }
 
+        // No onAuthStateChange during this check — bind watcher only after grant.
         var check = await verifyActiveAdmin();
 
         if (check.reason === "unauthenticated") {
@@ -382,21 +461,26 @@
         log("requireAdminPage complete — access granted");
         return check;
       })(),
-      ACCESS_CHECK_MS + 2000,
-      "Checking your access timed out."
+      ACCESS_CHECK_MS,
+      "Admin authorization service did not respond.",
+      "TIMEOUT"
     ).catch(function (err) {
       if (err && (err.code === "ENV_MISSING" || err.code === "ENV_LOAD_ERROR")) {
         setGateMessage(gateEl, MISSING_CONFIG_MESSAGE);
         return null;
       }
 
-      if (err && err.code === "TIMEOUT") {
-        log("requireAdminPage timed out");
+      if (
+        err &&
+        (err.code === "TIMEOUT" ||
+          err.code === "SESSION_TIMEOUT" ||
+          err.code === "ADMIN_QUERY_TIMEOUT")
+      ) {
+        log("requireAdminPage timed out", { code: err.code });
         setGateMessage(
           gateEl,
-          "Checking your access timed out. Please refresh the page or sign in again."
+          denyMessage(err.code === "TIMEOUT" ? "timeout" : err.code)
         );
-        // Clear a potentially stuck/corrupt session so the next attempt can succeed.
         return signOut().then(function () {
           setTimeout(function () {
             go(LOGIN_PATH + "?expired=1");
@@ -407,7 +491,7 @@
 
       log("requireAdminPage error", { code: err && err.code ? err.code : "unknown" });
       return signOut().then(function () {
-        setGateMessage(gateEl, "Your session expired. Redirecting to sign in…");
+        setGateMessage(gateEl, "Admin authorization query failed. Redirecting to sign in…");
         go(LOGIN_PATH + "?expired=1");
         return null;
       });
@@ -416,7 +500,7 @@
 
   function redirectIfAdminSession() {
     if (!isEnvConfigured()) return Promise.resolve(false);
-    return withTimeout(verifyActiveAdmin(), ACCESS_CHECK_MS, "timed out")
+    return withTimeout(verifyActiveAdmin(), ACCESS_CHECK_MS, "timed out", "TIMEOUT")
       .then(function (check) {
         if (check.ok) {
           go(DASHBOARD_PATH);
@@ -436,7 +520,7 @@
 
   /**
    * Bind auth watcher AFTER the initial session/admin check finishes.
-   * Registering onAuthStateChange before getSession() can deadlock supabase-js.
+   * Never await Supabase calls inside the callback (auth-js deadlock).
    */
   function watchAuth(onChange) {
     if (!isEnvConfigured()) return;
@@ -446,7 +530,6 @@
     getClient()
       .then(function (supabase) {
         supabase.auth.onAuthStateChange(function (event, session) {
-          // Keep this callback synchronous — never await Supabase calls here.
           if (typeof onChange === "function") onChange(event, session);
           if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
             if (!global.location.pathname.endsWith("/login.html")) {
