@@ -143,10 +143,16 @@
     $("previewTitle").textContent = title;
     $("previewDesc").textContent = desc.length > 140 ? desc.slice(0, 137) + "…" : desc;
 
-    var price = Number(data.price);
-    var sale = data.sale_price === "" ? null : Number(data.sale_price);
-    var hasSale = sale != null && isFinite(sale) && isFinite(price) && sale < price;
-    $("previewPrice").textContent = SRCatalog.money(hasSale ? sale : isFinite(price) ? price : 0);
+    var priceParsed = SRCatalog.parseMoneyInput(data.price, { required: false, label: "Price" });
+    var saleParsed = SRCatalog.parseMoneyInput(data.sale_price, {
+      required: false,
+      label: "Sale price",
+    });
+    var price = priceParsed.ok ? priceParsed.value : null;
+    var sale = saleParsed.ok ? saleParsed.value : null;
+    var hasSale = sale != null && price != null && sale < price;
+    $("previewPrice").textContent =
+      hasSale ? SRCatalog.money(sale) : price != null ? SRCatalog.money(price) : "$0.00";
     if (hasSale) {
       $("previewWas").hidden = false;
       $("previewWas").textContent = SRCatalog.money(price);
@@ -585,8 +591,8 @@
     $("title").value = product.title || "";
     $("slug").value = product.slug || "";
     $("description").value = product.description || "";
-    $("price").value = product.price != null ? product.price : "";
-    $("sale_price").value = product.sale_price != null ? product.sale_price : "";
+    $("price").value = SRCatalog.formatMoneyInput(product.price);
+    $("sale_price").value = SRCatalog.formatMoneyInput(product.sale_price);
     $("quantity").value = product.quantity != null ? product.quantity : 0;
     $("item_no").value = product.item_no || "";
     $("track_inventory").checked = !!product.track_inventory;
@@ -791,6 +797,22 @@
   }
 
   function bindForm() {
+    ["price", "sale_price"].forEach(function (id) {
+      $(id).addEventListener("blur", function () {
+        var required = id === "price";
+        var parsed = SRCatalog.parseMoneyInput($(id).value, {
+          required: false,
+          label: id === "price" ? "Price" : "Sale price",
+        });
+        if (parsed.ok && parsed.value != null) {
+          $(id).value = SRCatalog.formatMoneyInput(parsed.value);
+          updatePreview();
+        } else if (!required && String($(id).value || "").trim() === "") {
+          $(id).value = "";
+          updatePreview();
+        }
+      });
+    });
     ["title", "description", "price", "sale_price", "quantity", "item_no", "product_type", "status"].forEach(
       function (id) {
         $(id).addEventListener("input", function () {

@@ -54,6 +54,69 @@
     return "$" + v.toFixed(2);
   }
 
+  /**
+   * Parse owner-entered dollar amounts for numeric(10,2) columns.
+   * Treats blank as missing (does NOT coerce "" → 0 — that silently saved $0.00).
+   * Accepts 18, 18.00, 18.50, $125.99, and 1,250.00.
+   */
+  function parseMoneyInput(raw, opts) {
+    var options = opts || {};
+    var label = options.label || "Price";
+    var required = !!options.required;
+    var text = String(raw == null ? "" : raw).trim();
+
+    if (!text) {
+      if (required) {
+        return { ok: false, value: null, error: "Please enter a " + label.toLowerCase() + "." };
+      }
+      return { ok: true, value: null, error: null };
+    }
+
+    // Strip currency symbols / grouping commas owners commonly type or paste.
+    var cleaned = text.replace(/\$/g, "").replace(/,/g, "").replace(/\s+/g, "");
+    if (!/^-?\d+(\.\d+)?$/.test(cleaned)) {
+      return {
+        ok: false,
+        value: null,
+        error: label + " must look like 18 or 18.50.",
+      };
+    }
+
+    var num = Number(cleaned);
+    if (!isFinite(num)) {
+      return {
+        ok: false,
+        value: null,
+        error: label + " must look like 18 or 18.50.",
+      };
+    }
+    if (num < 0) {
+      return {
+        ok: false,
+        value: null,
+        error: label + " can’t be negative.",
+      };
+    }
+    if (num > 99999999.99) {
+      return {
+        ok: false,
+        value: null,
+        error: label + " is too large.",
+      };
+    }
+
+    // Store as dollars with 2-decimal precision (matches numeric(10,2)).
+    var cents = Math.round(num * 100);
+    return { ok: true, value: cents / 100, error: null };
+  }
+
+  function formatMoneyInput(n) {
+    if (n == null || n === "") return "";
+    var v = Number(n);
+    if (!isFinite(v)) return "";
+    return v.toFixed(2);
+  }
+
   function escapeHtml(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;")
@@ -170,10 +233,13 @@
     var errors = [];
     var title = String(input.title || "").trim();
     var description = String(input.description || "").trim();
-    var price = Number(input.price);
-    var saleRaw = input.sale_price;
-    var sale =
-      saleRaw === "" || saleRaw == null ? null : Number(saleRaw);
+    var priceParsed = parseMoneyInput(input.price, { required: true, label: "Price" });
+    var saleParsed = parseMoneyInput(input.sale_price, {
+      required: false,
+      label: "Sale price",
+    });
+    var price = priceParsed.value;
+    var sale = saleParsed.value;
     var quantity = Number(input.quantity);
     var status = input.status || "draft";
     var productType = input.product_type || "single";
@@ -183,11 +249,15 @@
 
     if (!title) errors.push("Please add a product title.");
     if (!description) errors.push("Please add a short description.");
-    if (!isFinite(price) || price < 0) errors.push("Price must be zero or greater.");
-    if (sale != null && (!isFinite(sale) || sale < 0)) {
-      errors.push("Sale price must be zero or greater.");
-    }
-    if (sale != null && isFinite(price) && sale > price) {
+    if (!priceParsed.ok) errors.push(priceParsed.error);
+    if (!saleParsed.ok) errors.push(saleParsed.error);
+    if (
+      priceParsed.ok &&
+      saleParsed.ok &&
+      sale != null &&
+      price != null &&
+      sale > price
+    ) {
       errors.push("Sale price can’t be higher than the regular price.");
     }
     if (!Number.isInteger(quantity) || quantity < 0) {
@@ -830,6 +900,8 @@
     PRODUCT_STATUS_FILTERS: PRODUCT_STATUS_FILTERS,
     slugify: slugify,
     money: money,
+    parseMoneyInput: parseMoneyInput,
+    formatMoneyInput: formatMoneyInput,
     escapeHtml: escapeHtml,
     friendlyDbError: friendlyDbError,
     primaryImage: primaryImage,
