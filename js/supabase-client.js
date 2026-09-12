@@ -6,7 +6,7 @@
  *   2. @supabase/supabase-js (CDN)
  *   3. this file
  *
- * The public storefront index.html does not load this yet (demo products stay local).
+ * The public storefront loads this when USE_LIVE_CATALOG is enabled.
  * Never place SUPABASE_SERVICE_ROLE_KEY in this file or any browser script.
  */
 (function (global) {

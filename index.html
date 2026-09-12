@@ -39,6 +39,7 @@
         <h2>Cast in concrete</h2>
         <p class="section-lead">Tap any piece for a closer look.</p>
       </div>
+      <div class="catalog-status" id="catalogStatus" hidden></div>
       <div class="product-grid" id="productGrid"><!-- injected by JS --></div>
     </div>
   </section>
@@ -72,7 +73,7 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <span class="footer-brand">S &amp; R Crafts Concrete Creations</span>
-      <p class="footer-note">Hand-cast in small batches · © 2026 S &amp; R Crafts · Demo store</p>
+      <p class="footer-note">Hand-cast in small batches · © 2026 S &amp; R Crafts · Checkout is demo-only until real ordering is connected</p>
       <ul class="footer-social">
         <li><a href="#">Instagram</a></li>
         <li><a href="#">Pinterest</a></li>
@@ -119,7 +120,7 @@
     <div class="cart-foot" id="cartFoot">
       <div class="cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
       <button class="btn btn-primary cart-checkout" id="cartCheckout">Checkout</button>
-      <p class="cart-note">Free shipping on orders over $50 · Demo only</p>
+      <p class="cart-note">Free shipping over $50 (demo estimate) · No real checkout yet</p>
     </div>
   </aside>
 
@@ -129,8 +130,8 @@
       <button class="checkout-close" id="checkoutClose" aria-label="Close checkout">&times;</button>
       <div class="checkout-grid">
         <form class="checkout-form" id="checkoutForm">
-          <h2>Checkout</h2>
-          <p class="checkout-sub">This is a demo — no payment is processed.</p>
+          <h2>Checkout (demo)</h2>
+          <p class="checkout-sub">No payment is processed and no real order is placed. Stock is not reserved. Real ordering is not connected yet.</p>
           <fieldset>
             <legend>Contact</legend>
             <label>Full name<input type="text" required placeholder="Sam Rivera" /></label>
@@ -152,7 +153,7 @@
               <label>CVC<input type="text" required placeholder="123" /></label>
             </div>
           </fieldset>
-          <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay">Pay <span id="checkoutPayAmt"></span></button>
+          <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay">Continue demo · <span id="checkoutPayAmt"></span></button>
         </form>
         <aside class="checkout-summary">
           <h3>Order summary</h3>
@@ -168,8 +169,8 @@
         <div class="success-check" aria-hidden="true">
           <svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="24" fill="none" stroke="#a8612f" stroke-width="3"/><path fill="none" stroke="#a8612f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M15 27l8 8 15-16"/></svg>
         </div>
-        <h2>Thank you, friend!</h2>
-        <p>Your order <strong id="orderNum"></strong> is confirmed. Your hand-cast piece is on its way. 🪨</p>
+        <h2>Demo checkout only</h2>
+        <p>No order was placed (<strong id="orderNum">DEMO-ONLY</strong>). Payment and inventory are not connected yet.</p>
         <button class="btn btn-primary" id="successDone">Keep shopping</button>
       </div>
     </div>
@@ -178,6 +179,10 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <script src="app.js"></script>
+  <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/storefront-catalog.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

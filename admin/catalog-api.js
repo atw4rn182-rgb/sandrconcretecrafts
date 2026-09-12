@@ -78,7 +78,7 @@
     var result = await supabase
       .from("products")
       .select(
-        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
+        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
       )
       .order("updated_at", { ascending: false });
 
@@ -113,7 +113,7 @@
     var result = await supabase
       .from("products")
       .select(
-        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
+        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
       )
       .eq("id", id)
       .maybeSingle();
@@ -178,6 +178,8 @@
     var status = input.status || "draft";
     var productType = input.product_type || "single";
     var imageCount = Number(input.imageCount || 0);
+    var trackInventory = !!input.track_inventory;
+    var itemNo = String(input.item_no || "").trim() || null;
 
     if (!title) errors.push("Please add a product title.");
     if (!description) errors.push("Please add a short description.");
@@ -190,6 +192,15 @@
     }
     if (!Number.isInteger(quantity) || quantity < 0) {
       errors.push("Quantity must be a whole number zero or greater.");
+    }
+    if (
+      trackInventory &&
+      ((opts && opts.publishing) || status === "published") &&
+      quantity < 1
+    ) {
+      errors.push(
+        "Enter stock quantity before publishing with inventory tracking, or turn tracking off."
+      );
     }
     if (["draft", "published", "sold_out", "hidden"].indexOf(status) === -1) {
       errors.push("Choose a valid status.");
@@ -216,6 +227,8 @@
         status: status,
         product_type: productType,
         featured: !!input.featured,
+        item_no: itemNo,
+        track_inventory: trackInventory,
         slug: String(input.slug || "").trim() || slugify(title),
         category_ids: input.category_ids || [],
         badge_ids: input.badge_ids || [],
@@ -236,6 +249,8 @@
       status: fields.status || "draft",
       product_type: fields.product_type || "single",
       featured: !!fields.featured,
+      item_no: fields.item_no,
+      track_inventory: !!fields.track_inventory,
       published_at:
         fields.status === "published" ? new Date().toISOString() : null,
     };
@@ -264,6 +279,8 @@
       status: fields.status,
       product_type: fields.product_type,
       featured: !!fields.featured,
+      item_no: fields.item_no,
+      track_inventory: !!fields.track_inventory,
       published_at: publishedAt,
     };
     var result = await supabase

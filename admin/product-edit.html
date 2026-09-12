@@ -48,8 +48,9 @@
         </div>
       </header>
 
-      <div class="notice-banner" role="note">
-        <strong>Heads up:</strong> Publishing here saves to your catalog only. The live demo storefront is not connected yet.
+      <div class="notice-banner" id="publishBanner" role="note">
+        <strong>Heads up:</strong>
+        <span id="publishBannerText">Loading publish notes…</span>
       </div>
 
       <div class="flash" id="flash" hidden role="status"></div>
@@ -111,8 +112,18 @@
             </div>
             <div class="form-grid-2">
               <div class="field">
+                <label for="item_no">Item # <span class="optional">optional</span></label>
+                <input id="item_no" name="item_no" maxlength="40" placeholder="e.g. 3-30" />
+              </div>
+              <div class="field field-checkbox" style="align-self:end;padding-bottom:0.35rem;">
+                <label><input type="checkbox" id="track_inventory" name="track_inventory" /> Track inventory (enforce stock)</label>
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="field">
                 <label for="quantity">Quantity</label>
                 <input id="quantity" name="quantity" type="number" min="0" step="1" required value="0" />
+                <p class="field-hint" id="quantityHint">Leave tracking off when you don’t manage stock counts. Imported demo pieces start untracked.</p>
               </div>
               <div class="field">
                 <label for="product_type">Product type</label>
@@ -131,10 +142,11 @@
                 <label for="status">Status</label>
                 <select id="status" name="status">
                   <option value="draft">Draft</option>
-                  <option value="published">Published (catalog)</option>
+                  <option value="published">Published</option>
                   <option value="sold_out">Sold out</option>
                   <option value="hidden">Hidden</option>
                 </select>
+                <p class="field-hint" id="statusHint">Publish controls catalog readiness. Live storefront visibility depends on the site cutover flag.</p>
               </div>
               <div class="field field-checkbox">
                 <label><input type="checkbox" id="featured" name="featured" /> Featured product</label>

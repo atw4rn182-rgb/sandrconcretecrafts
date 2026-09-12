@@ -199,8 +199,20 @@
     }
   }
 
+  function applyPublishMessaging() {
+    var live =
+      window.__SR_ENV__ &&
+      String(window.__SR_ENV__.USE_LIVE_CATALOG || "").toLowerCase() === "true";
+    var text = document.getElementById("publishBannerText");
+    if (!text) return;
+    text.textContent = live
+      ? "Published and sold-out products show on the live storefront. Draft and hidden stay private. Publish edits appear after visitors refresh."
+      : "Saving here updates your catalog only. The public site still shows demo products until USE_LIVE_CATALOG is turned on after migrations 07–08.";
+  }
+
   SRAdminShell.boot({ activeNav: "products" }).then(function (check) {
     if (!check) return;
+    applyPublishMessaging();
     var params = new URLSearchParams(window.location.search);
     if (params.get("saved") === "1") showFlash("Product saved.", "ok");
     if (params.get("created") === "1") showFlash("Product created.", "ok");

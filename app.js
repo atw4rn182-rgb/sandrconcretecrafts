@@ -1,10 +1,9 @@
-/* ===== S & R Crafts Concrete Creations — demo store logic (vanilla JS) ===== */
+/* ===== S & R Crafts Concrete Creations — storefront (vanilla JS) ===== */
 (function () {
   "use strict";
 
-  // --- Product data ---
-  // Unsplash images (stable photo URLs) with a Lorem Picsum fallback per item.
-  const PRODUCTS = [
+  // Demo catalog kept for local / pre-cutover use when USE_LIVE_CATALOG is not true.
+  const DEMO_PRODUCTS = [
     {
       id: "cow",
       name: "Highland Cow Head Wall Mount",
@@ -181,24 +180,88 @@
       img: "assets/prod-17r.png",
       seed: "mushroom-jars",
     },
-  ];
+  ].map(normalizeDemoProduct);
+
+  function normalizeDemoProduct(p) {
+    return {
+      id: p.id,
+      sourceKey: "legacy:" + p.id,
+      legacyId: p.id,
+      name: p.name,
+      desc: p.desc,
+      price: p.price,
+      salePrice: null,
+      effectivePrice: p.price,
+      itemNo: p.itemNo || "",
+      tag: p.tag || "",
+      tagSoft: !!p.tagSoft,
+      img: p.img,
+      alt: p.name,
+      seed: p.seed || p.id,
+      status: "published",
+      soldOut: false,
+      trackInventory: false,
+      quantity: 0,
+      featured: p.tag === "Bestseller",
+      categories: [],
+      productType: "single",
+    };
+  }
 
   const SHIPPING_THRESHOLD = 50;
   const SHIPPING_FEE = 6;
+  const CART_KEY = "sr_cart_v1";
 
-  // --- State ---
-  let cart = []; // { id, qty }
+  const Cat = window.SRStorefrontCatalog || null;
+  const liveMode = !!(Cat && Cat.useLiveCatalog && Cat.useLiveCatalog());
+
+  let products = liveMode ? [] : DEMO_PRODUCTS.slice();
+  let catalogReady = !liveMode;
+  let catalogError = null;
+  let cart = [];
   let modalProduct = null;
   let modalQty = 1;
 
-  // --- Helpers ---
   const $ = (sel) => document.querySelector(sel);
-  const money = (n) => "$" + n.toFixed(2);
-  const findProduct = (id) => PRODUCTS.find((p) => p.id === id);
-  const fallback = (seed) => `https://picsum.photos/seed/sr-${seed}/800/600`;
-  const imgError = "this.onerror=null;this.src='https://picsum.photos/seed/sr-'+this.dataset.seed+'/800/600';";
+  const money = (n) => "$" + Number(n).toFixed(2);
+  const esc = (s) => (Cat && Cat.escapeHtml ? Cat.escapeHtml(s) : String(s == null ? "" : s));
+  const escAttr = (s) => (Cat && Cat.escapeAttr ? Cat.escapeAttr(s) : esc(s));
 
-  // --- Elements ---
+  function findProduct(id) {
+    return products.find((p) => p.id === id) || null;
+  }
+
+  function unitPrice(p) {
+    if (!p) return 0;
+    return p.effectivePrice != null ? Number(p.effectivePrice) : Number(p.price) || 0;
+  }
+
+  function canPurchase(p) {
+    return !!(p && !p.soldOut && p.status !== "sold_out");
+  }
+
+  function maxQtyFor(p) {
+    if (!p || !canPurchase(p)) return 0;
+    if (p.trackInventory) return Math.max(0, Number(p.quantity) || 0);
+    return 99;
+  }
+
+  function fallback(seed) {
+    return "https://picsum.photos/seed/sr-" + encodeURIComponent(seed || "item") + "/800/600";
+  }
+
+  function safeImgSrc(p) {
+    var url = p && p.img;
+    if (Cat && Cat.isSafeImageUrl && !Cat.isSafeImageUrl(url)) {
+      return fallback(p && p.seed);
+    }
+    if (Cat && Cat.normalizeImageUrl) {
+      var n = Cat.normalizeImageUrl(url);
+      return n || fallback(p && p.seed);
+    }
+    return url || fallback(p && p.seed);
+  }
+
   const grid = $("#productGrid");
   const cartCount = $("#cartCount");
   const cartDrawer = $("#cartDrawer");
@@ -206,66 +269,289 @@
   const cartItemsEl = $("#cartItems");
   const cartTotalEl = $("#cartTotal");
   const toastEl = $("#toast");
+  const catalogStatus = $("#catalogStatus");
 
-  // --- Render product grid ---
-  function renderProducts() {
-    grid.innerHTML = PRODUCTS.map((p) => `
-      <article class="card" data-id="${p.id}" tabindex="0" role="button" aria-label="Quick view: ${p.name}">
-        <div class="card-img">
-          ${p.tag ? `<span class="card-tag ${p.tagSoft ? "card-tag--soft" : ""}">${p.tag}</span>` : ""}
-          <img src="${p.img}" data-seed="${p.seed}" onerror="${imgError}" alt="${p.name}" loading="lazy" />
-          <div class="card-quick">Quick view</div>
-        </div>
-        <div class="card-body">
-          <h3>${p.name}</h3>
-          ${p.itemNo ? `<span class="card-item">Item #${p.itemNo}</span>` : ""}
-          <p class="card-desc">${p.desc.split(".")[0]}.</p>
-          <div class="card-foot">
-            <span class="price">${money(p.price)}</span>
-            <button class="add" data-add="${p.id}">Add</button>
-          </div>
-        </div>
-      </article>
-    `).join("");
+  function loadCartRaw() {
+    try {
+      var raw = localStorage.getItem(CART_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map(function (l) {
+          return { id: String(l.id), qty: Math.max(1, Number(l.qty) || 1) };
+        })
+        .filter(function (l) {
+          return l.id;
+        });
+    } catch (e) {
+      return [];
+    }
   }
 
-  // --- Toast ---
+  function saveCart() {
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch (e) {
+      /* ignore quota */
+    }
+  }
+
+  function reconcileCart(notice) {
+    var raw = loadCartRaw();
+    var next = [];
+    var removed = 0;
+    var remapped = 0;
+    raw.forEach(function (line) {
+      var resolved =
+        Cat && Cat.resolveCartProductId
+          ? Cat.resolveCartProductId(line.id, products)
+          : findProduct(line.id)
+            ? line.id
+            : null;
+      if (!resolved) {
+        removed += 1;
+        return;
+      }
+      if (resolved !== line.id) remapped += 1;
+      var p = findProduct(resolved);
+      if (!p || !canPurchase(p)) {
+        removed += 1;
+        return;
+      }
+      var max = maxQtyFor(p);
+      var qty = Math.min(line.qty, max);
+      if (qty < 1) {
+        removed += 1;
+        return;
+      }
+      var existing = next.find(function (l) {
+        return l.id === resolved;
+      });
+      if (existing) existing.qty = Math.min(max, existing.qty + qty);
+      else next.push({ id: resolved, qty: qty });
+    });
+    cart = next;
+    saveCart();
+    if (notice && (removed || remapped)) {
+      var parts = [];
+      if (remapped) parts.push("updated " + remapped + " saved item" + (remapped === 1 ? "" : "s"));
+      if (removed) parts.push("removed " + removed + " unavailable item" + (removed === 1 ? "" : "s"));
+      toast("Cart " + parts.join(" and ") + ".");
+    }
+  }
+
+  function showCatalogStatus(kind, message, retryable) {
+    if (!catalogStatus) return;
+    if (!kind) {
+      catalogStatus.hidden = true;
+      catalogStatus.innerHTML = "";
+      catalogStatus.className = "catalog-status";
+      return;
+    }
+    catalogStatus.hidden = false;
+    catalogStatus.className = "catalog-status catalog-status--" + kind;
+    var html = "<p>" + esc(message) + "</p>";
+    if (retryable) {
+      html +=
+        '<button type="button" class="btn btn-ghost catalog-retry" id="catalogRetry">Try again</button>';
+    }
+    catalogStatus.innerHTML = html;
+    var btn = $("#catalogRetry");
+    if (btn) btn.addEventListener("click", function () {
+      loadLiveCatalog(true);
+    });
+  }
+
+  function priceHtml(p) {
+    if (p.salePrice != null) {
+      return (
+        '<span class="price">' +
+        esc(money(p.salePrice)) +
+        '</span><span class="price-was">' +
+        esc(money(p.price)) +
+        "</span>"
+      );
+    }
+    return '<span class="price">' + esc(money(unitPrice(p))) + "</span>";
+  }
+
+  function shortDesc(desc) {
+    var d = String(desc || "").trim();
+    if (!d) return "";
+    var first = d.split(".")[0];
+    return first ? first + "." : d;
+  }
+
+  function renderProducts() {
+    if (!grid) return;
+    if (liveMode && !catalogReady && !catalogError) {
+      grid.innerHTML = "";
+      showCatalogStatus("loading", "Loading the collection…", false);
+      return;
+    }
+    if (liveMode && catalogError) {
+      grid.innerHTML = "";
+      showCatalogStatus(
+        "error",
+        catalogError + " The shop catalog could not be loaded.",
+        true
+      );
+      return;
+    }
+    if (!products.length) {
+      grid.innerHTML = "";
+      showCatalogStatus(
+        "empty",
+        liveMode
+          ? "No products are published yet. Check back soon, or ask the shop owner to publish items in admin."
+          : "No products to show.",
+        false
+      );
+      return;
+    }
+    showCatalogStatus(null);
+    grid.innerHTML = products
+      .map(function (p) {
+        var sold = !canPurchase(p);
+        var tag =
+          p.tag
+            ? '<span class="card-tag ' +
+              (p.tagSoft ? "card-tag--soft" : "") +
+              '">' +
+              esc(p.tag) +
+              "</span>"
+            : "";
+        var soldBadge = sold
+          ? '<span class="card-sold" aria-hidden="true">Sold out</span>'
+          : "";
+        var addBtn = sold
+          ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">Unavailable</button>'
+          : '<button class="add" type="button" data-add="' +
+            escAttr(p.id) +
+            '">Add</button>';
+        return (
+          '<article class="card' +
+          (sold ? " card--sold-out" : "") +
+          (p.featured ? " card--featured" : "") +
+          '" data-id="' +
+          escAttr(p.id) +
+          '" tabindex="0" role="button" aria-label="Quick view: ' +
+          escAttr(p.name) +
+          '">' +
+          '<div class="card-img">' +
+          tag +
+          soldBadge +
+          '<img src="' +
+          escAttr(safeImgSrc(p)) +
+          '" data-seed="' +
+          escAttr(p.seed) +
+          '" alt="' +
+          escAttr(p.alt || p.name) +
+          '" loading="lazy" />' +
+          '<div class="card-quick">Quick view</div>' +
+          "</div>" +
+          '<div class="card-body">' +
+          "<h3>" +
+          esc(p.name) +
+          "</h3>" +
+          (p.itemNo
+            ? '<span class="card-item">Item #' + esc(p.itemNo) + "</span>"
+            : "") +
+          '<p class="card-desc">' +
+          esc(shortDesc(p.desc)) +
+          "</p>" +
+          '<div class="card-foot">' +
+          priceHtml(p) +
+          addBtn +
+          "</div>" +
+          "</div>" +
+          "</article>"
+        );
+      })
+      .join("");
+  }
+
   let toastTimer;
   function toast(msg) {
+    if (!toastEl) return;
     toastEl.textContent = msg;
     toastEl.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove("show");
+    }, 2400);
   }
 
-  // --- Cart logic ---
-  function addToCart(id, qty = 1) {
-    const line = cart.find((l) => l.id === id);
-    if (line) line.qty += qty;
-    else cart.push({ id, qty });
+  function addToCart(id, qty) {
+    qty = qty == null ? 1 : qty;
+    var p = findProduct(id);
+    if (!p) {
+      toast("That item is no longer available.");
+      return;
+    }
+    if (!canPurchase(p)) {
+      toast("That item is sold out.");
+      return;
+    }
+    var max = maxQtyFor(p);
+    var line = cart.find(function (l) {
+      return l.id === id;
+    });
+    var nextQty = (line ? line.qty : 0) + qty;
+    if (nextQty > max) {
+      toast(
+        p.trackInventory
+          ? "Only " + max + " available."
+          : "Quantity limit reached."
+      );
+      nextQty = max;
+    }
+    if (nextQty < 1) return;
+    if (line) line.qty = nextQty;
+    else cart.push({ id: id, qty: nextQty });
     updateCart(true);
-    toast(`${findProduct(id).name} added to cart`);
+    toast(p.name + " added to cart");
   }
 
   function setQty(id, qty) {
-    const line = cart.find((l) => l.id === id);
+    var line = cart.find(function (l) {
+      return l.id === id;
+    });
     if (!line) return;
-    line.qty = qty;
-    if (line.qty <= 0) cart = cart.filter((l) => l.id !== id);
+    var p = findProduct(id);
+    if (!p || !canPurchase(p)) {
+      removeFromCart(id);
+      toast("Removed an unavailable item from your cart.");
+      return;
+    }
+    var max = maxQtyFor(p);
+    line.qty = Math.min(Math.max(0, qty), max);
+    if (line.qty <= 0) cart = cart.filter(function (l) {
+      return l.id !== id;
+    });
     updateCart();
   }
 
   function removeFromCart(id) {
-    cart = cart.filter((l) => l.id !== id);
+    cart = cart.filter(function (l) {
+      return l.id !== id;
+    });
     updateCart();
   }
 
   function cartCountTotal() {
-    return cart.reduce((s, l) => s + l.qty, 0);
+    return cart.reduce(function (s, l) {
+      return s + l.qty;
+    }, 0);
   }
 
   function cartSubtotal() {
-    return cart.reduce((s, l) => s + findProduct(l.id).price * l.qty, 0);
+    return cart.reduce(function (s, l) {
+      var p = findProduct(l.id);
+      if (!p) return s;
+      return s + unitPrice(p) * l.qty;
+    }, 0);
   }
 
   function shippingFor(subtotal) {
@@ -274,40 +560,76 @@
   }
 
   function updateCart(bump) {
-    const count = cartCountTotal();
+    saveCart();
+    var count = cartCountTotal();
     cartCount.textContent = count;
     cartCount.classList.toggle("show", count > 0);
     if (bump && count > 0) {
       cartCount.classList.remove("bump");
-      void cartCount.offsetWidth; // reflow to restart animation
+      void cartCount.offsetWidth;
       cartCount.classList.add("bump");
     }
 
     cartDrawer.classList.toggle("empty", cart.length === 0);
 
-    cartItemsEl.innerHTML = cart.map((l) => {
-      const p = findProduct(l.id);
-      return `
-        <div class="cart-line" data-id="${p.id}">
-          <img src="${p.img}" data-seed="${p.seed}" onerror="${imgError}" alt="${p.name}" />
-          <div class="cart-line-info">
-            <h4>${p.name}</h4>
-            <span class="line-price">${money(p.price)}</span>
-            <div class="cart-line-qty">
-              <button data-dec="${p.id}" aria-label="Decrease">−</button>
-              <span>${l.qty}</span>
-              <button data-inc="${p.id}" aria-label="Increase">+</button>
-            </div>
-            <button class="cart-line-remove" data-remove="${p.id}">Remove</button>
-          </div>
-          <span class="line-total">${money(p.price * l.qty)}</span>
-        </div>`;
-    }).join("");
+    cartItemsEl.innerHTML = cart
+      .map(function (l) {
+        var p = findProduct(l.id);
+        if (!p) {
+          return (
+            '<div class="cart-line cart-line--missing" data-id="' +
+            escAttr(l.id) +
+            '">' +
+            "<p>Item no longer available</p>" +
+            '<button class="cart-line-remove" data-remove="' +
+            escAttr(l.id) +
+            '">Remove</button>' +
+            "</div>"
+          );
+        }
+        var price = unitPrice(p);
+        return (
+          '<div class="cart-line" data-id="' +
+          escAttr(p.id) +
+          '">' +
+          '<img src="' +
+          escAttr(safeImgSrc(p)) +
+          '" alt="' +
+          escAttr(p.alt || p.name) +
+          '" />' +
+          '<div class="cart-line-info">' +
+          "<h4>" +
+          esc(p.name) +
+          "</h4>" +
+          '<span class="line-price">' +
+          esc(money(price)) +
+          "</span>" +
+          '<div class="cart-line-qty">' +
+          '<button type="button" data-dec="' +
+          escAttr(p.id) +
+          '" aria-label="Decrease">−</button>' +
+          "<span>" +
+          esc(String(l.qty)) +
+          "</span>" +
+          '<button type="button" data-inc="' +
+          escAttr(p.id) +
+          '" aria-label="Increase">+</button>' +
+          "</div>" +
+          '<button type="button" class="cart-line-remove" data-remove="' +
+          escAttr(p.id) +
+          '">Remove</button>' +
+          "</div>" +
+          '<span class="line-total">' +
+          esc(money(price * l.qty)) +
+          "</span>" +
+          "</div>"
+        );
+      })
+      .join("");
 
     cartTotalEl.textContent = money(cartSubtotal());
   }
 
-  // --- Cart drawer open/close ---
   function openCart() {
     cartDrawer.classList.add("open");
     cartBackdrop.classList.add("open");
@@ -319,22 +641,46 @@
     if (!isCheckoutOpen()) document.body.classList.remove("no-scroll");
   }
 
-  // --- Quick view modal ---
   const modalOverlay = $("#modalOverlay");
   function openModal(id) {
     modalProduct = findProduct(id);
+    if (!modalProduct) {
+      toast("That item is no longer available.");
+      return;
+    }
     modalQty = 1;
     const img = $("#modalImg");
-    img.src = modalProduct.img;
+    img.src = safeImgSrc(modalProduct);
     img.dataset.seed = modalProduct.seed;
-    img.onerror = function () { this.onerror = null; this.src = fallback(modalProduct.seed); };
-    img.alt = modalProduct.name;
+    img.onerror = function () {
+      this.onerror = null;
+      this.src = fallback(modalProduct.seed);
+    };
+    img.alt = modalProduct.alt || modalProduct.name;
     $("#modalTitle").textContent = modalProduct.name;
-    $("#modalPrice").textContent = money(modalProduct.price);
+    if (modalProduct.salePrice != null) {
+      $("#modalPrice").innerHTML =
+        esc(money(modalProduct.salePrice)) +
+        ' <span class="price-was">' +
+        esc(money(modalProduct.price)) +
+        "</span>";
+    } else {
+      $("#modalPrice").textContent = money(unitPrice(modalProduct));
+    }
     $("#modalDesc").textContent = modalProduct.desc;
     const tagEl = $("#modalTag");
-    tagEl.textContent = modalProduct.tag || "Hand-cast";
+    tagEl.textContent =
+      modalProduct.tag ||
+      (modalProduct.soldOut ? "Sold out" : "Hand-cast");
     $("#modalQty").textContent = modalQty;
+    var addBtn = $("#modalAdd");
+    if (!canPurchase(modalProduct)) {
+      addBtn.disabled = true;
+      addBtn.textContent = "Unavailable";
+    } else {
+      addBtn.disabled = false;
+      addBtn.textContent = "Add to Cart";
+    }
     modalOverlay.classList.add("open");
     document.body.classList.add("no-scroll");
   }
@@ -344,12 +690,39 @@
   }
   const isCartOpen = () => cartDrawer.classList.contains("open");
 
-  // --- Checkout ---
   const checkoutEl = $("#checkout");
   const isCheckoutOpen = () => checkoutEl.classList.contains("open");
 
-  function openCheckout() {
-    if (cart.length === 0) { toast("Your cart is empty"); return; }
+  async function refreshCatalogBeforeCheckout() {
+    if (!liveMode || !Cat) return true;
+    try {
+      var fresh = await Cat.fetchStorefrontProducts();
+      products = fresh;
+      catalogReady = true;
+      catalogError = null;
+      reconcileCart(true);
+      renderProducts();
+      updateCart();
+      return true;
+    } catch (err) {
+      toast("Couldn’t refresh prices before checkout. Please try again.");
+      return false;
+    }
+  }
+
+  async function openCheckout() {
+    if (cart.length === 0) {
+      toast("Your cart is empty");
+      return;
+    }
+    var ok = await refreshCatalogBeforeCheckout();
+    if (!ok) return;
+    reconcileCart(true);
+    if (cart.length === 0) {
+      toast("Your cart no longer has available items.");
+      updateCart();
+      return;
+    }
     renderCheckoutSummary();
     $("#checkoutForm").style.display = "";
     $("#checkoutSuccess").hidden = true;
@@ -369,15 +742,29 @@
     const shipping = shippingFor(subtotal);
     const total = subtotal + shipping;
 
-    $("#summaryItems").innerHTML = cart.map((l) => {
-      const p = findProduct(l.id);
-      return `
-        <div class="summary-row">
-          <img src="${p.img}" data-seed="${p.seed}" onerror="${imgError}" alt="${p.name}" />
-          <div><div class="s-name">${p.name}</div><div class="s-qty">Qty ${l.qty}</div></div>
-          <div class="s-price">${money(p.price * l.qty)}</div>
-        </div>`;
-    }).join("");
+    $("#summaryItems").innerHTML = cart
+      .map(function (l) {
+        var p = findProduct(l.id);
+        if (!p) return "";
+        return (
+          '<div class="summary-row">' +
+          '<img src="' +
+          escAttr(safeImgSrc(p)) +
+          '" alt="' +
+          escAttr(p.alt || p.name) +
+          '" />' +
+          "<div><div class=\"s-name\">" +
+          esc(p.name) +
+          '</div><div class="s-qty">Qty ' +
+          esc(String(l.qty)) +
+          "</div></div>" +
+          '<div class="s-price">' +
+          esc(money(unitPrice(p) * l.qty)) +
+          "</div>" +
+          "</div>"
+        );
+      })
+      .join("");
 
     $("#sumSubtotal").textContent = money(subtotal);
     $("#sumShipping").textContent = shipping === 0 ? "Free" : money(shipping);
@@ -387,61 +774,101 @@
 
   function completeOrder(e) {
     e.preventDefault();
-    const orderNum = "SR-" + Math.floor(100000 + Math.random() * 900000);
-    $("#orderNum").textContent = orderNum;
+    // Honest demo: no payment, no stock reservation, no real order.
+    $("#orderNum").textContent = "DEMO-ONLY";
+    var successTitle = $("#checkoutSuccess h2");
+    var successCopy = $("#checkoutSuccess p");
+    if (successTitle) successTitle.textContent = "Demo checkout only";
+    if (successCopy) {
+      successCopy.textContent =
+        "No order was placed and no payment was processed. Real ordering isn’t connected yet — this walkthrough is for layout only.";
+    }
     $("#checkoutForm").style.display = "none";
     $(".checkout-summary").style.display = "none";
     $("#checkoutSuccess").hidden = false;
     checkoutEl.scrollTop = 0;
-    // Clear the cart after a successful (fake) purchase
     cart = [];
     updateCart();
   }
 
-  // --- Event wiring ---
   function bind() {
-    // Product grid: quick view on card, direct add on Add button
-    grid.addEventListener("click", (e) => {
-      const addBtn = e.target.closest("[data-add]");
-      if (addBtn) { e.stopPropagation(); addToCart(addBtn.dataset.add); return; }
-      const card = e.target.closest(".card");
+    grid.addEventListener("click", function (e) {
+      var addBtn = e.target.closest("[data-add]");
+      if (addBtn) {
+        e.stopPropagation();
+        if (addBtn.disabled) return;
+        addToCart(addBtn.dataset.add);
+        return;
+      }
+      var card = e.target.closest(".card");
       if (card) openModal(card.dataset.id);
     });
-    grid.addEventListener("keydown", (e) => {
+    grid.addEventListener("keydown", function (e) {
       if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("card")) {
         e.preventDefault();
         openModal(e.target.dataset.id);
       }
     });
 
-    // Modal controls
     $("#modalClose").addEventListener("click", closeModal);
-    modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
-    $("#modalMinus").addEventListener("click", () => { modalQty = Math.max(1, modalQty - 1); $("#modalQty").textContent = modalQty; });
-    $("#modalPlus").addEventListener("click", () => { modalQty++; $("#modalQty").textContent = modalQty; });
-    $("#modalAdd").addEventListener("click", () => { addToCart(modalProduct.id, modalQty); closeModal(); openCart(); });
+    modalOverlay.addEventListener("click", function (e) {
+      if (e.target === modalOverlay) closeModal();
+    });
+    $("#modalMinus").addEventListener("click", function () {
+      modalQty = Math.max(1, modalQty - 1);
+      $("#modalQty").textContent = modalQty;
+    });
+    $("#modalPlus").addEventListener("click", function () {
+      if (!modalProduct) return;
+      var max = maxQtyFor(modalProduct);
+      if (modalQty >= max) {
+        toast(modalProduct.trackInventory ? "Only " + max + " available." : "Quantity limit reached.");
+        return;
+      }
+      modalQty += 1;
+      $("#modalQty").textContent = modalQty;
+    });
+    $("#modalAdd").addEventListener("click", function () {
+      if (!modalProduct || !canPurchase(modalProduct)) return;
+      addToCart(modalProduct.id, modalQty);
+      closeModal();
+      openCart();
+    });
 
-    // Cart controls
     $("#cartOpen").addEventListener("click", openCart);
     $("#cartClose").addEventListener("click", closeCart);
     cartBackdrop.addEventListener("click", closeCart);
-    cartItemsEl.addEventListener("click", (e) => {
-      const inc = e.target.closest("[data-inc]");
-      const dec = e.target.closest("[data-dec]");
-      const rem = e.target.closest("[data-remove]");
-      if (inc) setQty(inc.dataset.inc, (cart.find((l) => l.id === inc.dataset.inc)?.qty || 0) + 1);
-      if (dec) setQty(dec.dataset.dec, (cart.find((l) => l.id === dec.dataset.dec)?.qty || 0) - 1);
+    cartItemsEl.addEventListener("click", function (e) {
+      var inc = e.target.closest("[data-inc]");
+      var dec = e.target.closest("[data-dec]");
+      var rem = e.target.closest("[data-remove]");
+      if (inc) {
+        setQty(
+          inc.dataset.inc,
+          (cart.find(function (l) {
+            return l.id === inc.dataset.inc;
+          }) || { qty: 0 }).qty + 1
+        );
+      }
+      if (dec) {
+        setQty(
+          dec.dataset.dec,
+          (cart.find(function (l) {
+            return l.id === dec.dataset.dec;
+          }) || { qty: 0 }).qty - 1
+        );
+      }
       if (rem) removeFromCart(rem.dataset.remove);
     });
     $("#cartCheckout").addEventListener("click", openCheckout);
 
-    // Checkout
     $("#checkoutClose").addEventListener("click", closeCheckout);
     $("#checkoutForm").addEventListener("submit", completeOrder);
-    $("#successDone").addEventListener("click", () => { closeCheckout(); });
+    $("#successDone").addEventListener("click", function () {
+      closeCheckout();
+    });
 
-    // Escape closes top-most layer
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
       if (isCheckoutOpen()) closeCheckout();
       else if (modalOverlay.classList.contains("open")) closeModal();
@@ -449,8 +876,38 @@
     });
   }
 
-  // --- Init ---
-  renderProducts();
-  updateCart();
-  bind();
+  async function loadLiveCatalog(isRetry) {
+    catalogError = null;
+    catalogReady = false;
+    if (isRetry) renderProducts();
+    showCatalogStatus("loading", "Loading the collection…", false);
+    try {
+      products = await Cat.fetchStorefrontProducts();
+      catalogReady = true;
+      catalogError = null;
+      reconcileCart(true);
+      renderProducts();
+      updateCart();
+    } catch (err) {
+      products = [];
+      catalogReady = false;
+      catalogError = (err && err.message) || "Catalog request failed.";
+      // Never fall back to demo products when live mode is on.
+      renderProducts();
+      updateCart();
+    }
+  }
+
+  async function init() {
+    bind();
+    if (liveMode) {
+      await loadLiveCatalog(false);
+    } else {
+      reconcileCart(false);
+      renderProducts();
+      updateCart();
+    }
+  }
+
+  init();
 })();

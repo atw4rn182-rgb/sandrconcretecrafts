@@ -7,12 +7,15 @@
  *
  * Production (Vercel):
  *   Set SUPABASE_URL and SUPABASE_ANON_KEY in Project → Settings → Environment Variables.
+ *   Optionally set USE_LIVE_CATALOG=true after migrations 07–08 are applied (default false).
  *   `npm run build` (scripts/write-public-env.js) generates js/env.js at deploy time.
  *   js/env.js stays gitignored and is never committed.
  *
- * Storefront index.html still does NOT load this file (demo products remain local).
+ * When USE_LIVE_CATALOG is false, the storefront keeps the local demo product list.
  */
 window.__SR_ENV__ = {
   SUPABASE_URL: "https://YOUR_PROJECT_REF.supabase.co",
   SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
+  // Keep false until migrations 07–08 are applied and the import is verified.
+  USE_LIVE_CATALOG: false,
 };

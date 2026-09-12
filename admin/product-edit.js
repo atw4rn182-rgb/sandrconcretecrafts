@@ -56,6 +56,8 @@
       price: $("price").value,
       sale_price: $("sale_price").value,
       quantity: $("quantity").value,
+      item_no: $("item_no").value,
+      track_inventory: $("track_inventory").checked,
       product_type: $("product_type").value,
       status: $("status").value,
       featured: $("featured").checked,
@@ -63,6 +65,35 @@
       badge_ids: badgeIds,
       imageCount: images.length,
     };
+  }
+
+  function applyPublishMessaging() {
+    var live =
+      window.__SR_ENV__ &&
+      String(window.__SR_ENV__.USE_LIVE_CATALOG || "").toLowerCase() === "true";
+    var text = $("publishBannerText");
+    var hint = $("statusHint");
+    if (text) {
+      text.textContent = live
+        ? "Published and sold-out products appear on the live storefront. Draft and hidden stay private. Visitors do not need to sign in."
+        : "Publishing saves to your catalog, but the public site still uses the demo product list until USE_LIVE_CATALOG is enabled after migrations 07–08.";
+    }
+    if (hint) {
+      hint.textContent = live
+        ? "Published = visible on the live shop (sold out still shows as unavailable). Draft and hidden never appear publicly."
+        : "Publish marks the product ready in your catalog. The live shop cutover flag is still off, so visitors see demo products.";
+    }
+  }
+
+  function syncInventoryUi() {
+    var tracked = $("track_inventory").checked;
+    $("quantity").disabled = !tracked;
+    var qh = $("quantityHint");
+    if (qh) {
+      qh.textContent = tracked
+        ? "Stock is enforced in the shop UI when tracking is on. Browser checks are not a warehouse reservation."
+        : "Inventory not tracked — quantity is ignored for purchases. Turn tracking on only when you manage stock.";
+    }
   }
 
   function updatePreview() {
@@ -306,9 +337,12 @@
     $("price").value = product.price != null ? product.price : "";
     $("sale_price").value = product.sale_price != null ? product.sale_price : "";
     $("quantity").value = product.quantity != null ? product.quantity : 0;
+    $("item_no").value = product.item_no || "";
+    $("track_inventory").checked = !!product.track_inventory;
     $("product_type").value = product.product_type || "single";
     $("status").value = product.status || "draft";
     $("featured").checked = !!product.featured;
+    syncInventoryUi();
     slugTouched = true;
 
     var catIds = (product.categories || []).map(function (c) { return c.id; });
@@ -441,7 +475,7 @@
   }
 
   function bindForm() {
-    ["title", "description", "price", "sale_price", "quantity", "product_type", "status"].forEach(
+    ["title", "description", "price", "sale_price", "quantity", "item_no", "product_type", "status"].forEach(
       function (id) {
         $(id).addEventListener("input", function () {
           markDirty();
@@ -459,6 +493,11 @@
     $("slug").addEventListener("input", function () {
       slugTouched = true;
       markDirty();
+    });
+    $("track_inventory").addEventListener("change", function () {
+      markDirty();
+      syncInventoryUi();
+      updatePreview();
     });
     $("featured").addEventListener("change", function () {
       markDirty();
@@ -502,7 +541,9 @@
 
   SRAdminShell.boot({ activeNav: "products" }).then(async function (check) {
     if (!check) return;
+    applyPublishMessaging();
     bindForm();
+    syncInventoryUi();
     try {
       var loaded = await Promise.all([
         SRCatalog.listCategories(true),

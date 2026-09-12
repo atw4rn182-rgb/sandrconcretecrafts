@@ -17,23 +17,33 @@ Private owner tools for S & R Concrete Crafts.
 3. `20260912000003_storage_product_images.sql`
 4. `20260912000004_seed_badges_and_settings.sql`
 5. `20260912000005_admin_users.sql`
-6. **`20260912000006_admin_catalog_policies.sql`** ← required for product saves/uploads
+6. `20260912000006_admin_catalog_policies.sql`
+7. **`20260912000007_storefront_catalog_fields.sql`** — `source_key`, `item_no`, `track_inventory`, sold-out public read
+8. **`20260912000008_import_legacy_storefront_products.sql`** — idempotent import of the 17 original demo products
 
 Supabase Dashboard → **SQL** → New query → paste each file → Run.
 
-Creating the migration file does **not** apply it. Until migration 6 runs, product saves will fail with a permission message.
+Creating a migration file does **not** apply it.
 
 ## Public config (Vercel)
 
-Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` (never service-role). Redeploy so `npm run build` writes `js/env.js`.
+Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` (never service-role).
+
+Keep **`USE_LIVE_CATALOG` unset or `false`** until migrations 07–08 are applied and the import notices look correct. Then set `USE_LIVE_CATALOG=true` and redeploy so `npm run build` writes the flag into `js/env.js`.
 
 ## Owner account
 
 1. Auth → Users → Add user  
 2. Insert into `admin_users` (see earlier Step 2 docs)
 
+## Publish meaning
+
+- With **`USE_LIVE_CATALOG=false`** (default): Publish saves to the catalog; visitors still see the local demo list.
+- With **`USE_LIVE_CATALOG=true`**: Published and sold-out products appear on the public shop. Draft and hidden never appear. Edits show after a refresh.
+
 ## Notes
 
-- Catalog “Publish” does **not** update the public demo storefront yet.
-- Badge choices come from the `badges` table (seeded), not hard-coded UI-only values.
+- Imported legacy products use `source_key` like `legacy:cow` and start with **inventory not tracked**.
+- Item # is editable on the product form.
 - Canceling an edit does **not** delete existing photos.
+- Checkout on the public site remains a **demo** (no real order / payment).
