@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Dashboard — S &amp; R Concrete Crafts Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="admin-gate" id="adminGate">Checking your access…</div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin menu">
+      <div class="sidebar-brand">
+        <img src="../assets/logo-crop.png" alt="" width="44" height="44" />
+        <div>
+          <strong>S &amp; R Crafts</strong>
+          <span>Shop manager</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Sections">
+        <a class="nav-link is-active" href="index.html"><span class="nav-ico" aria-hidden="true">◆</span> Dashboard</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming next"><span class="nav-ico" aria-hidden="true">▣</span> Products</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">▤</span> Categories</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">☰</span> Orders</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">☺</span> Customers</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">◈</span> Appearance</a>
+        <a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="account-chip">
+          <span class="label">Signed in as</span>
+          <span class="email" id="ownerEmail">—</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="signOutBtn">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <h1>Dashboard</h1>
+          <p>A quick look at your shop. Product tools come next.</p>
+        </div>
+      </header>
+
+      <section class="stats-grid" aria-label="Shop overview placeholders">
+        <article class="stat-card">
+          <div class="stat-label">Products</div>
+          <div class="stat-value">—</div>
+          <div class="stat-note">Coming soon</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Published Products</div>
+          <div class="stat-value">—</div>
+          <div class="stat-note">Coming soon</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Orders</div>
+          <div class="stat-value">—</div>
+          <div class="stat-note">Coming soon</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Revenue</div>
+          <div class="stat-value">—</div>
+          <div class="stat-note">Coming soon</div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Welcome to your shop manager</h2>
+        <p>
+          This is your private admin area for S &amp; R Concrete Crafts. Next we’ll add tools so you can
+          add products, photos, prices, and more — without touching code.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="../js/env.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="admin-auth.js"></script>
+  <script>
+    (function () {
+      const app = document.getElementById("adminApp");
+      const gate = document.getElementById("adminGate");
+      const emailEl = document.getElementById("ownerEmail");
+      const signOutBtn = document.getElementById("signOutBtn");
+      const menuToggle = document.getElementById("menuToggle");
+      const backdrop = document.getElementById("sidebarBackdrop");
+
+      function setNavOpen(open) {
+        app.classList.toggle("nav-open", open);
+        menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        backdrop.hidden = !open;
+      }
+
+      menuToggle.addEventListener("click", function () {
+        setNavOpen(!app.classList.contains("nav-open"));
+      });
+      backdrop.addEventListener("click", function () { setNavOpen(false); });
+
+      signOutBtn.addEventListener("click", async function () {
+        signOutBtn.disabled = true;
+        signOutBtn.textContent = "Signing out…";
+        await SRAdminAuth.signOut();
+        window.location.replace(SRAdminAuth.LOGIN_PATH);
+      });
+
+      SRAdminAuth.watchAuth(function (event) {
+        if (event === "SIGNED_OUT") {
+          window.location.replace(SRAdminAuth.LOGIN_PATH);
+        }
+      });
+
+      SRAdminAuth.requireAdminPage({ gateId: "adminGate" }).then(function (check) {
+        if (!check || !check.ok) return;
+        gate.hidden = true;
+        app.hidden = false;
+        emailEl.textContent = (check.session.user && check.session.user.email) || "Owner";
+      });
+    })();
+  </script>
+</body>
+</html>

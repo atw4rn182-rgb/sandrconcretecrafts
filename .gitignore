@@ -14,3 +14,13 @@ header-preview.png
 
 # Vercel
 .vercel/
+
+# Secrets / local env (never commit real credentials)
+.env
+.env.local
+.env.*.local
+js/env.js
+
+# Supabase CLI local leftovers
+supabase/.branches
+supabase/.temp
