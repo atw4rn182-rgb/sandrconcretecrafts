@@ -1,0 +1,11 @@
+{
+  "name": "sandrconcretecrafts",
+  "private": true,
+  "description": "S & R Concrete Crafts static storefront + admin",
+  "scripts": {
+    "build": "node scripts/write-public-env.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

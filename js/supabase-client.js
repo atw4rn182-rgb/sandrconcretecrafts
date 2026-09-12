@@ -1,14 +1,12 @@
 /**
- * Dormant Supabase browser client for S & R Concrete Crafts.
+ * Dormant / shared Supabase browser helpers for S & R Concrete Crafts.
  *
- * Step 1: foundation only — not imported by index.html.
- * The public storefront still uses the local PRODUCTS array in app.js.
- *
- * When wiring the storefront (later step), load in this order:
- *   1. js/env.js          (from env.example.js — anon key only)
- *   2. @supabase/supabase-js (CDN or future bundler)
+ * Admin pages load:
+ *   1. js/env.js          (generated on Vercel from SUPABASE_URL + SUPABASE_ANON_KEY)
+ *   2. @supabase/supabase-js (CDN)
  *   3. this file
  *
+ * The public storefront index.html does not load this yet (demo products stay local).
  * Never place SUPABASE_SERVICE_ROLE_KEY in this file or any browser script.
  */
 (function (global) {
@@ -22,6 +20,17 @@
     };
   }
 
+  function isConfigured() {
+    if (global.__SR_ENV_LOAD_ERROR__) return false;
+    const { url, anonKey } = readEnv();
+    return Boolean(
+      url &&
+        anonKey &&
+        !url.includes("YOUR_PROJECT_REF") &&
+        !anonKey.includes("YOUR_SUPABASE_ANON_KEY")
+    );
+  }
+
   /**
    * Creates a Supabase client when @supabase/supabase-js is available.
    * Returns null if credentials or the SDK are missing (safe no-op).
@@ -29,9 +38,9 @@
   function createSrSupabaseClient() {
     const { url, anonKey } = readEnv();
 
-    if (!url || !anonKey || url.includes("YOUR_PROJECT_REF")) {
+    if (!isConfigured()) {
       console.warn(
-        "[S&R] Supabase env not configured. Copy js/env.example.js → js/env.js."
+        "[S&R] Supabase env not configured. On Vercel set SUPABASE_URL + SUPABASE_ANON_KEY."
       );
       return null;
     }
@@ -59,5 +68,6 @@
   global.SRSupabase = {
     createClient: createSrSupabaseClient,
     getEnv: readEnv,
+    isConfigured: isConfigured,
   };
 })(typeof window !== "undefined" ? window : globalThis);

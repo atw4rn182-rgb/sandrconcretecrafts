@@ -89,7 +89,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
-  <script src="../js/env.js"></script>
+  <script src="../js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="admin-auth.js"></script>
   <script>
@@ -100,6 +100,15 @@
       const signOutBtn = document.getElementById("signOutBtn");
       const menuToggle = document.getElementById("menuToggle");
       const backdrop = document.getElementById("sidebarBackdrop");
+
+      const safety = setTimeout(function () {
+        if (gate && gate.dataset.resolved !== "1") {
+          gate.textContent =
+            (window.SRAdminAuth && SRAdminAuth.MISSING_CONFIG_MESSAGE) ||
+            "Admin setup is incomplete. Supabase configuration is missing.";
+          gate.dataset.resolved = "1";
+        }
+      }, 12000);
 
       function setNavOpen(open) {
         app.classList.toggle("nav-open", open);
@@ -119,18 +128,35 @@
         window.location.replace(SRAdminAuth.LOGIN_PATH);
       });
 
+      if (typeof SRAdminAuth === "undefined") {
+        gate.textContent = "Admin setup is incomplete. Supabase configuration is missing.";
+        gate.dataset.resolved = "1";
+        clearTimeout(safety);
+        return;
+      }
+
       SRAdminAuth.watchAuth(function (event) {
         if (event === "SIGNED_OUT") {
           window.location.replace(SRAdminAuth.LOGIN_PATH);
         }
       });
 
-      SRAdminAuth.requireAdminPage({ gateId: "adminGate" }).then(function (check) {
-        if (!check || !check.ok) return;
-        gate.hidden = true;
-        app.hidden = false;
-        emailEl.textContent = (check.session.user && check.session.user.email) || "Owner";
-      });
+      SRAdminAuth.requireAdminPage({ gateId: "adminGate" })
+        .then(function (check) {
+          clearTimeout(safety);
+          if (!check || !check.ok) return;
+          gate.hidden = true;
+          gate.dataset.resolved = "1";
+          app.hidden = false;
+          emailEl.textContent = (check.session.user && check.session.user.email) || "Owner";
+        })
+        .catch(function () {
+          clearTimeout(safety);
+          if (gate.dataset.resolved !== "1") {
+            gate.textContent = SRAdminAuth.MISSING_CONFIG_MESSAGE;
+            gate.dataset.resolved = "1";
+          }
+        });
     })();
   </script>
 </body>

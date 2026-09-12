@@ -48,7 +48,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
-  <script src="../js/env.js"></script>
+  <script src="../js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="admin-auth.js"></script>
   <script>
@@ -82,6 +82,20 @@
         }
       }
 
+      function showMissingConfig() {
+        setupEl.classList.add("is-visible");
+        setupEl.innerHTML =
+          "<strong>Admin setup is incomplete. Supabase configuration is missing.</strong> " +
+          "On Vercel, add <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> " +
+          "(Project Settings → Environment Variables), then redeploy. Never add the service-role key.";
+        submitBtn.disabled = true;
+      }
+
+      if (typeof SRAdminAuth === "undefined") {
+        showMissingConfig();
+        return;
+      }
+
       if (params.get("denied") === "1") {
         showError(SRAdminAuth.denyMessage("not_admin"));
       } else if (params.get("expired") === "1") {
@@ -89,10 +103,7 @@
       }
 
       if (!SRAdminAuth.isEnvConfigured()) {
-        setupEl.classList.add("is-visible");
-        setupEl.innerHTML =
-          "<strong>Setup needed:</strong> Copy <code>js/env.example.js</code> to <code>js/env.js</code> and add your Supabase project URL and anon key (never the service-role key).";
-        submitBtn.disabled = true;
+        showMissingConfig();
       }
 
       toggleBtn.addEventListener("click", function () {
@@ -107,6 +118,11 @@
       form.addEventListener("submit", async function (event) {
         event.preventDefault();
         clearError();
+
+        if (!SRAdminAuth.isEnvConfigured()) {
+          showError(SRAdminAuth.MISSING_CONFIG_MESSAGE);
+          return;
+        }
 
         const email = emailInput.value.trim();
         const password = passwordInput.value;
