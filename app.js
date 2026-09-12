@@ -297,8 +297,6 @@
   const cartTotalEl = $("#cartTotal");
   const toastEl = $("#toast");
   const catalogStatus = $("#catalogStatus");
-  const heroGalleryStatus = $("#heroGalleryStatus");
-  const heroMosaic = $("#heroMosaic");
   const filterWrap = $("#collectionFilters");
   const filterChips = $("#filterChips");
   const navToggle = $("#navToggle");
@@ -322,55 +320,13 @@
   }
 
   function renderHeroGallery() {
-    if (!heroGalleryStatus || !heroMosaic) return;
-    if (liveMode && !catalogReady && !catalogError) {
-      heroMosaic.hidden = true;
-      heroGalleryStatus.hidden = false;
-      heroGalleryStatus.classList.remove("is-empty");
-      heroGalleryStatus.textContent = "Loading pieces…";
-      return;
-    }
-    if (liveMode && catalogError) {
-      heroMosaic.hidden = true;
-      heroGalleryStatus.hidden = false;
-      heroGalleryStatus.classList.add("is-empty");
-      heroGalleryStatus.textContent = "Gallery unavailable while the catalog loads.";
-      return;
-    }
+    // Lifestyle hero replaced the product mosaic; still seed About photo from catalog.
     var picks = products.filter(function (p) {
       return p.img;
     });
-    // Prefer featured, then first available photos
     picks.sort(function (a, b) {
       return Number(!!b.featured) - Number(!!a.featured);
     });
-    picks = picks.slice(0, 3);
-    if (!picks.length) {
-      heroMosaic.hidden = true;
-      heroGalleryStatus.hidden = false;
-      heroGalleryStatus.classList.add("is-empty");
-      heroGalleryStatus.textContent = "New pieces will appear here when published.";
-      return;
-    }
-    heroGalleryStatus.hidden = true;
-    heroMosaic.hidden = false;
-    heroMosaic.innerHTML = picks
-      .map(function (p) {
-        return (
-          '<figure class="hero-tile">' +
-          '<img src="' +
-          escAttr(safeImgSrc(p)) +
-          '" alt="' +
-          escAttr(p.alt || p.name) +
-          '" loading="eager" />' +
-          "<figcaption>" +
-          esc(p.name) +
-          "</figcaption>" +
-          "</figure>"
-        );
-      })
-      .join("");
-
     if (aboutPhoto && picks[0]) {
       aboutPhoto.style.backgroundImage =
         'url("' + String(safeImgSrc(picks[0])).replace(/"/g, "") + '")';
