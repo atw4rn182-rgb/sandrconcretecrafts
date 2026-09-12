@@ -1,66 +1,39 @@
-# Admin area (Step 2)
+# Admin area
 
-Private owner login + dashboard shell for S & R Concrete Crafts.
+Private owner tools for S & R Concrete Crafts.
 
 ## Pages
 
 - `/admin/login.html` — email/password sign in
-- `/admin/index.html` — protected dashboard shell (`/admin/` serves this too)
+- `/admin/` — dashboard
+- `/admin/products.html` — product list
+- `/admin/product-edit.html` — add/edit product + live preview
+- `/admin/categories.html` — create/rename/activate categories
 
-## Required before login works
+## Required SQL migrations (in order)
 
-### 1) Apply SQL migrations in Supabase (in order)
-
-1. `supabase/migrations/20260912000001_initial_schema.sql`
-2. `supabase/migrations/20260912000002_row_level_security.sql`
-3. `supabase/migrations/20260912000003_storage_product_images.sql`
-4. `supabase/migrations/20260912000004_seed_badges_and_settings.sql`
-5. `supabase/migrations/20260912000005_admin_users.sql`
+1. `20260912000001_initial_schema.sql`
+2. `20260912000002_row_level_security.sql`
+3. `20260912000003_storage_product_images.sql`
+4. `20260912000004_seed_badges_and_settings.sql`
+5. `20260912000005_admin_users.sql`
+6. **`20260912000006_admin_catalog_policies.sql`** ← required for product saves/uploads
 
 Supabase Dashboard → **SQL** → New query → paste each file → Run.
 
-### 2) Public Supabase config (URL + anon key only)
+Creating the migration file does **not** apply it. Until migration 6 runs, product saves will fail with a permission message.
 
-**Production (Vercel)** — required for https://sandrconcretecrafts.com/admin/
+## Public config (Vercel)
 
-1. Vercel → project **sandrconcretecrafts** → **Settings** → **Environment Variables**
-2. Add for **Production**:
-   - `SUPABASE_URL` = `https://YOUR_PROJECT_REF.supabase.co`
-   - `SUPABASE_ANON_KEY` = your **anon/public** key
-3. Do **not** add `SUPABASE_SERVICE_ROLE_KEY` for this static site
-4. Redeploy (or push to `main`) so `npm run build` generates `js/env.js` at build time
+Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` (never service-role). Redeploy so `npm run build` writes `js/env.js`.
 
-**Local**
+## Owner account
 
-```bash
-copy js\env.example.js js\env.js
-```
+1. Auth → Users → Add user  
+2. Insert into `admin_users` (see earlier Step 2 docs)
 
-Edit `js/env.js` with URL + anon key only, **or** set the same env vars and run `npm run build`.
+## Notes
 
-`js/env.js` is gitignored and auto-generated on Vercel. Never put the **service role** key in browser files.
-
-### 3) Create the owner Auth user
-
-Supabase Dashboard → **Authentication** → **Users** → **Add user** → Email + password.  
-Copy the user’s **UUID**.
-
-### 4) Grant admin access
-
-```sql
-insert into public.admin_users (user_id, role, active)
-values ('PASTE-USER-UUID-HERE', 'owner', true)
-on conflict (user_id) do update
-set role = excluded.role, active = true;
-```
-
-### 5) Test
-
-1. `/admin/login.html` loads
-2. Owner signs in → dashboard
-3. Sign out
-4. `/admin/` while signed out → redirect to login
-5. Non-admin Auth user → denied
-6. Missing config → clear “Supabase configuration is missing” (no endless “Checking your access”)
-
-Do not paste passwords or secret keys into chat.
+- Catalog “Publish” does **not** update the public demo storefront yet.
+- Badge choices come from the `badges` table (seeded), not hard-coded UI-only values.
+- Canceling an edit does **not** delete existing photos.

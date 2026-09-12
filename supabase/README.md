@@ -105,10 +105,25 @@ Before relying on catalog or admin tables, confirm in Supabase:
 
 If missing, run the SQL files in numeric order in the SQL Editor.
 
+## Step 3 addition
+
+| Path | Purpose |
+|------|---------|
+| `supabase/migrations/20260912000006_admin_catalog_policies.sql` | Active-admin read/write on catalog + product-images storage |
+| `admin/products.html` / `product-edit.html` / `categories.html` | Product & category management UI |
+
+### Apply migration 6 before live saving
+
+```text
+supabase/migrations/20260912000006_admin_catalog_policies.sql
+```
+
+Until this is run in the Supabase SQL Editor, authenticated admins cannot insert/update products or upload images (RLS will deny writes).
+
 ## What is intentionally NOT done yet
 
-- Product CRUD / image uploading
-- Storefront still uses local demo products
-- No Stripe
-- No theme CSS (Southwestern / seasonal) applied
-- Admin nav items beyond Dashboard are placeholders
+- Storefront still uses local demo products (not Supabase catalog)
+- No Stripe / checkout / orders
+- No seasonal theme CSS applied
+- Badge **definitions** are not edited in UI (assignments only; seed migration provides badges)
+

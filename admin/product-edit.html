@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Edit Product — S &amp; R Concrete Crafts Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="admin-gate" id="adminGate">Checking your access…</div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+    <aside class="admin-sidebar" aria-label="Admin menu">
+      <div class="sidebar-brand">
+        <img src="/assets/logo-crop.png" alt="" width="44" height="44" />
+        <div>
+          <strong>S &amp; R Crafts</strong>
+          <span>Shop manager</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
+      <div class="sidebar-foot">
+        <div class="account-chip">
+          <span class="label">Signed in as</span>
+          <span class="email" id="ownerEmail">—</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="signOutBtn">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-row">
+          <div>
+            <p class="crumb"><a href="/admin/products.html">Products</a> / <span id="crumbLabel">New</span></p>
+            <h1 id="pageTitle">Add Product</h1>
+            <p>Fill in the details. The preview updates as you type.</p>
+          </div>
+          <a class="btn btn-ghost" href="/admin/products.html">Back to list</a>
+        </div>
+      </header>
+
+      <div class="notice-banner" role="note">
+        <strong>Heads up:</strong> Publishing here saves to your catalog only. The live demo storefront is not connected yet.
+      </div>
+
+      <div class="flash" id="flash" hidden role="status"></div>
+      <div class="form-error" id="formError" role="alert"></div>
+
+      <div class="editor-layout">
+        <aside class="preview-pane" aria-label="Live product preview">
+          <p class="preview-label">Live preview</p>
+          <article class="store-card" id="livePreview">
+            <div class="store-card-img">
+              <img id="previewImg" alt="" hidden />
+              <div class="store-card-placeholder" id="previewPlaceholder">Photo preview</div>
+              <span class="store-card-tag" id="previewBadge" hidden></span>
+              <span class="store-card-sold" id="previewSold" hidden>Sold out</span>
+            </div>
+            <div class="store-card-body">
+              <h3 id="previewTitle">Product title</h3>
+              <p class="store-card-desc" id="previewDesc">Short description appears here.</p>
+              <div class="store-card-foot">
+                <div class="store-card-prices">
+                  <span class="price" id="previewPrice">$0.00</span>
+                  <span class="price-was" id="previewWas" hidden></span>
+                </div>
+                <span class="store-card-add">Add</span>
+              </div>
+            </div>
+          </article>
+        </aside>
+
+        <form id="productForm" class="editor-form panel" novalidate>
+          <fieldset>
+            <legend>Basics</legend>
+            <div class="field">
+              <label for="title">Title</label>
+              <input id="title" name="title" required maxlength="120" />
+            </div>
+            <div class="field">
+              <label for="slug">Web name (slug)</label>
+              <input id="slug" name="slug" maxlength="80" />
+              <p class="field-hint" id="slugHint">Created automatically from the title. Kept the same when you edit later unless you change it.</p>
+            </div>
+            <div class="field">
+              <label for="description">Description</label>
+              <textarea id="description" name="description" rows="5" required maxlength="4000"></textarea>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Pricing &amp; stock</legend>
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="price">Price ($)</label>
+                <input id="price" name="price" type="number" min="0" step="0.01" required />
+              </div>
+              <div class="field">
+                <label for="sale_price">Sale price ($) <span class="optional">optional</span></label>
+                <input id="sale_price" name="sale_price" type="number" min="0" step="0.01" />
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="quantity">Quantity</label>
+                <input id="quantity" name="quantity" type="number" min="0" step="1" required value="0" />
+              </div>
+              <div class="field">
+                <label for="product_type">Product type</label>
+                <select id="product_type" name="product_type">
+                  <option value="single">Single item</option>
+                  <option value="bundle">Bundle</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Status &amp; flags</legend>
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                  <option value="draft">Draft</option>
+                  <option value="published">Published (catalog)</option>
+                  <option value="sold_out">Sold out</option>
+                  <option value="hidden">Hidden</option>
+                </select>
+              </div>
+              <div class="field field-checkbox">
+                <label><input type="checkbox" id="featured" name="featured" /> Featured product</label>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Categories</legend>
+            <div id="categoryChecks" class="check-grid"></div>
+            <p class="field-hint">Inactive categories stay available here so existing products keep their assignments.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Badges</legend>
+            <div id="badgeChecks" class="check-grid"></div>
+            <p class="field-hint">Choose badges manually. They are not calculated from sales.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Photos</legend>
+            <div class="upload-row">
+              <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+              <p class="field-hint">JPEG, PNG, WebP, GIF, or AVIF · up to 10 MB each</p>
+            </div>
+            <div id="uploadStatus" class="muted" aria-live="polite"></div>
+            <div id="photoList" class="photo-list"></div>
+          </fieldset>
+
+          <div class="editor-actions">
+            <button type="submit" class="btn btn-primary" id="saveBtn" data-intent="save">Save</button>
+            <button type="button" class="btn btn-ghost" id="saveDraftBtn" data-intent="draft">Save as draft</button>
+            <button type="button" class="btn btn-ghost" id="publishBtn" data-intent="publish">Save &amp; publish</button>
+            <button type="button" class="btn btn-ghost" id="hideBtn" data-intent="hide">Save &amp; hide</button>
+            <button type="button" class="btn btn-ghost" id="soldOutBtn" data-intent="sold_out">Mark sold out</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/admin/admin-auth.js"></script>
+  <script src="/admin/admin-shell.js"></script>
+  <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/product-edit.js"></script>
+</body>
+</html>
