@@ -3,5 +3,12 @@
   "framework": null,
   "outputDirectory": ".",
   "buildCommand": "npm run build",
-  "installCommand": "npm install --ignore-scripts"
+  "installCommand": "npm install --ignore-scripts",
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": true
+    }
+  ]
 }
