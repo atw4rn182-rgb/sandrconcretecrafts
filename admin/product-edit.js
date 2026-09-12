@@ -732,6 +732,59 @@
     }
   }
 
+  function bindEditorSteps() {
+    var current = 1;
+    function showStep(n) {
+      current = Math.min(4, Math.max(1, Number(n) || 1));
+      document.querySelectorAll(".editor-step").forEach(function (el) {
+        var step = Number(el.getAttribute("data-step"));
+        var on = step === current;
+        el.classList.toggle("is-active", on);
+        el.hidden = !on;
+      });
+      document.querySelectorAll(".editor-step-tab").forEach(function (tab) {
+        var on = Number(tab.getAttribute("data-goto")) === current;
+        tab.classList.toggle("is-active", on);
+        if (on) tab.setAttribute("aria-current", "step");
+        else tab.removeAttribute("aria-current");
+      });
+      var first = document.querySelector('.editor-step.is-active input, .editor-step.is-active textarea, .editor-step.is-active select');
+      if (first && window.matchMedia("(max-width: 899px)").matches) {
+        try { first.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    document.querySelectorAll("[data-next]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        showStep(btn.getAttribute("data-next"));
+      });
+    });
+    document.querySelectorAll("[data-prev]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        showStep(btn.getAttribute("data-prev"));
+      });
+    });
+    document.querySelectorAll(".editor-step-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        showStep(tab.getAttribute("data-goto"));
+      });
+    });
+    // Desktop: reveal all steps for continuous form; mobile uses one-at-a-time.
+    function syncDesktopSteps() {
+      var desktop = window.matchMedia("(min-width: 900px)").matches;
+      document.querySelectorAll(".editor-step").forEach(function (el) {
+        if (desktop) {
+          el.hidden = false;
+          el.classList.add("is-active");
+        } else {
+          showStep(current);
+        }
+      });
+    }
+    syncDesktopSteps();
+    window.addEventListener("resize", syncDesktopSteps);
+  }
+
   function bindForm() {
     ["title", "description", "price", "sale_price", "quantity", "item_no", "product_type", "status"].forEach(
       function (id) {
@@ -798,10 +851,13 @@
     });
   }
 
-  SRAdminShell.boot({ activeNav: "products" }).then(async function (check) {
+  SRAdminShell.boot({
+    activeNav: new URLSearchParams(window.location.search).get("id") ? "products" : "add",
+  }).then(async function (check) {
     if (!check) return;
     applyPublishMessaging();
     bindForm();
+    bindEditorSteps();
     syncInventoryUi();
     try {
       var loaded = await Promise.all([

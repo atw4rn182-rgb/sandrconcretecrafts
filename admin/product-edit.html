@@ -40,11 +40,11 @@
         </button>
         <div class="topbar-row">
           <div>
-            <p class="crumb"><a href="/admin/products.html">Products</a> / <span id="crumbLabel">New</span></p>
+            <p class="crumb desktop-only"><a href="/admin/products.html">Products</a> / <span id="crumbLabel">New</span></p>
             <h1 id="pageTitle">Add Product</h1>
-            <p>Fill in the details. The preview updates as you type.</p>
+            <p class="desktop-only">Fill in the details. The preview updates as you type.</p>
           </div>
-          <a class="btn btn-ghost" href="/admin/products.html">Back to list</a>
+          <a class="btn btn-ghost desktop-only" href="/admin/products.html">Back to list</a>
         </div>
       </header>
 
@@ -55,6 +55,13 @@
 
       <div class="flash" id="flash" hidden role="status"></div>
       <div class="form-error" id="formError" role="alert"></div>
+
+      <nav class="editor-steps" id="editorSteps" aria-label="Product setup steps">
+        <button type="button" class="editor-step-tab is-active" data-goto="1" aria-current="step"><span>1</span> Details</button>
+        <button type="button" class="editor-step-tab" data-goto="2"><span>2</span> Images</button>
+        <button type="button" class="editor-step-tab" data-goto="3"><span>3</span> Category</button>
+        <button type="button" class="editor-step-tab" data-goto="4"><span>4</span> Review</button>
+      </nav>
 
       <div class="editor-layout">
         <aside class="preview-pane" aria-label="Live product preview">
@@ -78,122 +85,39 @@
               </div>
             </div>
           </article>
+          <p class="preview-actions">
+            <a class="btn btn-ghost btn-small" href="/" target="_blank" rel="noopener">Preview Store ↗</a>
+          </p>
         </aside>
 
         <form id="productForm" class="editor-form panel" novalidate>
-          <fieldset>
-            <legend>Product</legend>
-            <div class="field">
-              <label for="title">Product name</label>
-              <input id="title" name="title" required maxlength="120" />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Photos</legend>
-            <div class="upload-row">
-              <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
-              <p class="field-hint">JPEG, PNG, WebP, GIF, or AVIF · up to 10 MB each</p>
-            </div>
-            <div id="uploadStatus" class="muted" aria-live="polite"></div>
-            <div id="photoList" class="photo-list"></div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Price</legend>
-            <div class="form-grid-2">
+          <div class="editor-step is-active" data-step="1">
+            <fieldset>
+              <legend>Details</legend>
               <div class="field">
-                <label for="price">Price ($)</label>
-                <input id="price" name="price" type="number" min="0" step="0.01" required />
+                <label for="title">Product Title <span class="req">*</span></label>
+                <input id="title" name="title" required maxlength="120" placeholder="e.g. Succulent Planter" />
               </div>
               <div class="field">
-                <label for="sale_price">Sale price ($) <span class="optional">optional</span></label>
-                <input id="sale_price" name="sale_price" type="number" min="0" step="0.01" />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Description</legend>
-            <div class="field">
-              <label for="description">Description</label>
-              <textarea id="description" name="description" rows="5" required maxlength="4000"></textarea>
-            </div>
-          </fieldset>
-
-          <fieldset class="editor-categories">
-            <legend>Categories</legend>
-            <div id="categoryChecks" class="check-grid"></div>
-            <div class="inline-cat-tools">
-              <button type="button" class="btn btn-ghost btn-small" id="addCategoryBtn" aria-expanded="false" aria-controls="addCategoryPanel">
-                Add Category
-              </button>
-              <div
-                id="addCategoryPanel"
-                class="inline-cat-panel"
-                role="dialog"
-                aria-labelledby="addCategoryHeading"
-                aria-describedby="addCategoryNote"
-                hidden
-              >
-                <h3 id="addCategoryHeading" class="inline-cat-title">New category</h3>
-                <p id="addCategoryNote" class="field-hint">
-                  The category is created right away. Assigning it to this product is saved when you save the product.
-                </p>
-                <div class="field">
-                  <label for="newCategoryName">Category name</label>
-                  <input type="text" id="newCategoryName" maxlength="80" autocomplete="off" />
-                </div>
-                <div id="addCategoryInlineError" class="inline-cat-error" role="alert" hidden></div>
-                <div id="addCategoryDupOffer" class="inline-cat-dup" hidden>
-                  <p id="addCategoryDupText"></p>
-                  <button type="button" class="btn btn-ghost btn-small" id="addCategorySelectExisting">
-                    Select existing
-                  </button>
-                </div>
-                <div class="inline-cat-actions">
-                  <button type="button" class="btn btn-primary btn-small" id="addCategoryCreateBtn">
-                    Create &amp; Select
-                  </button>
-                  <button type="button" class="btn btn-ghost btn-small" id="addCategoryCancelBtn">Cancel</button>
-                </div>
-              </div>
-            </div>
-            <p class="field-hint">Inactive categories stay available here so existing products keep their assignments. You can also manage categories on the Categories page.</p>
-          </fieldset>
-
-          <details class="editor-more" id="moreDetails">
-            <summary>More details <span class="editor-more-hint">slug, item #, inventory, badges, status</span></summary>
-            <div class="editor-more-body">
-              <div class="field">
-                <label for="slug">Web name (slug)</label>
-                <input id="slug" name="slug" maxlength="80" />
-                <p class="field-hint" id="slugHint">Created automatically from the title. Kept the same when you edit later unless you change it.</p>
+                <label for="description">Description <span class="req">*</span></label>
+                <textarea id="description" name="description" rows="5" required maxlength="4000" placeholder="Tell customers about your product…"></textarea>
               </div>
               <div class="form-grid-2">
                 <div class="field">
-                  <label for="item_no">Item # <span class="optional">optional</span></label>
-                  <input id="item_no" name="item_no" maxlength="40" placeholder="e.g. 3-30" />
+                  <label for="price">Price ($) <span class="req">*</span></label>
+                  <input id="price" name="price" type="number" min="0" step="0.01" required />
                 </div>
                 <div class="field">
-                  <label for="product_type">Product type</label>
-                  <select id="product_type" name="product_type">
-                    <option value="single">Single item</option>
-                    <option value="bundle">Bundle</option>
-                  </select>
+                  <label for="sale_price">Sale price ($) <span class="optional">optional</span></label>
+                  <input id="sale_price" name="sale_price" type="number" min="0" step="0.01" />
                 </div>
               </div>
               <div class="form-grid-2">
-                <div class="field field-checkbox" style="align-self:end;padding-bottom:0.35rem;">
-                  <label><input type="checkbox" id="track_inventory" name="track_inventory" /> Track inventory (enforce stock)</label>
-                </div>
                 <div class="field">
                   <label for="quantity">Quantity</label>
                   <input id="quantity" name="quantity" type="number" min="0" step="1" required value="0" />
-                  <p class="field-hint" id="quantityHint">Leave tracking off when you don’t manage stock counts. Imported demo pieces start untracked.</p>
+                  <p class="field-hint" id="quantityHint">Leave tracking off when you don’t manage stock counts.</p>
                 </div>
-              </div>
-              <div class="form-grid-2">
                 <div class="field">
                   <label for="status">Status</label>
                   <select id="status" name="status">
@@ -202,29 +126,137 @@
                     <option value="sold_out">Sold out</option>
                     <option value="hidden">Hidden</option>
                   </select>
-                  <p class="field-hint" id="statusHint">Publish controls catalog readiness. Live storefront visibility depends on the site cutover flag.</p>
-                </div>
-                <div class="field field-checkbox">
-                  <label><input type="checkbox" id="featured" name="featured" /> Featured product</label>
+                  <p class="field-hint" id="statusHint">Publish controls catalog readiness.</p>
                 </div>
               </div>
+              <div class="form-grid-2">
+                <div class="field">
+                  <label for="product_type">Product type</label>
+                  <select id="product_type" name="product_type">
+                    <option value="single">Single item</option>
+                    <option value="bundle">Bundle</option>
+                  </select>
+                </div>
+                <div class="field field-checkbox">
+                  <label><input type="checkbox" id="track_inventory" name="track_inventory" /> Track inventory</label>
+                </div>
+              </div>
+            </fieldset>
+            <div class="editor-step-nav">
+              <button type="button" class="btn btn-primary btn-block" data-next="2">Next: Add Images →</button>
+            </div>
+          </div>
+
+          <div class="editor-step" data-step="2" hidden>
+            <fieldset>
+              <legend>Images</legend>
+              <div class="upload-row upload-row--large">
+                <label class="upload-drop" for="photoInput">
+                  <strong>Tap to add photos</strong>
+                  <span>JPEG, PNG, WebP, GIF, or AVIF · up to 10 MB each</span>
+                </label>
+                <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+              </div>
+              <div id="uploadStatus" class="muted" aria-live="polite"></div>
+              <div id="photoList" class="photo-list"></div>
+            </fieldset>
+            <div class="editor-step-nav">
+              <button type="button" class="btn btn-ghost" data-prev="1">Back</button>
+              <button type="button" class="btn btn-primary" data-next="3">Next: Category →</button>
+            </div>
+          </div>
+
+          <div class="editor-step" data-step="3" hidden>
+            <fieldset class="editor-categories">
+              <legend>Categories</legend>
+              <div id="categoryChecks" class="check-grid"></div>
+              <div class="inline-cat-tools">
+                <button type="button" class="btn btn-ghost btn-small" id="addCategoryBtn" aria-expanded="false" aria-controls="addCategoryPanel">
+                  Add Category
+                </button>
+                <div
+                  id="addCategoryPanel"
+                  class="inline-cat-panel"
+                  role="dialog"
+                  aria-labelledby="addCategoryHeading"
+                  aria-describedby="addCategoryNote"
+                  hidden
+                >
+                  <h3 id="addCategoryHeading" class="inline-cat-title">New category</h3>
+                  <p id="addCategoryNote" class="field-hint">
+                    The category is created right away. Assigning it to this product is saved when you save the product.
+                  </p>
+                  <div class="field">
+                    <label for="newCategoryName">Category name</label>
+                    <input type="text" id="newCategoryName" maxlength="80" autocomplete="off" />
+                  </div>
+                  <div id="addCategoryInlineError" class="inline-cat-error" role="alert" hidden></div>
+                  <div id="addCategoryDupOffer" class="inline-cat-dup" hidden>
+                    <p id="addCategoryDupText"></p>
+                    <button type="button" class="btn btn-ghost btn-small" id="addCategorySelectExisting">
+                      Select existing
+                    </button>
+                  </div>
+                  <div class="inline-cat-actions">
+                    <button type="button" class="btn btn-primary btn-small" id="addCategoryCreateBtn">
+                      Create &amp; Select
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-small" id="addCategoryCancelBtn">Cancel</button>
+                  </div>
+                </div>
+              </div>
+              <p class="field-hint">Inactive categories stay available here so existing products keep their assignments.</p>
+            </fieldset>
+
+            <fieldset>
+              <legend>Badges &amp; extras</legend>
               <div class="field">
                 <span class="field-label-text">Badges</span>
                 <div id="badgeChecks" class="check-grid"></div>
                 <p class="field-hint">Choose badges manually. They are not calculated from sales.</p>
               </div>
+              <div class="field field-checkbox">
+                <label><input type="checkbox" id="featured" name="featured" /> Featured product</label>
+              </div>
+              <details class="editor-more" id="moreDetails">
+                <summary>More details <span class="editor-more-hint">slug, item #</span></summary>
+                <div class="editor-more-body">
+                  <div class="field">
+                    <label for="slug">Web name (slug)</label>
+                    <input id="slug" name="slug" maxlength="80" />
+                    <p class="field-hint" id="slugHint">Created automatically from the title.</p>
+                  </div>
+                  <div class="field">
+                    <label for="item_no">Item # <span class="optional">optional</span></label>
+                    <input id="item_no" name="item_no" maxlength="40" placeholder="e.g. 3-30" />
+                  </div>
+                </div>
+              </details>
+            </fieldset>
+            <div class="editor-step-nav">
+              <button type="button" class="btn btn-ghost" data-prev="2">Back</button>
+              <button type="button" class="btn btn-primary" data-next="4">Next: Review →</button>
             </div>
-          </details>
+          </div>
 
-          <div class="editor-actions">
-            <div class="editor-actions-primary">
-              <button type="button" class="btn btn-ghost" id="saveDraftBtn" data-intent="draft">Save Draft</button>
-              <button type="button" class="btn btn-primary" id="publishBtn" data-intent="publish">Publish</button>
+          <div class="editor-step" data-step="4" hidden>
+            <fieldset>
+              <legend>Review &amp; save</legend>
+              <p class="field-hint">Check the live preview, then save as draft or publish.</p>
+            </fieldset>
+            <div class="editor-actions">
+              <div class="editor-actions-primary">
+                <button type="button" class="btn btn-ghost" id="saveDraftBtn" data-intent="draft">Save Draft</button>
+                <button type="button" class="btn btn-primary" id="publishBtn" data-intent="publish">Publish</button>
+              </div>
+              <div class="editor-actions-secondary" aria-label="More save options">
+                <button type="submit" class="btn btn-ghost btn-small" id="saveBtn" data-intent="save">Save (keep status)</button>
+                <button type="button" class="btn btn-ghost btn-small" id="hideBtn" data-intent="hide">Save &amp; hide</button>
+                <button type="button" class="btn btn-ghost btn-small" id="soldOutBtn" data-intent="sold_out">Mark sold out</button>
+              </div>
             </div>
-            <div class="editor-actions-secondary" aria-label="More save options">
-              <button type="submit" class="btn btn-ghost btn-small" id="saveBtn" data-intent="save">Save (keep status)</button>
-              <button type="button" class="btn btn-ghost btn-small" id="hideBtn" data-intent="hide">Save &amp; hide</button>
-              <button type="button" class="btn btn-ghost btn-small" id="soldOutBtn" data-intent="sold_out">Mark sold out</button>
+            <div class="editor-step-nav">
+              <button type="button" class="btn btn-ghost" data-prev="3">Back</button>
             </div>
           </div>
         </form>

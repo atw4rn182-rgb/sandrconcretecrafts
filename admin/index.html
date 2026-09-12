@@ -24,9 +24,7 @@
           <span>Shop manager</span>
         </div>
       </div>
-
       <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
-
       <div class="sidebar-foot">
         <div class="account-chip">
           <span class="label">Signed in as</span>
@@ -37,34 +35,65 @@
     </aside>
 
     <main class="admin-main">
-      <header class="admin-topbar">
+      <header class="admin-topbar admin-topbar--home">
         <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
-        <div class="topbar-row">
-          <div>
-            <h1>Dashboard</h1>
-            <p>Live catalog summary for your S&amp;R Concrete Crafts shop.</p>
-          </div>
-          <button type="button" class="btn btn-ghost" id="dashboardRefresh">Refresh</button>
+        <div class="topbar-row topbar-row--home">
+          <button type="button" class="btn btn-ghost btn-small" id="dashboardRefresh">Refresh</button>
         </div>
       </header>
 
       <div id="dashboardError" class="form-error" role="alert" hidden></div>
-
       <div id="dashboardLoading" class="state-box" aria-live="polite">Loading catalog summary…</div>
 
       <div id="dashboardContent" hidden>
-        <section class="dash-shortcuts" aria-label="Quick actions">
-          <a class="btn btn-primary" href="/admin/product-edit.html">Add Product</a>
-          <a class="btn btn-ghost" href="/admin/categories.html">Manage Categories</a>
-          <a class="btn btn-ghost" href="/admin/products.html">All Products</a>
+        <section class="dash-welcome">
+          <h1>Welcome back!</h1>
+          <p>Manage your products, orders, and website all in one place.</p>
         </section>
 
-        <section class="stats-grid" id="statsGrid" aria-label="Catalog counts"></section>
+        <section class="stats-grid stats-grid--home" id="statsGrid" aria-label="Catalog counts"></section>
 
         <p class="dash-secondary-note" id="ordersNote">
-          Real ordering and payments are not connected yet. Demo checkout on the public site does not create sales.
+          Real ordering and payments are not connected yet. Orders and revenue stay blank until checkout is live.
+        </p>
+
+        <section class="dash-nav-cards" aria-label="Shop sections">
+          <a class="dash-nav-card" href="/admin/products.html">
+            <span class="dash-nav-ico" aria-hidden="true">▣</span>
+            <span class="dash-nav-copy"><strong>Products</strong><span>Add, edit, and manage your items</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+          <a class="dash-nav-card" href="/admin/categories.html">
+            <span class="dash-nav-ico" aria-hidden="true">▤</span>
+            <span class="dash-nav-copy"><strong>Categories</strong><span>Organize your products</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+          <a class="dash-nav-card" href="/admin/orders.html">
+            <span class="dash-nav-ico" aria-hidden="true">☰</span>
+            <span class="dash-nav-copy"><strong>Orders</strong><span>View and manage orders</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
+            <span class="dash-nav-ico" aria-hidden="true">☺</span>
+            <span class="dash-nav-copy"><strong>Customers</strong><span>See your customers</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
+            <span class="dash-nav-ico" aria-hidden="true">◈</span>
+            <span class="dash-nav-copy"><strong>Appearance</strong><span>Update your site look</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
+            <span class="dash-nav-ico" aria-hidden="true">⚙</span>
+            <span class="dash-nav-copy"><strong>Settings</strong><span>Store details and preferences</span></span>
+            <span class="dash-nav-chev" aria-hidden="true">›</span>
+          </a>
+        </section>
+
+        <p class="dash-view-store-wrap">
+          <a class="btn btn-ghost btn-block dash-view-store" href="/" target="_blank" rel="noopener">View Store ↗</a>
         </p>
 
         <section class="panel dash-panel" id="inventoryPanel" hidden>

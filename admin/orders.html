@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Orders — S&amp;R Concrete Crafts Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="admin-gate" id="adminGate">Checking your access…</div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+    <aside class="admin-sidebar" aria-label="Admin menu">
+      <div class="sidebar-brand">
+        <img src="/assets/sandrlogo.jpg" alt="" width="44" height="44" />
+        <div>
+          <strong>S&amp;R Concrete Crafts</strong>
+          <span>Shop manager</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
+      <div class="sidebar-foot">
+        <div class="account-chip">
+          <span class="label">Signed in as</span>
+          <span class="email" id="ownerEmail">—</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="signOutBtn">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-row">
+          <div>
+            <h1>Orders</h1>
+            <p>Real ordering is not connected yet.</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel placeholder-panel">
+        <h2>Coming soon</h2>
+        <p>
+          Orders and payments are not wired up. Demo checkout on the public store does not create sales.
+          When ordering is connected, this page will list real customer orders here.
+        </p>
+        <p><a class="btn btn-ghost" href="/admin/">Back to Home</a></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/admin/admin-auth.js"></script>
+  <script src="/admin/admin-shell.js"></script>
+  <script>
+    SRAdminShell.boot({ activeNav: "orders" });
+  </script>
+</body>
+</html>

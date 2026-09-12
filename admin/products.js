@@ -1,11 +1,12 @@
 /**
- * Admin products list page.
+ * Admin products list — mobile cards + status chips.
  */
 (function () {
   "use strict";
 
   var allProducts = [];
   var categories = [];
+  var actionProductId = null;
 
   function statusLabel(status) {
     return (
@@ -36,7 +37,58 @@
         "</span>"
       );
     }
-    return SRCatalog.money(p.price);
+    return '<span class="price-sale">' + SRCatalog.money(p.price) + "</span>";
+  }
+
+  function stockHtml(p) {
+    if (!p.track_inventory) return '<span class="stock-pill stock-untracked">Stock not tracked</span>';
+    var q = Number(p.quantity) || 0;
+    if (q <= 0) return '<span class="stock-pill stock-zero">Qty 0</span>';
+    return '<span class="stock-pill">Qty ' + SRCatalog.escapeHtml(String(q)) + "</span>";
+  }
+
+  function countByStatus(status) {
+    if (!status) return allProducts.length;
+    return allProducts.filter(function (p) {
+      return p.status === status;
+    }).length;
+  }
+
+  function renderStatusChips() {
+    var wrap = document.getElementById("statusChips");
+    if (!wrap) return;
+    var current = document.getElementById("statusFilter").value;
+    var chips = [
+      { value: "", label: "All", count: countByStatus("") },
+      { value: "published", label: "Published", count: countByStatus("published") },
+      { value: "draft", label: "Drafts", count: countByStatus("draft") },
+      { value: "sold_out", label: "Sold Out", count: countByStatus("sold_out") },
+      { value: "hidden", label: "Hidden", count: countByStatus("hidden") },
+    ];
+    wrap.innerHTML = chips
+      .map(function (c) {
+        var active = current === c.value;
+        return (
+          '<button type="button" class="filter-chip' +
+          (active ? " is-active" : "") +
+          '" data-status="' +
+          SRCatalog.escapeHtml(c.value) +
+          '" aria-pressed="' +
+          (active ? "true" : "false") +
+          '">' +
+          SRCatalog.escapeHtml(c.label) +
+          " (" +
+          c.count +
+          ")</button>"
+        );
+      })
+      .join("");
+    wrap.querySelectorAll("[data-status]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.getElementById("statusFilter").value = btn.getAttribute("data-status") || "";
+        onFilterChange();
+      });
+    });
   }
 
   function filtered() {
@@ -56,10 +108,84 @@
     });
   }
 
+  function closeActionSheet() {
+    var sheet = document.getElementById("productActionSheet");
+    var backdrop = document.getElementById("actionSheetBackdrop");
+    if (sheet) sheet.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+    actionProductId = null;
+    document.body.classList.remove("action-sheet-open");
+  }
+
+  function openActionSheet(product) {
+    actionProductId = product.id;
+    var sheet = document.getElementById("productActionSheet");
+    var backdrop = document.getElementById("actionSheetBackdrop");
+    var list = document.getElementById("actionSheetList");
+    document.getElementById("actionSheetSub").textContent = product.title || "Product";
+    list.innerHTML =
+      '<a class="action-sheet-btn" href="/admin/product-edit.html?id=' +
+      encodeURIComponent(product.id) +
+      '">Edit</a>' +
+      '<button type="button" class="action-sheet-btn" data-action="publish">Publish</button>' +
+      '<button type="button" class="action-sheet-btn" data-action="hide">Hide</button>' +
+      '<button type="button" class="action-sheet-btn" data-action="sold_out">Mark Sold Out</button>' +
+      '<button type="button" class="action-sheet-btn action-sheet-btn--danger" data-action="delete">Delete</button>';
+    list.querySelectorAll("[data-action]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        onAction(btn.getAttribute("data-action"));
+      });
+    });
+    sheet.hidden = false;
+    if (backdrop) backdrop.hidden = false;
+    document.body.classList.add("action-sheet-open");
+  }
+
+  async function onAction(action) {
+    var product = allProducts.find(function (p) {
+      return p.id === actionProductId;
+    });
+    if (!product) return;
+    closeActionSheet();
+    if (action === "delete") {
+      onDelete(product.id, product.title);
+      return;
+    }
+    if (action === "publish" || action === "hide" || action === "sold_out") {
+      try {
+        var status = action === "hide" ? "hidden" : action;
+        await SRCatalog.updateProduct(
+          product.id,
+          {
+            title: product.title,
+            slug: product.slug,
+            description: product.description,
+            price: product.price,
+            sale_price: product.sale_price,
+            quantity: product.quantity,
+            item_no: product.item_no,
+            track_inventory: product.track_inventory,
+            product_type: product.product_type,
+            status: status,
+            featured: product.featured,
+          },
+          product
+        );
+        product.status = status;
+        showFlash("Updated to " + statusLabel(status) + ".", "ok");
+        renderStatusChips();
+        renderList();
+      } catch (err) {
+        showFlash(err.message || "Couldn’t update status.", "err");
+      }
+    }
+  }
+
   function renderList() {
     var state = document.getElementById("listState");
     var wrap = document.getElementById("productList");
     var rows = filtered();
+    renderStatusChips();
 
     if (!allProducts.length) {
       state.hidden = false;
@@ -80,66 +206,55 @@
 
     state.hidden = true;
     wrap.hidden = false;
-    wrap.innerHTML =
-      '<table class="product-table"><thead><tr>' +
-      "<th>Product</th><th>Price</th><th>Qty</th><th>Status</th><th>Categories</th><th></th>" +
-      "</tr></thead><tbody>" +
-      rows
-        .map(function (p) {
-          var img = p.primary
-            ? '<img src="' +
-              SRCatalog.escapeHtml(p.primary.image_url) +
-              '" alt="" />'
-            : '<div class="thumb-empty">No photo</div>';
-          var cats = (p.categories || [])
-            .map(function (c) {
-              return SRCatalog.escapeHtml(c.name);
-            })
-            .join(", ");
-          return (
-            "<tr>" +
-            '<td class="cell-product"><div class="prod-cell">' +
-            '<div class="prod-thumb">' +
-            img +
-            "</div><div>" +
-            "<strong>" +
-            SRCatalog.escapeHtml(p.title) +
-            "</strong>" +
-            '<div class="muted">' +
-            SRCatalog.escapeHtml(p.slug) +
-            "</div></div></div></td>" +
-            "<td>" +
-            priceHtml(p) +
-            "</td>" +
-            "<td>" +
-            SRCatalog.escapeHtml(String(p.quantity)) +
-            "</td>" +
-            '<td><span class="status-pill status-' +
-            SRCatalog.escapeHtml(p.status) +
-            '">' +
-            statusLabel(p.status) +
-            "</span></td>" +
-            '<td class="cell-cats">' +
-            (cats || "—") +
-            "</td>" +
-            '<td class="cell-actions">' +
-            '<a class="btn btn-ghost btn-small" href="/admin/product-edit.html?id=' +
-            encodeURIComponent(p.id) +
-            '">Edit</a> ' +
-            '<button type="button" class="btn btn-ghost btn-small btn-danger-text" data-delete="' +
-            SRCatalog.escapeHtml(p.id) +
-            '" data-title="' +
-            SRCatalog.escapeHtml(p.title) +
-            '">Delete</button>' +
-            "</td></tr>"
-          );
-        })
-        .join("") +
-      "</tbody></table>";
+    wrap.innerHTML = rows
+      .map(function (p) {
+        var img = p.primary
+          ? '<img src="' +
+            SRCatalog.escapeHtml(p.primary.image_url) +
+            '" alt="" />'
+          : '<div class="thumb-empty">No photo</div>';
+        return (
+          '<article class="product-card">' +
+          '<a class="product-card-media" href="/admin/product-edit.html?id=' +
+          encodeURIComponent(p.id) +
+          '">' +
+          img +
+          "</a>" +
+          '<div class="product-card-body">' +
+          '<a class="product-card-title" href="/admin/product-edit.html?id=' +
+          encodeURIComponent(p.id) +
+          '">' +
+          SRCatalog.escapeHtml(p.title) +
+          "</a>" +
+          '<div class="product-card-price">' +
+          priceHtml(p) +
+          "</div>" +
+          '<div class="product-card-meta">' +
+          '<span class="status-pill status-' +
+          SRCatalog.escapeHtml(p.status) +
+          '">' +
+          statusLabel(p.status) +
+          "</span>" +
+          stockHtml(p) +
+          "</div>" +
+          "</div>" +
+          '<button type="button" class="product-card-menu" data-menu="' +
+          SRCatalog.escapeHtml(p.id) +
+          '" aria-label="Actions for ' +
+          SRCatalog.escapeHtml(p.title) +
+          '">⋯</button>' +
+          "</article>"
+        );
+      })
+      .join("");
 
-    wrap.querySelectorAll("[data-delete]").forEach(function (btn) {
+    wrap.querySelectorAll("[data-menu]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        onDelete(btn.getAttribute("data-delete"), btn.getAttribute("data-title"));
+        var id = btn.getAttribute("data-menu");
+        var product = allProducts.find(function (p) {
+          return p.id === id;
+        });
+        if (product) openActionSheet(product);
       });
     });
   }
@@ -226,7 +341,6 @@
           })
           .join("");
       applyFiltersFromUrl();
-      // Drop invalid category ids after options exist
       var catVal = document.getElementById("categoryFilter").value;
       var catParam =
         new URLSearchParams(window.location.search).get("category") ||
@@ -253,7 +367,7 @@
     var text = document.getElementById("publishBannerText");
     if (!text) return;
     text.textContent = live
-      ? "Published and sold-out products show on the live storefront. Draft and hidden stay private. Publish edits appear after visitors refresh."
+      ? "Published and sold-out products show on the live storefront. Draft and hidden stay private."
       : "Saving here updates your catalog only. The public site still shows demo products until USE_LIVE_CATALOG is turned on after migrations 07–08.";
   }
 
@@ -267,6 +381,10 @@
       document.getElementById(id).addEventListener("input", onFilterChange);
       document.getElementById(id).addEventListener("change", onFilterChange);
     });
+    var close = document.getElementById("actionSheetClose");
+    var backdrop = document.getElementById("actionSheetBackdrop");
+    if (close) close.addEventListener("click", closeActionSheet);
+    if (backdrop) backdrop.addEventListener("click", closeActionSheet);
     load();
   });
 })();

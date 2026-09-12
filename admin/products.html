@@ -41,9 +41,9 @@
         <div class="topbar-row">
           <div>
             <h1>Products</h1>
-            <p>Add, edit, and organize your concrete pieces.</p>
+            <p class="desktop-only">Add, edit, and organize your concrete pieces.</p>
           </div>
-          <a class="btn btn-primary" href="/admin/product-edit.html">Add Product</a>
+          <a class="btn btn-primary desktop-only" href="/admin/product-edit.html">Add Product</a>
         </div>
       </header>
 
@@ -54,26 +54,40 @@
 
       <div class="flash" id="flash" hidden role="status"></div>
 
-      <section class="toolbar panel-tight">
+      <section class="products-toolbar" aria-label="Find products">
+        <div class="filter-chip-row" id="statusChips" role="group" aria-label="Status filters"></div>
         <label class="sr-only" for="searchInput">Search products</label>
-        <input id="searchInput" type="search" placeholder="Search by title…" />
-        <label class="sr-only" for="statusFilter">Filter by status</label>
-        <select id="statusFilter">
+        <input id="searchInput" type="search" placeholder="Search products…" autocomplete="off" />
+        <label class="sr-only" for="categoryFilter">Filter by category</label>
+        <select id="categoryFilter" class="category-filter-select">
+          <option value="">All categories</option>
+        </select>
+        <select id="statusFilter" class="sr-only" tabindex="-1" aria-hidden="true">
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="sold_out">Sold out</option>
           <option value="hidden">Hidden</option>
         </select>
-        <label class="sr-only" for="categoryFilter">Filter by category</label>
-        <select id="categoryFilter">
-          <option value="">All categories</option>
-        </select>
       </section>
 
       <div id="listState" class="state-box">Loading products…</div>
-      <div id="productList" class="product-table-wrap" hidden></div>
+      <div id="productList" class="product-card-list" hidden></div>
+
+      <div class="mobile-fab-wrap">
+        <a class="btn btn-primary btn-block" href="/admin/product-edit.html">+ Add New Product</a>
+      </div>
     </main>
+  </div>
+
+  <div id="productActionSheet" class="action-sheet" hidden>
+    <div class="action-sheet-backdrop" id="actionSheetBackdrop" hidden></div>
+    <div class="action-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="actionSheetTitle">
+      <h2 id="actionSheetTitle">Product actions</h2>
+      <p class="action-sheet-sub" id="actionSheetSub"></p>
+      <div class="action-sheet-list" id="actionSheetList"></div>
+      <button type="button" class="btn btn-ghost btn-block" id="actionSheetClose">Cancel</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>

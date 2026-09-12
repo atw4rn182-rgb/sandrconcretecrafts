@@ -100,39 +100,33 @@
     var cards = [
       {
         key: "total",
-        label: "Total products",
+        label: "Products",
         value: counts.total,
-        note: "All statuses",
+        ico: "▣",
         href: "/admin/products.html",
       },
       {
         key: "published",
         label: "Published",
         value: counts.published,
-        note: "Visible when live catalog is on",
+        ico: "✓",
         href: "/admin/products.html?status=published",
       },
       {
-        key: "draft",
-        label: "Draft",
-        value: counts.draft,
-        note: "Not public yet",
-        href: "/admin/products.html?status=draft",
+        key: "orders",
+        label: "Orders",
+        value: "—",
+        ico: "☰",
+        href: "/admin/orders.html",
+        placeholder: true,
       },
       {
-        key: "sold_out",
-        label: "Sold out",
-        value: counts.sold_out,
-        note: "Shown as unavailable publicly",
-        href: "/admin/products.html?status=sold_out",
-      },
-      {
-        key: "hidden",
-        label: "Hidden",
-        value: counts.hidden,
-        note: "Kept private",
-        href: "/admin/products.html?status=hidden",
-        secondary: true,
+        key: "revenue",
+        label: "Revenue",
+        value: "—",
+        ico: "◈",
+        href: "/admin/orders.html",
+        placeholder: true,
       },
     ];
 
@@ -140,19 +134,21 @@
       .map(function (c) {
         return (
           '<a class="stat-card' +
-          (c.secondary ? " stat-card--secondary" : "") +
+          (c.placeholder ? " stat-card--placeholder" : "") +
           '" href="' +
           SRCatalog.escapeHtml(c.href) +
           '">' +
-          '<div class="stat-label">' +
+          '<div class="stat-card-top"><span class="stat-ico" aria-hidden="true">' +
+          c.ico +
+          '</span><div class="stat-label">' +
           SRCatalog.escapeHtml(c.label) +
-          "</div>" +
+          "</div></div>" +
           '<div class="stat-value">' +
           SRCatalog.escapeHtml(String(c.value)) +
           "</div>" +
-          '<div class="stat-note">' +
-          SRCatalog.escapeHtml(c.note) +
-          " · Open list</div>" +
+          (c.placeholder
+            ? '<div class="stat-note">Not connected</div>'
+            : "") +
           "</a>"
         );
       })

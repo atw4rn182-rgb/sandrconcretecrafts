@@ -42,7 +42,7 @@ assert((index.match(/accent-zia/g) || []).length === 1, "one zia in markup");
 assert((index.match(/accent-roadrunner/g) || []).length === 1, "one roadrunner in markup");
 
 const editHtml = read("admin/product-edit.html");
-assert(/Product name[\s\S]*photoInput[\s\S]*price[\s\S]*description[\s\S]*categoryChecks/i.test(editHtml), "editor leads with name, photos, price, description, categories");
+assert(/Product Title[\s\S]*Description[\s\S]*price[\s\S]*photoInput[\s\S]*categoryChecks/i.test(editHtml), "editor includes title, description, price, photos, categories");
 assert(editHtml.includes('id="moreDetails"'), "optional details in expandable section");
 assert(editHtml.includes('id="slug"') && editHtml.includes("moreDetails"), "slug remains in page");
 assert(editHtml.includes("addCategoryBtn"), "inline Add Category preserved");
