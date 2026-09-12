@@ -532,6 +532,151 @@
     }
   }
 
+  /**
+   * Status change with publish rules (title, price, ≥1 photo when publishing).
+   * Hiding / sold_out keep images and product data.
+   */
+  async function changeProductStatus(product, nextStatus) {
+    if (!product || !product.id) throw new Error("That product wasn’t found.");
+    if (["draft", "published", "sold_out", "hidden"].indexOf(nextStatus) === -1) {
+      throw new Error("Choose a valid status.");
+    }
+
+    var imageCount = Array.isArray(product.images)
+      ? product.images.length
+      : product.primary
+        ? 1
+        : 0;
+
+    if (nextStatus === "published") {
+      var check = validateProductInput(
+        {
+          title: product.title,
+          description: product.description,
+          price: product.price,
+          sale_price: product.sale_price,
+          quantity: product.quantity,
+          status: "published",
+          product_type: product.product_type || "single",
+          featured: product.featured,
+          item_no: product.item_no,
+          track_inventory: product.track_inventory,
+          imageCount: imageCount,
+        },
+        { publishing: true }
+      );
+      if (!check.ok) {
+        throw new Error(check.errors[0] || "Couldn’t publish this product.");
+      }
+    }
+
+    return updateProduct(
+      product.id,
+      {
+        title: product.title,
+        slug: product.slug,
+        description: product.description,
+        price: product.price,
+        sale_price: product.sale_price,
+        quantity: product.quantity,
+        item_no: product.item_no,
+        track_inventory: product.track_inventory,
+        product_type: product.product_type || "single",
+        status: nextStatus,
+        featured: product.featured,
+      },
+      product
+    );
+  }
+
+  /**
+   * Delete one image row and its storage object when the path belongs to this product.
+   */
+  async function deleteProductImage(productId, image) {
+    if (!productId || !image || !image.id) {
+      throw new Error("That photo wasn’t found.");
+    }
+    var supabase = await client();
+    var path = image.storage_path || storagePathFromPublicUrl(image.image_url);
+    if (path && String(path).indexOf(String(productId) + "/") !== 0) {
+      // Refuse deleting another product's storage object.
+      path = null;
+    }
+
+    var del = await supabase
+      .from("product_images")
+      .delete()
+      .eq("id", image.id)
+      .eq("product_id", productId);
+    if (del.error) {
+      throw new Error(friendlyDbError(del.error, "Couldn’t remove that photo."));
+    }
+
+    if (path) {
+      var rem = await supabase.storage.from(BUCKET).remove([path]);
+      if (rem.error) {
+        return {
+          warnings: [
+            "Photo removed from the product, but the file may still be in storage.",
+          ],
+        };
+      }
+    }
+    return { warnings: [] };
+  }
+
+  /**
+   * Persist sort_order / primary flags for existing images (same product only).
+   */
+  async function reorderProductImages(productId, images) {
+    if (!productId) throw new Error("That product wasn’t found.");
+    var list = (images || []).filter(function (img) {
+      return img && img.id;
+    });
+    if (!list.length) return { warnings: [] };
+
+    var supabase = await client();
+    var clear = await supabase
+      .from("product_images")
+      .update({ is_primary: false })
+      .eq("product_id", productId);
+    if (clear.error) {
+      throw new Error(friendlyDbError(clear.error, "Couldn’t update photo order."));
+    }
+
+    for (var i = 0; i < list.length; i++) {
+      var img = list[i];
+      var upd = await supabase
+        .from("product_images")
+        .update({
+          sort_order: Number(img.sort_order) || i,
+          alt_text: img.alt_text || "",
+          is_primary: false,
+        })
+        .eq("id", img.id)
+        .eq("product_id", productId);
+      if (upd.error) {
+        throw new Error(friendlyDbError(upd.error, "Couldn’t update photo order."));
+      }
+    }
+
+    var primary =
+      list.find(function (img) {
+        return img.is_primary;
+      }) || list[0];
+    if (primary && primary.id) {
+      var setPrimary = await supabase
+        .from("product_images")
+        .update({ is_primary: true })
+        .eq("id", primary.id)
+        .eq("product_id", productId);
+      if (setPrimary.error) {
+        throw new Error(friendlyDbError(setPrimary.error, "Couldn’t set the main photo."));
+      }
+    }
+    return { warnings: [] };
+  }
+
   async function createCategory(input) {
     var supabase = await client();
     var name = String(input.name || "").trim();
@@ -690,9 +835,13 @@
     primaryImage: primaryImage,
     normalizeProductStatusFilter: normalizeProductStatusFilter,
     listProducts: listProducts,
+    fetchProducts: listProducts,
     getProduct: getProduct,
+    fetchProduct: getProduct,
     listCategories: listCategories,
+    fetchCategories: listCategories,
     listBadges: listBadges,
+    fetchBadges: listBadges,
     countProducts: countProducts,
     getDashboardCounts: getDashboardCounts,
     listRecentProducts: listRecentProducts,
@@ -701,11 +850,16 @@
     validateProductInput: validateProductInput,
     createProduct: createProduct,
     updateProduct: updateProduct,
+    changeProductStatus: changeProductStatus,
     syncProductCategories: syncProductCategories,
+    saveProductCategories: syncProductCategories,
     syncProductBadges: syncProductBadges,
+    saveProductBadges: syncProductBadges,
     validateImageFile: validateImageFile,
     uploadProductImage: uploadProductImage,
     syncProductImages: syncProductImages,
+    deleteProductImage: deleteProductImage,
+    reorderProductImages: reorderProductImages,
     deleteProduct: deleteProduct,
     createCategory: createCategory,
     updateCategory: updateCategory,

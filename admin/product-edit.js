@@ -702,8 +702,13 @@
       if (warnings.length) {
         showFlash("Saved with warnings: " + warnings.join(" "), "err");
       } else {
-        window.location.href =
-          "/admin/products.html?" + (wasNew ? "created=1" : "saved=1");
+        var q =
+          intent === "publish"
+            ? "published=1"
+            : wasNew
+              ? "created=1"
+              : "saved=1";
+        window.location.href = "/admin/products.html?" + q;
         return;
       }
     } catch (err) {

@@ -47,6 +47,22 @@
     return '<span class="stock-pill">Qty ' + SRCatalog.escapeHtml(String(q)) + "</span>";
   }
 
+  function categorySummaryHtml(p) {
+    var names = (p.categories || [])
+      .map(function (c) {
+        return c && c.name ? String(c.name) : "";
+      })
+      .filter(Boolean);
+    if (!names.length) {
+      return '<span class="product-card-cats muted">No category</span>';
+    }
+    var shown = names.slice(0, 2).join(", ");
+    if (names.length > 2) shown += " +" + (names.length - 2);
+    return (
+      '<span class="product-card-cats">' + SRCatalog.escapeHtml(shown) + "</span>"
+    );
+  }
+
   function countByStatus(status) {
     if (!status) return allProducts.length;
     return allProducts.filter(function (p) {
@@ -95,17 +111,25 @@
     var q = (document.getElementById("searchInput").value || "").trim().toLowerCase();
     var status = document.getElementById("statusFilter").value;
     var cat = document.getElementById("categoryFilter").value;
-    return allProducts.filter(function (p) {
+    var sortEl = document.getElementById("sortFilter");
+    var sort = (sortEl && sortEl.value) || "newest";
+    var rows = allProducts.filter(function (p) {
       if (status && p.status !== status) return false;
       if (q && String(p.title || "").toLowerCase().indexOf(q) === -1) return false;
       if (cat) {
         var hit = (p.categories || []).some(function (c) {
-          return c.id === cat;
+          return c && c.id === cat;
         });
         if (!hit) return false;
       }
       return true;
     });
+    rows.sort(function (a, b) {
+      var aTime = Date.parse(a.updated_at || a.created_at || 0) || 0;
+      var bTime = Date.parse(b.updated_at || b.created_at || 0) || 0;
+      return sort === "oldest" ? aTime - bTime : bTime - aTime;
+    });
+    return rows;
   }
 
   function closeActionSheet() {
@@ -154,25 +178,18 @@
     if (action === "publish" || action === "hide" || action === "sold_out") {
       try {
         var status = action === "hide" ? "hidden" : action;
-        await SRCatalog.updateProduct(
-          product.id,
-          {
-            title: product.title,
-            slug: product.slug,
-            description: product.description,
-            price: product.price,
-            sale_price: product.sale_price,
-            quantity: product.quantity,
-            item_no: product.item_no,
-            track_inventory: product.track_inventory,
-            product_type: product.product_type,
-            status: status,
-            featured: product.featured,
-          },
-          product
-        );
+        await SRCatalog.changeProductStatus(product, status);
         product.status = status;
-        showFlash("Updated to " + statusLabel(status) + ".", "ok");
+        if (status === "published" && !product.published_at) {
+          product.published_at = new Date().toISOString();
+        }
+        var flash =
+          status === "published"
+            ? "Product published."
+            : status === "hidden"
+              ? "Product hidden from the shop."
+              : "Marked sold out.";
+        showFlash(flash, "ok");
         renderStatusChips();
         renderList();
       } catch (err) {
@@ -237,6 +254,7 @@
           "</span>" +
           stockHtml(p) +
           "</div>" +
+          categorySummaryHtml(p) +
           "</div>" +
           '<button type="button" class="product-card-menu" data-menu="' +
           SRCatalog.escapeHtml(p.id) +
@@ -285,6 +303,7 @@
     var status = SRCatalog.normalizeProductStatusFilter(statusRaw);
     var search = params.get("q") || params.get("search") || "";
     var category = params.get("category") || params.get("category_id") || "";
+    var sort = params.get("sort") === "oldest" ? "oldest" : "newest";
 
     if (statusRaw != null && statusRaw !== "" && status === null) {
       showFlash("That status filter isn’t valid. Showing all products.", "err");
@@ -296,6 +315,8 @@
     if (category) {
       document.getElementById("categoryFilter").value = category;
     }
+    var sortEl = document.getElementById("sortFilter");
+    if (sortEl) sortEl.value = sort;
   }
 
   function syncFiltersToUrl() {
@@ -303,9 +324,12 @@
     var status = document.getElementById("statusFilter").value;
     var search = (document.getElementById("searchInput").value || "").trim();
     var category = document.getElementById("categoryFilter").value;
+    var sortEl = document.getElementById("sortFilter");
+    var sort = (sortEl && sortEl.value) || "newest";
     if (status) params.set("status", status);
     if (search) params.set("q", search);
     if (category) params.set("category", category);
+    if (sort && sort !== "newest") params.set("sort", sort);
     var next = params.toString();
     var url = window.location.pathname + (next ? "?" + next : "");
     window.history.replaceState({}, "", url);
@@ -377,9 +401,12 @@
     var params = new URLSearchParams(window.location.search);
     if (params.get("saved") === "1") showFlash("Product saved.", "ok");
     if (params.get("created") === "1") showFlash("Product created.", "ok");
-    ["searchInput", "statusFilter", "categoryFilter"].forEach(function (id) {
-      document.getElementById(id).addEventListener("input", onFilterChange);
-      document.getElementById(id).addEventListener("change", onFilterChange);
+    if (params.get("published") === "1") showFlash("Product published.", "ok");
+    ["searchInput", "statusFilter", "categoryFilter", "sortFilter"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", onFilterChange);
+      el.addEventListener("change", onFilterChange);
     });
     var close = document.getElementById("actionSheetClose");
     var backdrop = document.getElementById("actionSheetBackdrop");

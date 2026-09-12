@@ -2,7 +2,8 @@
 (function () {
   "use strict";
 
-  // Demo catalog kept for local / pre-cutover use when USE_LIVE_CATALOG is not true.
+  // Demo catalog kept only when USE_LIVE_CATALOG is not true.
+  // When live catalog is enabled, this array is never used as a fallback.
   const DEMO_PRODUCTS = [
     {
       id: "cow",

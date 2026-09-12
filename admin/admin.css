@@ -1673,6 +1673,19 @@ body.more-sheet-open {
   flex-wrap: wrap;
 }
 
+.product-card-cats {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--ink-muted, #6b5e55);
+  font-size: 0.78rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.product-card-cats.muted {
+  opacity: 0.75;
+}
+
 .stock-pill {
   display: inline-flex;
   padding: 0.2rem 0.5rem;
