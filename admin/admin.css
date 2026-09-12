@@ -51,6 +51,11 @@ a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 h1, h2, h3 { font-family: var(--serif); color: var(--charcoal); margin: 0; line-height: 1.15; }
 
+/* Ensure [hidden] wins over display:grid on .admin-gate / .admin-app */
+[hidden] {
+  display: none !important;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
