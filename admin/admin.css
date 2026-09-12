@@ -679,71 +679,79 @@ h1, h2, h3 { font-family: var(--serif); color: var(--charcoal); margin: 0; line-
 .photo-meta label { display: grid; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; }
 .photo-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.55rem; }
 
-/* Storefront-like preview card */
+/* Storefront-like preview card (matches Southwestern shop cards) */
 .store-card {
-  background: #fffcf8;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: #fbf6ee;
+  border: 1px solid rgba(58, 42, 34, 0.1);
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 20px -14px rgba(58, 42, 34, 0.4);
   display: flex;
   flex-direction: column;
 }
 .store-card-img {
   position: relative;
-  aspect-ratio: 4 / 3;
-  background: #c7c0b4;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(160deg, #e6d6c0, #f3eadc);
   overflow: hidden;
 }
-.store-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.store-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: 0.85rem;
+}
 .store-card-placeholder {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  color: #6b655c;
+  color: #6e5749;
   font-size: 0.9rem;
 }
 .store-card-tag {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: #9d5630;
+  background: #8f3f24;
   color: #fff;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.32rem 0.7rem;
-  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
 }
-.store-card-tag--soft { background: #2f2c28; }
+.store-card-tag--soft { background: #2f6f6d; }
 .store-card-sold {
   position: absolute;
   right: 12px;
-  bottom: 12px;
-  background: rgba(47, 44, 40, 0.88);
+  top: 12px;
+  background: rgba(58, 42, 34, 0.88);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
 }
-.store-card.is-sold-out .store-card-img img { filter: grayscale(0.35) brightness(0.92); }
+.store-card.is-sold-out .store-card-img img { filter: grayscale(0.4) brightness(0.94); }
 .store-card-body {
-  padding: 1.1rem 1.15rem 1.2rem;
+  padding: 1.05rem 1.15rem 1.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  border-top: 1px solid rgba(58, 42, 34, 0.06);
 }
 .store-card-body h3 {
   font-family: var(--serif);
-  font-size: 1.25rem;
+  font-size: 1.22rem;
   margin: 0;
+  color: #3a2a22;
 }
 .store-card-desc {
   margin: 0;
-  color: #6b655c;
+  color: #6e5749;
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -757,15 +765,16 @@ h1, h2, h3 { font-family: var(--serif); color: var(--charcoal); margin: 0; line-
   font-family: var(--serif);
   font-size: 1.25rem;
   font-weight: 600;
-  color: #9d5630;
+  color: #8f3f24;
 }
 .store-card-add {
-  border: 1px solid rgba(47, 44, 40, 0.18);
+  border: 1.5px solid rgba(58, 42, 34, 0.16);
   border-radius: 999px;
-  padding: 0.35rem 0.85rem;
+  padding: 0.4rem 0.9rem;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #3a352f;
+  font-weight: 700;
+  color: #3a2a22;
+  background: #f3eadc;
 }
 
 .cat-form { margin-top: 0.75rem; }

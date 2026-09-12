@@ -4,25 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>S &amp; R Crafts Concrete Creations — Handmade Concrete Decor</title>
-  <meta name="description" content="S & R Crafts Concrete Creations — small-batch, hand-cast concrete homeware. Planters, candle holders, vases, and earthy decor made by hand." />
+  <meta name="description" content="S &amp; R Crafts Concrete Creations — small-batch, hand-cast concrete art for home and garden. Planters, pavers, figurines, and custom pieces." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <a class="skip-link" href="#products">Skip to collection</a>
+
   <!-- Header -->
   <header class="site-header">
-    <nav class="nav container">
-      <a href="#products" class="brand" aria-label="S &amp; R Crafts Concrete Art — home">
-        <img class="brand-logo" src="assets/logo-crop.png" alt="S &amp; R Crafts Concrete Art" />
+    <nav class="nav container" aria-label="Primary">
+      <a href="#top" class="brand" aria-label="S &amp; R Crafts Concrete Creations — home">
+        <img class="brand-logo" src="assets/logo-crop.png" alt="S &amp; R Crafts Concrete Art" width="160" height="48" />
       </a>
-      <ul class="nav-links">
-        <li><a href="#products">Shop</a></li>
-        <li><a href="#about">About</a></li>
-      </ul>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        id="navToggle"
+        aria-expanded="false"
+        aria-controls="primaryNav"
+        aria-label="Open menu"
+      >
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+      </button>
+
+      <div class="nav-panel" id="primaryNav">
+        <ul class="nav-links">
+          <li><a href="#products">Shop</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </div>
+
       <button class="cart-btn" id="cartOpen" aria-label="Open cart">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" />
           <path d="M2.5 3h2.2l2.1 11.4a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21.5 7H6" />
         </svg>
@@ -31,14 +50,50 @@
     </nav>
   </header>
 
+  <!-- Hero -->
+  <section class="hero" id="top" aria-labelledby="heroTitle">
+    <div class="hero-sky" aria-hidden="true">
+      <svg class="hero-mesas" viewBox="0 0 1440 220" preserveAspectRatio="none" focusable="false">
+        <path fill="rgba(143,63,36,0.18)" d="M0 220V120c80-40 160-70 260-60 90 9 140 50 230 48 95-2 150-55 250-58 110-3 170 48 270 52 90 4 170-30 250-20v138H0z"/>
+        <path fill="rgba(47,111,109,0.12)" d="M0 220V150c120-30 220-55 340-40 100 12 150 40 250 36 120-5 180-50 300-45 100 4 180 40 280 30 90-9 170-35 270-20v109H0z"/>
+        <path fill="rgba(58,42,34,0.16)" d="M0 220v-40c140-20 260-50 400-35 130 14 200 40 330 34 140-7 220-48 360-40 120 7 220 30 350 20v61H0z"/>
+      </svg>
+      <div class="hero-sun"></div>
+      <div class="hero-arch hero-arch--left"></div>
+      <div class="hero-arch hero-arch--right"></div>
+    </div>
+
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="hero-brand">S &amp; R Crafts Concrete Creations</p>
+        <h1 id="heroTitle">Handcrafted concrete for home &amp; garden</h1>
+        <p class="hero-lead">Small-batch pieces cast by hand — planters, pavers, figurines, and custom art with warm desert spirit.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#products">Shop the Collection</a>
+        </div>
+      </div>
+
+      <div class="hero-gallery" id="heroGallery" aria-label="Featured pieces from the collection">
+        <div class="hero-gallery-status" id="heroGalleryStatus">Loading pieces…</div>
+        <div class="hero-mosaic" id="heroMosaic" hidden></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Products -->
   <section id="products" class="products">
     <div class="container">
       <div class="section-head">
         <p class="section-eyebrow">The Collection</p>
         <h2>Cast in concrete</h2>
-        <p class="section-lead">Tap any piece for a closer look.</p>
+        <p class="section-lead">Browse the live shop. Tap any piece for a closer look.</p>
       </div>
+
+      <div class="collection-filters" id="collectionFilters" hidden>
+        <p class="filters-label" id="filtersLabel">Filter by category</p>
+        <div class="filter-chips" id="filterChips" role="group" aria-labelledby="filtersLabel"></div>
+      </div>
+
       <div class="catalog-status" id="catalogStatus" hidden></div>
       <div class="product-grid" id="productGrid"><!-- injected by JS --></div>
     </div>
@@ -48,8 +103,10 @@
   <section id="about" class="about">
     <div class="container about-inner">
       <div class="about-media" aria-hidden="true">
-        <div class="about-photo"></div>
-        <span class="about-badge">Est. <strong>2021</strong></span>
+        <div class="about-frame">
+          <div class="about-photo" id="aboutPhoto"></div>
+        </div>
+        <div class="about-plaster"></div>
       </div>
       <div class="about-copy">
         <p class="section-eyebrow">About S &amp; R Crafts</p>
@@ -58,13 +115,9 @@
           your yard and home — from pavers and planters to garden figurines and custom
           pieces. Each item is handcrafted from cement, cement-all, or plaster of Paris.
           Choose from our selection of unpainted or beautifully finished painted pieces.
-          Custom orders are welcome. We're at the Farmer's Market every Saturday, and we
-          also offer local delivery and meetups. It's not your grandma's ceramics!</p>
-        <ul class="about-stats">
-          <li><span class="stat-num">1.2k+</span><span class="stat-label">Pieces poured</span></li>
-          <li><span class="stat-num">100%</span><span class="stat-label">Hand-cast</span></li>
-          <li><span class="stat-num">5 yrs</span><span class="stat-label">In the studio</span></li>
-        </ul>
+          Custom orders are welcome. We’re at the Farmer’s Market every Saturday, and we
+          also offer local delivery and meetups.</p>
+        <p class="about-aside">It’s not your grandma’s ceramics.</p>
       </div>
     </div>
   </section>
@@ -72,13 +125,11 @@
   <!-- Footer -->
   <footer class="site-footer">
     <div class="container footer-inner">
-      <span class="footer-brand">S &amp; R Crafts Concrete Creations</span>
-      <p class="footer-note">Hand-cast in small batches · © 2026 S &amp; R Crafts · Checkout is demo-only until real ordering is connected</p>
-      <ul class="footer-social">
-        <li><a href="#">Instagram</a></li>
-        <li><a href="#">Pinterest</a></li>
-        <li><a href="#">Etsy</a></li>
-      </ul>
+      <div class="footer-brand-block">
+        <span class="footer-brand">S &amp; R Crafts Concrete Creations</span>
+        <p class="footer-note">Hand-cast in small batches · © 2026 S &amp; R Crafts</p>
+      </div>
+      <p class="footer-demo">Checkout on this site is <strong>demo-only</strong> until real ordering is connected. No payment is processed and no order is placed.</p>
     </div>
   </footer>
 
@@ -95,12 +146,12 @@
         <div class="modal-qty">
           <span>Qty</span>
           <div class="qty-control">
-            <button id="modalMinus" aria-label="Decrease quantity">−</button>
+            <button type="button" id="modalMinus" aria-label="Decrease quantity">−</button>
             <span id="modalQty">1</span>
-            <button id="modalPlus" aria-label="Increase quantity">+</button>
+            <button type="button" id="modalPlus" aria-label="Increase quantity">+</button>
           </div>
         </div>
-        <button class="btn btn-primary modal-add" id="modalAdd">Add to Cart</button>
+        <button type="button" class="btn btn-primary modal-add" id="modalAdd">Add to Cart</button>
       </div>
     </div>
   </div>
@@ -110,7 +161,7 @@
   <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
     <div class="cart-head">
       <h3>Your Cart</h3>
-      <button class="cart-close" id="cartClose" aria-label="Close cart">&times;</button>
+      <button type="button" class="cart-close" id="cartClose" aria-label="Close cart">&times;</button>
     </div>
     <div class="cart-items" id="cartItems"><!-- injected --></div>
     <div class="cart-empty" id="cartEmpty">
@@ -119,38 +170,38 @@
     </div>
     <div class="cart-foot" id="cartFoot">
       <div class="cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
-      <button class="btn btn-primary cart-checkout" id="cartCheckout">Checkout</button>
-      <p class="cart-note">Free shipping over $50 (demo estimate) · No real checkout yet</p>
+      <button type="button" class="btn btn-primary cart-checkout" id="cartCheckout">Checkout (demo)</button>
+      <p class="cart-note">Shipping estimate for demo only · No real checkout yet</p>
     </div>
   </aside>
 
   <!-- ===== Checkout Overlay ===== -->
   <div class="checkout" id="checkout" aria-hidden="true">
     <div class="checkout-inner">
-      <button class="checkout-close" id="checkoutClose" aria-label="Close checkout">&times;</button>
+      <button type="button" class="checkout-close" id="checkoutClose" aria-label="Close checkout">&times;</button>
       <div class="checkout-grid">
         <form class="checkout-form" id="checkoutForm">
           <h2>Checkout (demo)</h2>
           <p class="checkout-sub">No payment is processed and no real order is placed. Stock is not reserved. Real ordering is not connected yet.</p>
           <fieldset>
             <legend>Contact</legend>
-            <label>Full name<input type="text" required placeholder="Sam Rivera" /></label>
-            <label>Email<input type="email" required placeholder="sam@example.com" /></label>
+            <label>Full name<input type="text" required autocomplete="name" placeholder="Your name" /></label>
+            <label>Email<input type="email" required autocomplete="email" placeholder="you@example.com" /></label>
           </fieldset>
           <fieldset>
             <legend>Shipping</legend>
-            <label>Address<input type="text" required placeholder="14 Foundry Street" /></label>
+            <label>Address<input type="text" required autocomplete="street-address" placeholder="Street address" /></label>
             <div class="form-row">
-              <label>City<input type="text" required placeholder="Portland" /></label>
-              <label>ZIP<input type="text" required placeholder="97201" /></label>
+              <label>City<input type="text" required autocomplete="address-level2" placeholder="City" /></label>
+              <label>ZIP<input type="text" required autocomplete="postal-code" placeholder="ZIP" /></label>
             </div>
           </fieldset>
           <fieldset>
-            <legend>Payment</legend>
-            <label>Card number<input type="text" inputmode="numeric" required placeholder="4242 4242 4242 4242" /></label>
+            <legend>Payment (demo fields)</legend>
+            <label>Card number<input type="text" inputmode="numeric" required placeholder="•••• •••• •••• ••••" autocomplete="off" /></label>
             <div class="form-row">
-              <label>Expiry<input type="text" required placeholder="12/28" /></label>
-              <label>CVC<input type="text" required placeholder="123" /></label>
+              <label>Expiry<input type="text" required placeholder="MM/YY" autocomplete="off" /></label>
+              <label>CVC<input type="text" required placeholder="CVC" autocomplete="off" /></label>
             </div>
           </fieldset>
           <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay">Continue demo · <span id="checkoutPayAmt"></span></button>
@@ -161,23 +212,23 @@
           <div class="summary-line"><span>Subtotal</span><span id="sumSubtotal">$0.00</span></div>
           <div class="summary-line"><span>Shipping</span><span id="sumShipping">$0.00</span></div>
           <div class="summary-line summary-total"><span>Total</span><span id="sumTotal">$0.00</span></div>
+          <p class="checkout-demo-note">This is a layout walkthrough only.</p>
         </aside>
       </div>
 
-      <!-- Success state -->
       <div class="checkout-success" id="checkoutSuccess" hidden>
         <div class="success-check" aria-hidden="true">
-          <svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="24" fill="none" stroke="#a8612f" stroke-width="3"/><path fill="none" stroke="#a8612f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M15 27l8 8 15-16"/></svg>
+          <svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="3"/><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M15 27l8 8 15-16"/></svg>
         </div>
         <h2>Demo checkout only</h2>
         <p>No order was placed (<strong id="orderNum">DEMO-ONLY</strong>). Payment and inventory are not connected yet.</p>
-        <button class="btn btn-primary" id="successDone">Keep shopping</button>
+        <button type="button" class="btn btn-primary" id="successDone">Keep shopping</button>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
