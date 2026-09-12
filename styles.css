@@ -936,7 +936,12 @@ img { max-width: 100%; display: block; }
   .hero {
     min-height: clamp(24rem, 78vh, 32rem);
   }
-  .hero-bg-img { object-position: 78% 40%; }
+  /*
+    Mobile crop for <img object-fit:cover> (same role as background-position).
+    Skull sits ~58% across the photo. ~50% object-position places it mid-right,
+    clear of the left CTA. (78% put it under the button; very low % crops it off.)
+  */
+  .hero-bg-img { object-position: 50% 50%; }
   .hero-copy h1 { font-size: clamp(1.75rem, 8vw, 2.25rem); max-width: none; }
   .hero-brand { font-size: 1.05rem; }
   .trust-grid { grid-template-columns: 1fr 1fr; gap: 1.4rem 0.85rem; }
@@ -946,9 +951,27 @@ img { max-width: 100%; display: block; }
   .brand-logo { height: 40px; width: 40px; }
 }
 
+/* Fine-tune phone widths — nudge skull farther right as the viewport narrows */
+@media (max-width: 430px) {
+  .hero-bg-img { object-position: 48% 50%; }
+}
+
+@media (max-width: 412px) {
+  .hero-bg-img { object-position: 47% 50%; }
+}
+
+@media (max-width: 390px) {
+  .hero-bg-img { object-position: 46% 50%; }
+}
+
 @media (max-width: 360px) {
   .hero-actions .btn { width: 100%; }
   .hero-lead { font-size: 0.98rem; }
+  .hero-bg-img { object-position: 44% 50%; }
+}
+
+@media (max-width: 320px) {
+  .hero-bg-img { object-position: 42% 50%; }
 }
 
 /* Hover motion only on true hover pointers — touch relies on :active / focus */
