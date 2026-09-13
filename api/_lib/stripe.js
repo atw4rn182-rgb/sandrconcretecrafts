@@ -45,6 +45,17 @@ function appendForm(params, key, value) {
  * @param {object} [input.metadata]
  */
 async function createCheckoutSession(input) {
+  // TEMP debug — remove after diagnosing STRIPE_ALLOW_LIVE on Vercel (never logs secrets).
+  var allowLivePasses = stripeLiveAllowed();
+  console.log(
+    "[stripe-debug] " +
+      JSON.stringify({
+        STRIPE_ALLOW_LIVE: process.env.STRIPE_ALLOW_LIVE,
+        STRIPE_ALLOW_TRUE: process.env.STRIPE_ALLOW_TRUE,
+        allowLivePasses: allowLivePasses,
+      })
+  );
+
   var secret = stripeSecretKey();
   if (!secret) {
     var err = new Error("Stripe isn’t configured on the server yet.");
@@ -53,9 +64,9 @@ async function createCheckoutSession(input) {
   }
   // Block live secret / restricted keys until STRIPE_ALLOW_LIVE=true.
   if (/^(sk_live_|rk_live_)/.test(secret)) {
-    if (!stripeLiveAllowed()) {
+    if (!allowLivePasses) {
       var liveErr = new Error(
-        "Live Stripe keys are blocked. In Vercel set STRIPE_ALLOW_LIVE=true (Production, available to Functions), then redeploy."
+        "Live Stripe keys are blocked until STRIPE_ALLOW_LIVE=true"
       );
       liveErr.code = "STRIPE_LIVE_BLOCKED";
       throw liveErr;
