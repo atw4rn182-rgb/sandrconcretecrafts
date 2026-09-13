@@ -836,7 +836,20 @@
   function syncCheckoutButtonLabel() {
     var btn = $("#cartCheckout");
     if (!btn) return;
-    btn.textContent = stripeCheckoutEnabled() ? "Checkout" : "Checkout (demo)";
+    var enabled = stripeCheckoutEnabled();
+    var env = window.__SR_ENV__ || {};
+    btn.textContent = enabled ? "Checkout" : "Checkout (demo)";
+    btn.setAttribute("data-use-stripe-checkout", enabled ? "true" : "false");
+    btn.setAttribute(
+      "data-sr-build-commit",
+      env.BUILD_COMMIT ? String(env.BUILD_COMMIT) : ""
+    );
+    // Visible in DevTools → Elements on #cartCheckout, and here in the console.
+    console.log("[sr-checkout]", {
+      USE_STRIPE_CHECKOUT: env.USE_STRIPE_CHECKOUT,
+      enabled: enabled,
+      BUILD_COMMIT: env.BUILD_COMMIT || null,
+    });
   }
 
   var stripeCheckoutBusy = false;

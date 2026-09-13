@@ -22,4 +22,6 @@ window.__SR_ENV__ = {
   USE_LIVE_CATALOG: false,
   // Keep false until Stripe test Checkout is configured (server secrets + webhook).
   USE_STRIPE_CHECKOUT: false,
+  // Set at build time on Vercel (VERCEL_GIT_COMMIT_SHA) — null locally.
+  BUILD_COMMIT: null,
 };
