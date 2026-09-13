@@ -62,35 +62,64 @@ function normalizeItems(body) {
   return [];
 }
 
+/** Non-secret allow-live snapshot for error JSON (never includes Stripe keys). */
+function allowLiveFields() {
+  var d =
+    (stripe.stripeAllowLiveDebug && stripe.stripeAllowLiveDebug()) ||
+    {
+      STRIPE_ALLOW_LIVE: null,
+      STRIPE_ALLOW_TRUE: null,
+      allowLivePasses: false,
+    };
+  return {
+    STRIPE_ALLOW_LIVE: d.STRIPE_ALLOW_LIVE,
+    STRIPE_ALLOW_TRUE: d.STRIPE_ALLOW_TRUE,
+    allowLivePasses: !!d.allowLivePasses,
+  };
+}
+
+function mergeAllowLive(payload) {
+  var fields = allowLiveFields();
+  payload.STRIPE_ALLOW_LIVE = fields.STRIPE_ALLOW_LIVE;
+  payload.STRIPE_ALLOW_TRUE = fields.STRIPE_ALLOW_TRUE;
+  payload.allowLivePasses = fields.allowLivePasses;
+  return payload;
+}
+
 module.exports = async function handler(req, res) {
-  setCors(req, res);
-
-  if (req.method === "OPTIONS") {
-    res.statusCode = 204;
-    res.end();
-    return;
-  }
-
-  if (req.method !== "POST") {
-    sendJson(res, 405, { error: "Use POST to start checkout." });
-    return;
-  }
-
-  if (!stripe.stripeSecretKey()) {
-    sendJson(res, 503, {
-      error: "Stripe Checkout isn’t configured yet. Demo checkout still works on the site.",
-      code: "STRIPE_NOT_CONFIGURED",
-    });
-    return;
-  }
-
   try {
+    setCors(req, res);
+
+    if (req.method === "OPTIONS") {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+
+    if (req.method !== "POST") {
+      sendJson(res, 405, mergeAllowLive({ error: "Use POST to start checkout." }));
+      return;
+    }
+
+    if (!stripe.stripeSecretKey()) {
+      sendJson(
+        res,
+        503,
+        mergeAllowLive({
+          error:
+            "Stripe Checkout isn’t configured yet. Demo checkout still works on the site.",
+          code: "STRIPE_NOT_CONFIGURED",
+        })
+      );
+      return;
+    }
+
     var body = req.body;
     if (typeof body === "string") {
       try {
         body = JSON.parse(body || "{}");
       } catch (e) {
-        sendJson(res, 400, { error: "Invalid JSON body." });
+        sendJson(res, 400, mergeAllowLive({ error: "Invalid JSON body." }));
         return;
       }
     }
@@ -100,13 +129,21 @@ module.exports = async function handler(req, res) {
       return row && row.id;
     });
     if (!requested.length) {
-      sendJson(res, 400, {
-        error: "Add at least one product before checking out.",
-      });
+      sendJson(
+        res,
+        400,
+        mergeAllowLive({
+          error: "Add at least one product before checking out.",
+        })
+      );
       return;
     }
     if (requested.length > 40) {
-      sendJson(res, 400, { error: "Too many items in one checkout." });
+      sendJson(
+        res,
+        400,
+        mergeAllowLive({ error: "Too many items in one checkout." })
+      );
       return;
     }
 
@@ -128,7 +165,7 @@ module.exports = async function handler(req, res) {
       var row = await catalog.fetchPublicProduct(productId);
       var check = catalog.assertPurchasable(row, qtyById[productId]);
       if (!check.ok) {
-        sendJson(res, 400, { error: check.error });
+        sendJson(res, 400, mergeAllowLive({ error: check.error }));
         return;
       }
 
@@ -154,7 +191,11 @@ module.exports = async function handler(req, res) {
     });
 
     if (!session || !session.url) {
-      sendJson(res, 502, { error: "Stripe didn’t return a checkout URL." });
+      sendJson(
+        res,
+        502,
+        mergeAllowLive({ error: "Stripe didn’t return a checkout URL." })
+      );
       return;
     }
 
@@ -164,22 +205,55 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     var code = err && err.code;
-    if (code === "STRIPE_NOT_CONFIGURED" || code === "STRIPE_LIVE_BLOCKED") {
-      var payload = {
-        error: err.message || "Stripe isn’t ready.",
-        code: code,
-      };
-      // TEMP: non-secret allow-live snapshot so DevTools Network shows what
-      // the function received (never includes Stripe secret keys).
-      if (code === "STRIPE_LIVE_BLOCKED" && err.debug) {
-        payload.debug = err.debug;
-      }
-      sendJson(res, 503, payload);
+    var message = (err && err.message) || String(err);
+
+    console.error("[create-checkout-session] exception", {
+      code: code || null,
+      message: message,
+      name: err && err.name,
+      status: err && err.status,
+      stack: err && err.stack,
+      allowLive: allowLiveFields(),
+    });
+
+    // Live-key safety gate — always 503 with flat allow-live fields (never generic).
+    if (code === "STRIPE_LIVE_BLOCKED") {
+      var liveDebug = (err && err.debug) || allowLiveFields();
+      sendJson(
+        res,
+        503,
+        {
+          error: message || "Live payments aren’t enabled on the server yet.",
+          code: "STRIPE_LIVE_BLOCKED",
+          STRIPE_ALLOW_LIVE: liveDebug.STRIPE_ALLOW_LIVE,
+          STRIPE_ALLOW_TRUE: liveDebug.STRIPE_ALLOW_TRUE,
+          allowLivePasses: !!liveDebug.allowLivePasses,
+        }
+      );
       return;
     }
-    console.error("[create-checkout-session]", code || "error", err && err.message);
-    sendJson(res, 500, {
-      error: "Couldn’t start checkout. Please try again.",
-    });
+
+    if (code === "STRIPE_NOT_CONFIGURED") {
+      sendJson(
+        res,
+        503,
+        mergeAllowLive({
+          error: message || "Stripe isn’t ready.",
+          code: "STRIPE_NOT_CONFIGURED",
+        })
+      );
+      return;
+    }
+
+    // Unexpected errors (incl. STRIPE_API_ERROR): still return JSON + allow-live debug.
+    sendJson(
+      res,
+      500,
+      mergeAllowLive({
+        error: "Couldn’t start checkout. Please try again.",
+        code: code || "CHECKOUT_ERROR",
+        detail: message,
+      })
+    );
   }
 };
