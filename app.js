@@ -898,9 +898,8 @@
       }
 
       if (!res.ok || !data || !data.url) {
-        var msg =
-          (data && data.error) ||
-          "Couldn’t start checkout. Please try again.";
+        // Client only gates on USE_STRIPE_CHECKOUT (see stripeCheckoutEnabled).
+        // Never read or act on STRIPE_ALLOW_LIVE here — that is server-only.
         if (data && data.code === "STRIPE_NOT_CONFIGURED") {
           toast(
             "Stripe isn’t configured on the server yet — opening demo checkout."
@@ -908,7 +907,19 @@
           await openDemoCheckout();
           return;
         }
-        toast(msg);
+        if (data && data.code === "STRIPE_LIVE_BLOCKED") {
+          // TEMP: surface non-secret server debug in the console for owners.
+          if (data.debug) {
+            console.warn("[checkout] server allow-live debug", data.debug);
+          }
+          toast(
+            "Checkout couldn’t start — the server isn’t ready for live payments yet. Please try again shortly."
+          );
+          return;
+        }
+        toast(
+          (data && data.error) || "Couldn’t start checkout. Please try again."
+        );
         return;
       }
 

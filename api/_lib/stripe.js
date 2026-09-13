@@ -10,18 +10,55 @@ function env(name) {
   return String(process.env[name] || "").trim();
 }
 
+/** Read env by exact name, then case-insensitive key match (Vercel typo safety). */
+function envLoose(name) {
+  var direct = process.env[name];
+  if (direct != null && String(direct).trim() !== "") {
+    return String(direct).trim();
+  }
+  var want = String(name).toLowerCase();
+  var keys = Object.keys(process.env || {});
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i]).toLowerCase() === want) {
+      var v = process.env[keys[i]];
+      if (v != null && String(v).trim() !== "") return String(v).trim();
+    }
+  }
+  return "";
+}
+
+function normalizeFlagValue(raw) {
+  // Strip wrapping quotes and whitespace; accept common truthy forms.
+  var s = String(raw == null ? "" : raw)
+    .trim()
+    .replace(/^['"]+|['"]+$/g, "")
+    .trim()
+    .toLowerCase();
+  return s === "true" || s === "1" || s === "yes" || s === "on";
+}
+
 function envFlagTrue() {
   // Prefer the canonical Vercel name; keep STRIPE_ALLOW_TRUE as a typo/alias.
   var names = Array.prototype.slice.call(arguments);
   for (var i = 0; i < names.length; i++) {
-    var raw = env(names[i]);
-    if (raw && raw.toLowerCase() === "true") return true;
+    if (normalizeFlagValue(envLoose(names[i]))) return true;
   }
   return false;
 }
 
 function stripeLiveAllowed() {
   return envFlagTrue("STRIPE_ALLOW_LIVE", "STRIPE_ALLOW_TRUE");
+}
+
+/** Non-secret snapshot for temporary checkout diagnostics (never includes keys). */
+function stripeAllowLiveDebug() {
+  var liveRaw = envLoose("STRIPE_ALLOW_LIVE");
+  var trueRaw = envLoose("STRIPE_ALLOW_TRUE");
+  return {
+    STRIPE_ALLOW_LIVE: liveRaw === "" ? null : liveRaw,
+    STRIPE_ALLOW_TRUE: trueRaw === "" ? null : trueRaw,
+    allowLivePasses: stripeLiveAllowed(),
+  };
 }
 
 function stripeSecretKey() {
@@ -45,16 +82,9 @@ function appendForm(params, key, value) {
  * @param {object} [input.metadata]
  */
 async function createCheckoutSession(input) {
-  // TEMP debug — remove after diagnosing STRIPE_ALLOW_LIVE on Vercel (never logs secrets).
-  var allowLivePasses = stripeLiveAllowed();
-  console.log(
-    "[stripe-debug] " +
-      JSON.stringify({
-        STRIPE_ALLOW_LIVE: process.env.STRIPE_ALLOW_LIVE,
-        STRIPE_ALLOW_TRUE: process.env.STRIPE_ALLOW_TRUE,
-        allowLivePasses: allowLivePasses,
-      })
-  );
+  // TEMP debug — remove after diagnosing allow-live on Vercel (never logs secrets).
+  var allowDebug = stripeAllowLiveDebug();
+  console.log("[stripe-debug] " + JSON.stringify(allowDebug));
 
   var secret = stripeSecretKey();
   if (!secret) {
@@ -62,13 +92,14 @@ async function createCheckoutSession(input) {
     err.code = "STRIPE_NOT_CONFIGURED";
     throw err;
   }
-  // Block live secret / restricted keys until STRIPE_ALLOW_LIVE=true.
+  // Block live secret / restricted keys until STRIPE_ALLOW_LIVE is truthy (server-only).
   if (/^(sk_live_|rk_live_)/.test(secret)) {
-    if (!allowLivePasses) {
+    if (!allowDebug.allowLivePasses) {
       var liveErr = new Error(
-        "Live Stripe keys are blocked until STRIPE_ALLOW_LIVE=true"
+        "Live payments aren’t enabled on the server yet."
       );
       liveErr.code = "STRIPE_LIVE_BLOCKED";
+      liveErr.debug = allowDebug;
       throw liveErr;
     }
   }
@@ -289,4 +320,5 @@ module.exports = {
   constructEvent: constructEvent,
   readRawBody: readRawBody,
   stripeLiveAllowed: stripeLiveAllowed,
+  stripeAllowLiveDebug: stripeAllowLiveDebug,
 };

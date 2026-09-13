@@ -165,10 +165,16 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     var code = err && err.code;
     if (code === "STRIPE_NOT_CONFIGURED" || code === "STRIPE_LIVE_BLOCKED") {
-      sendJson(res, 503, {
+      var payload = {
         error: err.message || "Stripe isn’t ready.",
         code: code,
-      });
+      };
+      // TEMP: non-secret allow-live snapshot so DevTools Network shows what
+      // the function received (never includes Stripe secret keys).
+      if (code === "STRIPE_LIVE_BLOCKED" && err.debug) {
+        payload.debug = err.debug;
+      }
+      sendJson(res, 503, payload);
       return;
     }
     console.error("[create-checkout-session]", code || "error", err && err.message);
