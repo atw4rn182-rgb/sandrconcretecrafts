@@ -46,9 +46,17 @@ const useLiveCatalog =
   String(process.env.USE_LIVE_CATALOG || "").trim().toLowerCase() === "true";
 
 // Public feature flag only — never write Stripe secrets into js/env.js.
-// Keep false until /api/create-checkout-session works with test keys.
-const useStripeCheckout =
-  String(process.env.USE_STRIPE_CHECKOUT || "").trim().toLowerCase() === "true";
+// Keep false until /api/create-checkout-session works with keys + webhook.
+// Primary name: USE_STRIPE_CHECKOUT (set this in Vercel Production).
+const useStripeCheckoutRaw = String(
+  process.env.USE_STRIPE_CHECKOUT ||
+    process.env.NEXT_PUBLIC_USE_STRIPE_CHECKOUT ||
+    process.env.PUBLIC_USE_STRIPE_CHECKOUT ||
+    ""
+)
+  .trim()
+  .toLowerCase();
+const useStripeCheckout = useStripeCheckoutRaw === "true";
 
 if (!configured) {
   console.warn(

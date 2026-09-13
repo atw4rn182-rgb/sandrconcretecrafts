@@ -10,6 +10,20 @@ function env(name) {
   return String(process.env[name] || "").trim();
 }
 
+function envFlagTrue() {
+  // Prefer the canonical Vercel name; keep STRIPE_ALLOW_TRUE as a typo/alias.
+  var names = Array.prototype.slice.call(arguments);
+  for (var i = 0; i < names.length; i++) {
+    var raw = env(names[i]);
+    if (raw && raw.toLowerCase() === "true") return true;
+  }
+  return false;
+}
+
+function stripeLiveAllowed() {
+  return envFlagTrue("STRIPE_ALLOW_LIVE", "STRIPE_ALLOW_TRUE");
+}
+
 function stripeSecretKey() {
   return env("STRIPE_SECRET_KEY");
 }
@@ -39,9 +53,9 @@ async function createCheckoutSession(input) {
   }
   // Block live secret / restricted keys until STRIPE_ALLOW_LIVE=true.
   if (/^(sk_live_|rk_live_)/.test(secret)) {
-    if (env("STRIPE_ALLOW_LIVE") !== "true") {
+    if (!stripeLiveAllowed()) {
       var liveErr = new Error(
-        "Live Stripe keys are blocked until STRIPE_ALLOW_LIVE=true."
+        "Live Stripe keys are blocked. In Vercel set STRIPE_ALLOW_LIVE=true (Production, available to Functions), then redeploy."
       );
       liveErr.code = "STRIPE_LIVE_BLOCKED";
       throw liveErr;
@@ -263,4 +277,5 @@ module.exports = {
   retrieveCheckoutSession: retrieveCheckoutSession,
   constructEvent: constructEvent,
   readRawBody: readRawBody,
+  stripeLiveAllowed: stripeLiveAllowed,
 };

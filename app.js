@@ -218,7 +218,11 @@
 
   function stripeCheckoutEnabled() {
     var env = window.__SR_ENV__ || {};
-    return String(env.USE_STRIPE_CHECKOUT || "").toLowerCase() === "true";
+    // Build writes a real boolean; also accept the string "true".
+    return (
+      env.USE_STRIPE_CHECKOUT === true ||
+      String(env.USE_STRIPE_CHECKOUT || "").toLowerCase() === "true"
+    );
   }
 
   let products = liveMode ? [] : DEMO_PRODUCTS.slice();
