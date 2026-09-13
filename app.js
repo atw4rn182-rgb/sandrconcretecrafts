@@ -216,6 +216,11 @@
   const Cat = window.SRStorefrontCatalog || null;
   const liveMode = !!(Cat && Cat.useLiveCatalog && Cat.useLiveCatalog());
 
+  function stripeCheckoutEnabled() {
+    var env = window.__SR_ENV__ || {};
+    return String(env.USE_STRIPE_CHECKOUT || "").toLowerCase() === "true";
+  }
+
   let products = liveMode ? [] : DEMO_PRODUCTS.slice();
   let catalogReady = !liveMode;
   let catalogError = null;
@@ -824,11 +829,98 @@
     }
   }
 
-  async function openCheckout() {
+  function syncCheckoutButtonLabel() {
+    var btn = $("#cartCheckout");
+    if (!btn) return;
+    btn.textContent = stripeCheckoutEnabled() ? "Checkout" : "Checkout (demo)";
+  }
+
+  var stripeCheckoutBusy = false;
+
+  async function startStripeCheckout() {
+    if (stripeCheckoutBusy) return;
     if (cart.length === 0) {
       toast("Your cart is empty");
       return;
     }
+    if (!liveMode) {
+      toast(
+        "Real checkout needs the live catalog. Demo checkout is still available when Stripe is off."
+      );
+      return;
+    }
+
+    var ok = await refreshCatalogBeforeCheckout();
+    if (!ok) return;
+    reconcileCart(true);
+    if (cart.length === 0) {
+      toast("Your cart no longer has available items.");
+      updateCart();
+      return;
+    }
+
+    var items = cart
+      .map(function (l) {
+        var p = findProduct(l.id);
+        if (!p || !canPurchase(p)) return null;
+        return { id: l.id, quantity: l.qty };
+      })
+      .filter(Boolean);
+
+    if (!items.length) {
+      toast("Your cart no longer has available items.");
+      return;
+    }
+
+    stripeCheckoutBusy = true;
+    var btn = $("#cartCheckout");
+    var prevLabel = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Starting checkout…";
+    }
+
+    try {
+      var res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ items: items }),
+      });
+      var data = null;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        data = null;
+      }
+
+      if (!res.ok || !data || !data.url) {
+        var msg =
+          (data && data.error) ||
+          "Couldn’t start checkout. Please try again.";
+        if (data && data.code === "STRIPE_NOT_CONFIGURED") {
+          toast(
+            "Stripe isn’t configured on the server yet — opening demo checkout."
+          );
+          await openDemoCheckout();
+          return;
+        }
+        toast(msg);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      toast("Couldn’t reach checkout. Please try again.");
+    } finally {
+      stripeCheckoutBusy = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevLabel || "Checkout";
+      }
+    }
+  }
+
+  async function openDemoCheckout() {
     var ok = await refreshCatalogBeforeCheckout();
     if (!ok) return;
     reconcileCart(true);
@@ -845,6 +937,44 @@
     checkoutEl.classList.add("open");
     document.body.classList.add("no-scroll");
     checkoutEl.scrollTop = 0;
+  }
+
+  async function openCheckout() {
+    if (cart.length === 0) {
+      toast("Your cart is empty");
+      return;
+    }
+
+    // Feature flag: Stripe Checkout Session redirect when enabled.
+    // If the flag is off (or Stripe isn’t ready), keep the demo checkout UI.
+    if (stripeCheckoutEnabled()) {
+      await startStripeCheckout();
+      return;
+    }
+
+    await openDemoCheckout();
+  }
+
+  function handleCheckoutReturn() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var status = params.get("checkout");
+      if (!status) return;
+      if (status === "success") {
+        cart = [];
+        updateCart();
+        toast("Payment received — thank you!");
+      } else if (status === "cancel") {
+        toast("Checkout canceled. Your cart is still here.");
+      }
+      params.delete("checkout");
+      params.delete("session_id");
+      var next = params.toString();
+      var url = window.location.pathname + (next ? "?" + next : "") + window.location.hash;
+      window.history.replaceState({}, "", url);
+    } catch (e) {
+      /* ignore */
+    }
   }
   function closeCheckout() {
     checkoutEl.classList.remove("open");
@@ -1031,6 +1161,8 @@
 
   async function init() {
     bind();
+    syncCheckoutButtonLabel();
+    handleCheckoutReturn();
     if (liveMode) {
       await loadLiveCatalog(false);
     } else {

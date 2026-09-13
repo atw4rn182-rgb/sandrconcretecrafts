@@ -893,6 +893,53 @@
     return value;
   }
 
+  async function listOrders() {
+    var supabase = await client();
+    var result = await supabase
+      .from("orders")
+      .select(
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total)"
+      )
+      .order("created_at", { ascending: false });
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load orders."));
+    }
+    return (result.data || []).map(function (row) {
+      var items = Array.isArray(row.order_items) ? row.order_items.slice() : [];
+      return Object.assign({}, row, { items: items, order_items: items });
+    });
+  }
+
+  async function getOrder(id) {
+    var supabase = await client();
+    var result = await supabase
+      .from("orders")
+      .select(
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total, created_at)"
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load that order."));
+    }
+    if (!result.data) throw new Error("That order wasn’t found.");
+    var items = Array.isArray(result.data.order_items)
+      ? result.data.order_items.slice()
+      : [];
+    return Object.assign({}, result.data, { items: items, order_items: items });
+  }
+
+  async function countOrders() {
+    var supabase = await client();
+    var result = await supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true });
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t count orders."));
+    }
+    return result.count || 0;
+  }
+
   global.SRCatalog = {
     BUCKET: BUCKET,
     MAX_BYTES: MAX_BYTES,
@@ -919,6 +966,9 @@
     listRecentProducts: listRecentProducts,
     listInventoryAttention: listInventoryAttention,
     countInventoryAttention: countInventoryAttention,
+    listOrders: listOrders,
+    getOrder: getOrder,
+    countOrders: countOrders,
     validateProductInput: validateProductInput,
     createProduct: createProduct,
     updateProduct: updateProduct,

@@ -2075,3 +2075,122 @@ body.more-sheet-open {
 .placeholder-panel h2 { margin-bottom: 0.5rem; }
 .placeholder-panel p { color: var(--warm-gray); max-width: 52ch; }
 body.action-sheet-open { overflow: hidden; }
+
+/* ----- Orders ----- */
+.order-card-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 5rem;
+}
+.order-card {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 22px -18px rgba(61, 46, 35, 0.45);
+}
+.order-card:active {
+  transform: translateY(1px);
+}
+.order-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.order-card-name {
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.order-card-meta {
+  color: var(--warm-gray);
+  font-size: 0.86rem;
+}
+.order-card-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+.order-card-items {
+  color: var(--warm-gray);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+.order-card-total {
+  font-family: var(--serif);
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  white-space: nowrap;
+}
+.order-status {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--concrete-100);
+  color: var(--charcoal);
+}
+.order-status--paid {
+  background: rgba(63, 107, 74, 0.14);
+  color: var(--success);
+}
+.order-status--unpaid {
+  background: rgba(155, 61, 46, 0.12);
+  color: var(--danger);
+}
+.order-status--refunded,
+.order-status--partially_refunded {
+  background: rgba(120, 100, 70, 0.16);
+  color: #6b5538;
+}
+.order-detail-panel {
+  max-height: min(88vh, 720px);
+  overflow: auto;
+}
+.order-detail-body {
+  display: grid;
+  gap: 1rem;
+  margin: 0.5rem 0 1rem;
+}
+.order-detail-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--warm-gray);
+}
+.order-detail-section p {
+  margin: 0;
+  line-height: 1.45;
+}
+.order-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.order-line:last-child {
+  border-bottom: 0;
+}
+.order-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+.muted {
+  color: var(--warm-gray);
+}
+

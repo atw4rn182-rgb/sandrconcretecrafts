@@ -41,20 +41,24 @@
         <div class="topbar-row">
           <div>
             <h1>Orders</h1>
-            <p>Real ordering is not connected yet.</p>
+            <p class="desktop-only">Newest Stripe Checkout orders first.</p>
           </div>
         </div>
       </header>
 
-      <section class="panel placeholder-panel">
-        <h2>Coming soon</h2>
-        <p>
-          Orders and payments are not wired up. Demo checkout on the public store does not create sales.
-          When ordering is connected, this page will list real customer orders here.
-        </p>
-        <p><a class="btn btn-ghost" href="/admin/">Back to Home</a></p>
-      </section>
+      <div class="flash" id="flash" hidden role="status"></div>
+      <div id="listState" class="state-box">Loading orders…</div>
+      <div id="orderList" class="order-card-list" hidden></div>
     </main>
+  </div>
+
+  <div id="orderDetailSheet" class="action-sheet" hidden>
+    <div class="action-sheet-backdrop" id="orderDetailBackdrop" hidden></div>
+    <div class="action-sheet-panel order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle">
+      <h2 id="orderDetailTitle">Order</h2>
+      <div id="orderDetailBody" class="order-detail-body"></div>
+      <button type="button" class="btn btn-ghost btn-block" id="orderDetailClose">Close</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
@@ -62,8 +66,7 @@
   <script src="/js/supabase-client.js"></script>
   <script src="/admin/admin-auth.js"></script>
   <script src="/admin/admin-shell.js"></script>
-  <script>
-    SRAdminShell.boot({ activeNav: "orders" });
-  </script>
+  <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/orders.js"></script>
 </body>
 </html>

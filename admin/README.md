@@ -20,6 +20,7 @@ Private owner tools for S&R Concrete Crafts.
 6. `20260912000006_admin_catalog_policies.sql`
 7. **`20260912000007_storefront_catalog_fields.sql`** — `source_key`, `item_no`, `track_inventory`, sold-out public read
 8. **`20260912000008_import_legacy_storefront_products.sql`** — idempotent import of the 17 original demo products
+9. **`20260913000001_orders.sql`** — `orders` + `order_items` for Stripe Checkout webhook upserts (admin read; service-role write)
 
 Supabase Dashboard → **SQL** → New query → paste each file → Run.
 
@@ -46,5 +47,5 @@ Keep **`USE_LIVE_CATALOG` unset or `false`** until migrations 07–08 are applie
 - Imported legacy products use `source_key` like `legacy:cow` and start with **inventory not tracked**.
 - Item # is editable on the product form.
 - Canceling an edit does **not** delete existing photos.
-- Checkout on the public site remains a **demo** (no real order / payment). The dashboard does not show Orders/Revenue metrics until a real payment path exists.
+- Checkout: demo by default. Stripe hosted Checkout is available behind `USE_STRIPE_CHECKOUT` (server secrets only — see `docs/STRIPE_SETUP.md`). Paid sessions appear under **Orders** after the webhook upserts them.
 - From the product editor, **Add Category** creates an active category immediately via `SRCatalog.createCategory`. Checking it on the product still requires **Save**. Equivalent names offer “Select existing” instead of duplicating; inactive matches are selected without reactivation.

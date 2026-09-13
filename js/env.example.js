@@ -8,6 +8,8 @@
  * Production (Vercel):
  *   Set SUPABASE_URL and SUPABASE_ANON_KEY in Project → Settings → Environment Variables.
  *   Optionally set USE_LIVE_CATALOG=true after migrations 07–08 are applied (default false).
+ *   Optionally set USE_STRIPE_CHECKOUT=true only after Stripe test keys + webhook are on the server.
+ *   Never put STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET into this file.
  *   `npm run build` (scripts/write-public-env.js) generates js/env.js at deploy time.
  *   js/env.js stays gitignored and is never committed.
  *
@@ -18,4 +20,6 @@ window.__SR_ENV__ = {
   SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
   // Keep false until migrations 07–08 are applied and the import is verified.
   USE_LIVE_CATALOG: false,
+  // Keep false until Stripe test Checkout is configured (server secrets + webhook).
+  USE_STRIPE_CHECKOUT: false,
 };
