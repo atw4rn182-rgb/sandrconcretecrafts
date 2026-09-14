@@ -11,7 +11,7 @@
   <meta property="og:title" content="S&amp;R Concrete Crafts — Handmade Concrete Decor in Milan, NM" />
   <meta property="og:description" content="Handcrafted concrete decor from Milan, New Mexico — painted finished pieces and raw concrete designs you can customize." />
   <meta property="og:locale" content="en_US" />
-  <script type="application/ld+json">
+  <script type="application/ld+json" id="localBusinessJsonLd">
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -45,14 +45,20 @@
 <body>
   <a class="skip-link" href="#products">Skip to collection</a>
 
+  <div class="store-announcement" id="storeAnnouncement" hidden data-style="neutral" role="status">
+    <div class="container">
+      <p data-announce-text></p>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="site-header">
     <nav class="nav container" aria-label="Primary">
       <a href="#top" class="brand" aria-label="S&amp;R Concrete Crafts — home">
         <img class="brand-logo" src="assets/sandrlogo.jpg" alt="" width="48" height="48" />
         <span class="brand-text">
-          <span class="brand-name">S&amp;R Concrete Crafts</span>
-          <span class="brand-tag">Handmade in Milan, NM</span>
+          <span class="brand-name" data-settings-business-name>S&amp;R Concrete Crafts</span>
+          <span class="brand-tag">Handmade in <span data-settings-location-short>Milan, NM</span></span>
         </span>
       </a>
 
@@ -169,8 +175,9 @@
         <div class="about-plaster"></div>
       </div>
       <div class="about-copy">
-        <p class="section-eyebrow">About S&amp;R Concrete Crafts</p>
+        <p class="section-eyebrow">About <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
         <h2>Raw material, made warm</h2>
+        <p class="about-lead" data-settings-description>Handmade concrete pieces cast in small batches in Milan, New Mexico.</p>
         <p>S&amp;R Concrete Crafts creates handmade concrete pieces in Milan, New Mexico.
           We cast planters, decor, seasonal pieces, and Southwestern-inspired designs one
           small batch at a time. Choose from painted, finished pieces or raw concrete designs
@@ -206,7 +213,7 @@
               </g>
             </svg>
           </span>
-          <span>Based in Milan, NM</span>
+          <span>Based in <span data-settings-location-short>Milan, NM</span></span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
@@ -251,10 +258,15 @@
     </div>
     <div class="container footer-inner">
       <div class="footer-brand-block">
-        <span class="footer-brand">S&amp;R Concrete Crafts</span>
-        <p class="footer-note">Hand-cast in Milan, New Mexico · © 2026 S&amp;R Concrete Crafts</p>
+        <span class="footer-brand" data-settings-business-name>S&amp;R Concrete Crafts</span>
+        <p class="footer-note">Hand-cast in <span data-settings-location>Milan, New Mexico</span> · © 2026 <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
+        <p class="footer-fulfillment" id="footerFulfillment" hidden></p>
+        <div class="footer-contact" id="footerContact" hidden>
+          <a id="footerEmail" hidden></a>
+          <a id="footerPhone" hidden></a>
+        </div>
+        <div class="footer-social" id="footerSocial" hidden aria-label="Social links"></div>
       </div>
-      <p class="footer-demo">Checkout on this site is <strong>demo-only</strong> until real ordering is connected. No payment is processed and no order is placed.</p>
     </div>
   </footer>
 
@@ -294,6 +306,7 @@
       <span>Add a hand-cast piece to get started.</span>
     </div>
     <div class="cart-foot" id="cartFoot">
+      <p class="cart-fulfillment-note" id="cartFulfillmentNote" hidden></p>
       <div class="cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
       <button type="button" class="btn btn-primary cart-checkout" id="cartCheckout">Checkout (demo)</button>
       <p class="cart-note">Shipping estimate for demo only · No real checkout yet</p>
@@ -359,6 +372,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
   <script src="/js/supabase-client.js"></script>
   <script src="/js/appearance.js"></script>
+  <script src="/js/store-settings.js"></script>
   <script src="/js/storefront-catalog.js"></script>
   <script src="/app.js"></script>
 </body>

@@ -243,9 +243,21 @@
   }
 
   function visibleProducts() {
-    if (activeCategory === "all") return products.slice();
-    return products.filter(function (p) {
-      return (p.categories || []).some(function (c) {
+    var list = products.slice();
+    var p = prefs();
+    if (!p.show_sold_out) {
+      list = list.filter(function (item) {
+        return canPurchase(item);
+      });
+    }
+    if (p.featured_first) {
+      list.sort(function (a, b) {
+        return Number(!!b.featured) - Number(!!a.featured);
+      });
+    }
+    if (activeCategory === "all") return list;
+    return list.filter(function (item) {
+      return (item.categories || []).some(function (c) {
         return c && (c.id === activeCategory || c.slug === activeCategory);
       });
     });
@@ -544,6 +556,19 @@
         var soldBadge = sold
           ? '<span class="card-sold" aria-hidden="true">Sold out</span>'
           : "";
+        var lowStock = "";
+        if (
+          prefs().show_low_stock &&
+          !sold &&
+          p.trackInventory &&
+          Number(p.quantity) > 0 &&
+          Number(p.quantity) <= 3
+        ) {
+          lowStock =
+            '<span class="card-low-stock">Only ' +
+            esc(String(p.quantity)) +
+            " left</span>";
+        }
         var addBtn = sold
           ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">Unavailable</button>'
           : '<button class="add" type="button" data-add="' +
@@ -577,6 +602,7 @@
           (p.itemNo
             ? '<span class="card-item">Item #' + esc(p.itemNo) + "</span>"
             : "") +
+          lowStock +
           '<p class="card-desc">' +
           esc(shortDesc(p.desc)) +
           "</p>" +
@@ -1203,12 +1229,50 @@
     }
   }
 
+  var storeSettings = null;
+
+  async function loadStoreSettings() {
+    try {
+      if (typeof SRStoreSettings === "undefined") {
+        storeSettings = null;
+        return;
+      }
+      var client =
+        typeof SRSupabase !== "undefined" && SRSupabase.isConfigured()
+          ? SRSupabase.createClient()
+          : null;
+      storeSettings = await SRStoreSettings.fetchStoreSettings(client);
+      SRStoreSettings.applyToDocument(storeSettings);
+    } catch (err) {
+      storeSettings =
+        typeof SRStoreSettings !== "undefined"
+          ? SRStoreSettings.cloneDefaults()
+          : null;
+      if (storeSettings && typeof SRStoreSettings !== "undefined") {
+        SRStoreSettings.applyToDocument(storeSettings);
+      }
+    }
+  }
+
+  function prefs() {
+    return (
+      (storeSettings && storeSettings.storefront) || {
+        show_sold_out: true,
+        featured_first: true,
+        show_low_stock: true,
+        show_about: true,
+        show_social_links: true,
+      }
+    );
+  }
+
   async function init() {
     bind();
     syncCheckoutButtonLabel();
     handleCheckoutReturn();
-    // Theme first so paint settles quickly; catalog can follow.
+    // Theme + settings first so paint settles quickly; catalog can follow.
     await loadAppearance();
+    await loadStoreSettings();
     if (liveMode) {
       await loadLiveCatalog(false);
     } else {

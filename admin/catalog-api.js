@@ -1206,6 +1206,59 @@
     return appearance;
   }
 
+  async function getStoreSettings() {
+    var row = await getSiteSettingsRow();
+    var settings =
+      typeof SRStoreSettings !== "undefined"
+        ? SRStoreSettings.normalize(row.config || {})
+        : row.config || {};
+    return {
+      id: row.id,
+      settings: settings,
+      config: row.config || {},
+    };
+  }
+
+  async function saveStoreSettings(settingsInput) {
+    var current = await getStoreSettings();
+    if (!current.id) {
+      throw new Error("Site settings aren’t set up yet.");
+    }
+    var errors =
+      typeof SRStoreSettings !== "undefined" && SRStoreSettings.validateDraft
+        ? SRStoreSettings.validateDraft(settingsInput)
+        : [];
+    if (errors && errors.length) {
+      throw new Error(errors[0]);
+    }
+    var settings =
+      typeof SRStoreSettings !== "undefined"
+        ? SRStoreSettings.normalize(settingsInput)
+        : settingsInput;
+
+    // Merge only settings namespaces — never wipe appearance / sales_goals / etc.
+    var nextConfig = Object.assign({}, current.config || {}, {
+      business: settings.business,
+      contact: settings.contact,
+      social: Object.assign({}, (current.config && current.config.social) || {}, settings.social),
+      announcement: settings.announcement,
+      fulfillment: settings.fulfillment,
+      storefront: settings.storefront,
+    });
+
+    var supabase = await client();
+    var result = await supabase
+      .from("site_settings")
+      .update({ config: nextConfig })
+      .eq("id", current.id)
+      .select("id, config")
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t save settings."));
+    }
+    return settings;
+  }
+
   function validateHeroImageFile(file) {
     if (!file) return "Choose a hero image.";
     if (!ALLOWED_TYPES[file.type]) {
@@ -1368,6 +1421,8 @@
     saveSalesGoals: saveSalesGoals,
     getAppearance: getAppearance,
     saveAppearance: saveAppearance,
+    getStoreSettings: getStoreSettings,
+    saveStoreSettings: saveStoreSettings,
     validateHeroImageFile: validateHeroImageFile,
     prepareHeroImageFile: prepareHeroImageFile,
     uploadHeroImage: uploadHeroImage,

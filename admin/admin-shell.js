@@ -43,7 +43,7 @@
       link("/admin/orders.html", "orders", "Orders", "☰") +
       link("/admin/customers.html", "customers", "Customers", "☺") +
       link("/admin/appearance.html", "appearance", "Appearance", "◈") +
-      '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</a>'
+      link("/admin/settings.html", "settings", "Settings", "⚙")
     );
   }
 
@@ -96,7 +96,9 @@
         '<a class="admin-more-link" href="/admin/appearance.html"><span>Appearance</span><span class="chev" aria-hidden="true">' +
         ICONS.chevron +
         "</span></a>" +
-        '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Settings <em>Coming soon</em></span></a>' +
+        '<a class="admin-more-link" href="/admin/settings.html"><span>Settings</span><span class="chev" aria-hidden="true">' +
+        ICONS.chevron +
+        "</span></a>" +
         '<button type="button" class="admin-more-link admin-more-signout" id="moreSignOutBtn">Sign Out</button>' +
         "</div>" +
         '<button type="button" class="btn btn-ghost btn-block" id="moreSheetClose">Close</button>' +

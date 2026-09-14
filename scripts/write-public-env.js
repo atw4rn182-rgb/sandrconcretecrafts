@@ -131,6 +131,10 @@ if (fs.existsSync(indexPath)) {
       'src="/js/appearance.js?v=' + buildStamp + '"'
     )
     .replace(
+      /src="\/js\/store-settings\.js(?:\?v=[^"]*)?"/g,
+      'src="/js/store-settings.js?v=' + buildStamp + '"'
+    )
+    .replace(
       /src="\/app\.js(?:\?v=[^"]*)?"/g,
       'src="/app.js?v=' + buildStamp + '"'
     );

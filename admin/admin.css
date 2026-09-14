@@ -3346,3 +3346,133 @@ body.action-sheet-open { overflow: hidden; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Settings editor (Prompt XYZ) ===== */
+.settings-main { max-width: none; }
+.settings-layout {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+.settings-summary-col,
+.settings-editor {
+  min-width: 0;
+}
+.settings-summary-card {
+  background: #fff8f0;
+  border: 1px solid rgba(58, 42, 34, 0.12);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+}
+.settings-summary-dl {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+.settings-summary-dl dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6e5749;
+  margin: 0 0 0.2rem;
+}
+.settings-summary-dl dd {
+  margin: 0;
+  font-weight: 600;
+  color: #3a2a22;
+  line-height: 1.35;
+}
+.settings-card {
+  border: 1px solid rgba(58, 42, 34, 0.12);
+  border-radius: 16px;
+  padding: 1rem 1.1rem 1.15rem;
+  margin: 0 0 1rem;
+  background: #fff;
+  min-width: 0;
+}
+.settings-card legend {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+  color: #3a2a22;
+}
+.settings-card .field { margin-bottom: 0.75rem; }
+.settings-card .field span {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #3a2a22;
+}
+.settings-card input[type="text"],
+.settings-card input[type="email"],
+.settings-card input[type="tel"],
+.settings-card input[type="url"],
+.settings-card textarea {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 42, 34, 0.18);
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  background: #fffaf4;
+}
+.settings-card textarea { min-height: 88px; resize: vertical; }
+.field-row {
+  display: grid;
+  gap: 0.75rem;
+}
+@media (min-width: 560px) {
+  .field-row { grid-template-columns: 1fr 1fr; }
+}
+.toggle-row { margin: 0.35rem 0 0.65rem; }
+.settings-card .toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.settings-card .toggle input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #c45c32;
+}
+.settings-actions {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 3;
+  background: linear-gradient(180deg, transparent, #f7efe4 28%);
+  padding: 1rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.settings-actions .btn { min-height: 48px; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (min-width: 980px) {
+  .settings-layout {
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  }
+  .settings-summary-col {
+    position: sticky;
+    top: 1rem;
+    order: 2;
+  }
+  .settings-editor { order: 1; }
+}
+@media (max-width: 979px) {
+  .settings-summary-col { order: -1; }
+}
+
