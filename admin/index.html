@@ -45,71 +45,170 @@
       </header>
 
       <div id="dashboardError" class="form-error" role="alert" hidden></div>
-      <div id="dashboardLoading" class="state-box" aria-live="polite">Loading catalog summary…</div>
+      <div id="dashboardLoading" class="state-box" aria-live="polite">Loading sales summary…</div>
+
+      <div id="celebrateToast" class="celebrate-toast" role="status" aria-live="polite" hidden></div>
 
       <div id="dashboardContent" hidden>
-        <section class="dash-welcome">
-          <h1>Welcome back!</h1>
-          <p>Manage your products, orders, and website all in one place.</p>
-        </section>
-
-        <section class="stats-grid stats-grid--home" id="statsGrid" aria-label="Catalog counts"></section>
-
-        <p class="dash-secondary-note" id="ordersNote">
-          Paid Stripe Checkout orders appear under Orders after the webhook saves them. Revenue totals stay simple until reporting is added.
-        </p>
-
-        <section class="dash-nav-cards" aria-label="Shop sections">
-          <a class="dash-nav-card" href="/admin/products.html">
-            <span class="dash-nav-ico" aria-hidden="true">▣</span>
-            <span class="dash-nav-copy"><strong>Products</strong><span>Add, edit, and manage your items</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-          <a class="dash-nav-card" href="/admin/categories.html">
-            <span class="dash-nav-ico" aria-hidden="true">▤</span>
-            <span class="dash-nav-copy"><strong>Categories</strong><span>Organize your products</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-          <a class="dash-nav-card" href="/admin/orders.html">
-            <span class="dash-nav-ico" aria-hidden="true">☰</span>
-            <span class="dash-nav-copy"><strong>Orders</strong><span>View and manage orders</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
-            <span class="dash-nav-ico" aria-hidden="true">☺</span>
-            <span class="dash-nav-copy"><strong>Customers</strong><span>See your customers</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
-            <span class="dash-nav-ico" aria-hidden="true">◈</span>
-            <span class="dash-nav-copy"><strong>Appearance</strong><span>Update your site look</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-          <a class="dash-nav-card is-disabled" href="#" aria-disabled="true" title="Coming soon">
-            <span class="dash-nav-ico" aria-hidden="true">⚙</span>
-            <span class="dash-nav-copy"><strong>Settings</strong><span>Store details and preferences</span></span>
-            <span class="dash-nav-chev" aria-hidden="true">›</span>
-          </a>
-        </section>
-
-        <p class="dash-view-store-wrap">
-          <a class="btn btn-ghost btn-block dash-view-store" href="/" target="_blank" rel="noopener">View Store ↗</a>
-        </p>
-
-        <section class="panel dash-panel" id="inventoryPanel" hidden>
-          <div class="panel-head">
-            <h2>Inventory attention</h2>
-            <p class="panel-sub">Published products with inventory tracking on and zero stock.</p>
+        <section class="dash-welcome dash-welcome--sales">
+          <div class="dash-welcome-row">
+            <div>
+              <h1 id="dashGreeting">Welcome back</h1>
+              <p>Your sales command center — goals, shipping, and paid orders.</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-small" id="skipAnimBtn" hidden>Skip Animation</button>
           </div>
-          <div id="inventoryList"></div>
+        </section>
+
+        <section class="sales-goals" aria-label="Sales goals">
+          <article class="goal-card goal-card--annual">
+            <div class="goal-card-top">
+              <h2>Annual goal</h2>
+              <span class="goal-pct" id="annualPct">0%</span>
+            </div>
+            <p class="goal-amount">
+              <span id="annualRevenue">$0.00</span>
+              <span class="goal-of" id="annualGoalLabel">of $0</span>
+            </p>
+            <div class="goal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="annualBar">
+              <div class="goal-bar-fill" id="annualBarFill"></div>
+            </div>
+          </article>
+
+          <article class="goal-card goal-card--weekly">
+            <div class="goal-card-top">
+              <h2>This week</h2>
+              <span class="goal-pct" id="weeklyPct">0%</span>
+            </div>
+            <p class="goal-amount">
+              <span id="weeklyRevenue">$0.00</span>
+              <span class="goal-of" id="weeklyGoalLabel">of $0</span>
+            </p>
+            <div class="goal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="weeklyBar">
+              <div class="goal-bar-fill" id="weeklyBarFill"></div>
+            </div>
+          </article>
+        </section>
+
+        <details class="goals-edit">
+          <summary>Edit sales goals</summary>
+          <form id="goalsForm" class="goals-form" novalidate>
+            <div class="field">
+              <label for="weeklyGoalInput">Weekly goal (USD)</label>
+              <input id="weeklyGoalInput" name="weekly" type="number" min="0" step="0.01" inputmode="decimal" required />
+            </div>
+            <div class="field">
+              <label for="annualGoalInput">Annual goal (USD)</label>
+              <input id="annualGoalInput" name="annual" type="number" min="0" step="0.01" inputmode="decimal" required />
+            </div>
+            <p class="form-error" id="goalsFormError" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block" id="goalsSaveBtn">Save goals</button>
+          </form>
+        </details>
+
+        <a class="needs-ship-card" id="needsShipCard" href="/admin/orders.html?filter=needs-shipping">
+          <span class="needs-ship-count" id="needsShipCount">0</span>
+          <span class="needs-ship-copy">
+            <strong>Needs shipping</strong>
+            <span id="needsShipLabel">Paid orders waiting to ship</span>
+          </span>
+          <span class="needs-ship-chev" aria-hidden="true">›</span>
+        </a>
+
+        <section class="sales-metrics" aria-label="Sales summary">
+          <div class="sales-metric">
+            <span class="sales-metric-label">Today</span>
+            <strong id="metricToday">$0.00</strong>
+          </div>
+          <div class="sales-metric">
+            <span class="sales-metric-label">Week</span>
+            <strong id="metricWeek">$0.00</strong>
+          </div>
+          <div class="sales-metric">
+            <span class="sales-metric-label">Month</span>
+            <strong id="metricMonth">$0.00</strong>
+          </div>
+          <div class="sales-metric">
+            <span class="sales-metric-label">Year</span>
+            <strong id="metricYear">$0.00</strong>
+          </div>
+        </section>
+
+        <section class="panel dash-panel sales-chart-panel">
+          <div class="panel-head sales-chart-head">
+            <div>
+              <h2>Sales</h2>
+              <p class="panel-sub">Paid revenue only</p>
+            </div>
+            <div class="filter-chips chart-range-tabs" role="tablist" aria-label="Chart range">
+              <button type="button" class="filter-chip is-active" data-range="7d" role="tab" aria-selected="true">7d</button>
+              <button type="button" class="filter-chip" data-range="30d" role="tab" aria-selected="false">30d</button>
+              <button type="button" class="filter-chip" data-range="year" role="tab" aria-selected="false">Year</button>
+            </div>
+          </div>
+          <div class="sales-chart" id="salesChartWrap">
+            <canvas id="salesChart" width="640" height="220" aria-label="Sales chart"></canvas>
+            <p class="sales-chart-empty" id="salesChartEmpty" hidden>No paid sales in this range yet.</p>
+          </div>
         </section>
 
         <section class="panel dash-panel">
           <div class="panel-head">
-            <h2>Recently updated</h2>
-            <p class="panel-sub">Latest changes in your catalog.</p>
+            <h2>Recent paid orders</h2>
+            <p class="panel-sub"><a href="/admin/orders.html">View all orders</a></p>
           </div>
-          <div id="recentList"></div>
+          <div id="recentOrdersList"></div>
+        </section>
+
+        <section class="dash-catalog-secondary" aria-label="Catalog">
+          <details class="catalog-collapse" open>
+            <summary>Catalog &amp; inventory</summary>
+
+            <section class="stats-grid stats-grid--home" id="statsGrid" aria-label="Catalog counts"></section>
+
+            <section class="dash-nav-cards" aria-label="Shop sections">
+              <a class="dash-nav-card" href="/admin/products.html">
+                <span class="dash-nav-ico" aria-hidden="true">▣</span>
+                <span class="dash-nav-copy"><strong>Products</strong><span>Add, edit, and manage your items</span></span>
+                <span class="dash-nav-chev" aria-hidden="true">›</span>
+              </a>
+              <a class="dash-nav-card" href="/admin/categories.html">
+                <span class="dash-nav-ico" aria-hidden="true">▤</span>
+                <span class="dash-nav-copy"><strong>Categories</strong><span>Organize your products</span></span>
+                <span class="dash-nav-chev" aria-hidden="true">›</span>
+              </a>
+              <a class="dash-nav-card" href="/admin/orders.html">
+                <span class="dash-nav-ico" aria-hidden="true">☰</span>
+                <span class="dash-nav-copy"><strong>Orders</strong><span>View and manage orders</span></span>
+                <span class="dash-nav-chev" aria-hidden="true">›</span>
+              </a>
+              <a class="dash-nav-card" href="/admin/customers.html">
+                <span class="dash-nav-ico" aria-hidden="true">☺</span>
+                <span class="dash-nav-copy"><strong>Customers</strong><span>See who has purchased</span></span>
+                <span class="dash-nav-chev" aria-hidden="true">›</span>
+              </a>
+            </section>
+
+            <p class="dash-view-store-wrap">
+              <a class="btn btn-ghost btn-block dash-view-store" href="/" target="_blank" rel="noopener">View Store ↗</a>
+            </p>
+
+            <section class="panel dash-panel" id="inventoryPanel" hidden>
+              <div class="panel-head">
+                <h2>Inventory attention</h2>
+                <p class="panel-sub">Published products with inventory tracking on and zero stock.</p>
+              </div>
+              <div id="inventoryList"></div>
+            </section>
+
+            <section class="panel dash-panel">
+              <div class="panel-head">
+                <h2>Recently updated</h2>
+                <p class="panel-sub">Latest changes in your catalog.</p>
+              </div>
+              <div id="recentList"></div>
+            </section>
+          </details>
         </section>
       </div>
     </main>
@@ -121,6 +220,7 @@
   <script src="/admin/admin-auth.js" onerror="window.__SR_ADMIN_SCRIPT_ERROR__='admin-auth'"></script>
   <script src="/admin/admin-shell.js"></script>
   <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/sales-lib.js"></script>
   <script src="/admin/dashboard.js"></script>
 </body>
 </html>

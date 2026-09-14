@@ -41,7 +41,7 @@
       link("/admin/product-edit.html", "add", "Add Product", "+") +
       link("/admin/categories.html", "categories", "Categories", "▤") +
       link("/admin/orders.html", "orders", "Orders", "☰") +
-      '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">☺</span> Customers</a>' +
+      link("/admin/customers.html", "customers", "Customers", "☺") +
       '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">◈</span> Appearance</a>' +
       '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</a>'
     );
@@ -90,7 +90,9 @@
         '<a class="admin-more-link" href="/admin/categories.html"><span>Categories</span><span class="chev" aria-hidden="true">' +
         ICONS.chevron +
         "</span></a>" +
-        '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Customers <em>Coming soon</em></span></a>' +
+        '<a class="admin-more-link" href="/admin/customers.html"><span>Customers</span><span class="chev" aria-hidden="true">' +
+        ICONS.chevron +
+        "</span></a>" +
         '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Appearance <em>Coming soon</em></span></a>' +
         '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Settings <em>Coming soon</em></span></a>' +
         '<button type="button" class="admin-more-link admin-more-signout" id="moreSignOutBtn">Sign Out</button>' +
@@ -101,7 +103,7 @@
     }
 
     var key = active || "dashboard";
-    if (key === "categories" || key === "settings") key = "more";
+    if (key === "categories" || key === "customers" || key === "settings") key = "more";
     document.querySelectorAll(".bottom-nav-item[data-nav]").forEach(function (el) {
       var on = el.getAttribute("data-nav") === key;
       el.classList.toggle("is-active", on);

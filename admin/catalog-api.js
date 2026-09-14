@@ -893,14 +893,32 @@
     return value;
   }
 
-  async function listOrders() {
+  async function listOrders(opts) {
+    opts = opts || {};
     var supabase = await client();
-    var result = await supabase
+    var q = supabase
       .from("orders")
       .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total)"
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total)"
       )
       .order("created_at", { ascending: false });
+
+    if (opts.needsShipping) {
+      q = q
+        .eq("payment_status", "paid")
+        .eq("fulfillment_status", "unfulfilled")
+        .eq("fulfillment_method", "ship");
+    } else if (opts.paymentStatus) {
+      q = q.eq("payment_status", opts.paymentStatus);
+    }
+    if (opts.fulfillmentStatus) {
+      q = q.eq("fulfillment_status", opts.fulfillmentStatus);
+    }
+    if (opts.limit) {
+      q = q.limit(Number(opts.limit));
+    }
+
+    var result = await q;
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t load orders."));
     }
@@ -915,7 +933,7 @@
     var result = await supabase
       .from("orders")
       .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total, created_at)"
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total, created_at)"
       )
       .eq("id", id)
       .maybeSingle();
@@ -929,15 +947,139 @@
     return Object.assign({}, result.data, { items: items, order_items: items });
   }
 
-  async function countOrders() {
+  async function countOrders(opts) {
+    opts = opts || {};
     var supabase = await client();
-    var result = await supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true });
+    var q = supabase.from("orders").select("id", { count: "exact", head: true });
+    if (opts.paymentStatus) q = q.eq("payment_status", opts.paymentStatus);
+    if (opts.needsShipping) {
+      q = q
+        .eq("payment_status", "paid")
+        .eq("fulfillment_status", "unfulfilled")
+        .eq("fulfillment_method", "ship");
+    }
+    var result = await q;
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t count orders."));
     }
     return result.count || 0;
+  }
+
+  /**
+   * Lightweight paid-order rows for dashboard aggregates (no line items).
+   */
+  async function listPaidOrdersLite() {
+    var supabase = await client();
+    var result = await supabase
+      .from("orders")
+      .select(
+        "id, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, fulfillment_status, fulfillment_method, created_at, shipping_city, shipping_state"
+      )
+      .eq("payment_status", "paid")
+      .order("created_at", { ascending: false });
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load sales data."));
+    }
+    return result.data || [];
+  }
+
+  async function updateOrderFulfillment(id, patch) {
+    var supabase = await client();
+    var body = {};
+    if (patch.fulfillment_status != null) {
+      body.fulfillment_status = String(patch.fulfillment_status);
+    }
+    if (patch.fulfillment_method != null) {
+      body.fulfillment_method = String(patch.fulfillment_method);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "tracking_number")) {
+      body.tracking_number = patch.tracking_number
+        ? String(patch.tracking_number).trim()
+        : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "carrier")) {
+      body.carrier = patch.carrier ? String(patch.carrier).trim() : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "shipped_at")) {
+      body.shipped_at = patch.shipped_at;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "completed_at")) {
+      body.completed_at = patch.completed_at;
+    }
+    var result = await supabase
+      .from("orders")
+      .update(body)
+      .eq("id", id)
+      .select(
+        "id, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, updated_at"
+      )
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t update fulfillment."));
+    }
+    if (!result.data) throw new Error("That order wasn’t found.");
+    return result.data;
+  }
+
+  async function getSalesGoals() {
+    var supabase = await client();
+    var result = await supabase
+      .from("site_settings")
+      .select("id, config")
+      .limit(1)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load sales goals."));
+    }
+    var goals =
+      result.data &&
+      result.data.config &&
+      result.data.config.sales_goals
+        ? result.data.config.sales_goals
+        : {};
+    var weekly = Number(goals.weekly_cents);
+    var annual = Number(goals.annual_cents);
+    return {
+      id: result.data && result.data.id,
+      weekly_cents: isFinite(weekly) && weekly >= 0 ? Math.round(weekly) : 30000,
+      annual_cents: isFinite(annual) && annual >= 0 ? Math.round(annual) : 1000000,
+      config: (result.data && result.data.config) || {},
+    };
+  }
+
+  async function saveSalesGoals(weeklyCents, annualCents) {
+    var current = await getSalesGoals();
+    if (!current.id) {
+      throw new Error("Site settings aren’t set up yet.");
+    }
+    var weekly = Math.round(Number(weeklyCents));
+    var annual = Math.round(Number(annualCents));
+    if (!isFinite(weekly) || weekly < 0) {
+      throw new Error("Enter a valid weekly goal.");
+    }
+    if (!isFinite(annual) || annual < 0) {
+      throw new Error("Enter a valid annual goal.");
+    }
+    var nextConfig = Object.assign({}, current.config || {}, {
+      sales_goals: {
+        weekly_cents: weekly,
+        annual_cents: annual,
+      },
+    });
+    var supabase = await client();
+    var result = await supabase
+      .from("site_settings")
+      .update({ config: nextConfig })
+      .eq("id", current.id)
+      .select("id, config")
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t save sales goals."));
+    }
+    return {
+      weekly_cents: weekly,
+      annual_cents: annual,
+    };
   }
 
   global.SRCatalog = {
@@ -969,6 +1111,10 @@
     listOrders: listOrders,
     getOrder: getOrder,
     countOrders: countOrders,
+    listPaidOrdersLite: listPaidOrdersLite,
+    updateOrderFulfillment: updateOrderFulfillment,
+    getSalesGoals: getSalesGoals,
+    saveSalesGoals: saveSalesGoals,
     validateProductInput: validateProductInput,
     createProduct: createProduct,
     updateProduct: updateProduct,

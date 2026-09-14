@@ -183,6 +183,8 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
     shipping_postal_code: ship.shipping_postal_code,
     shipping_country: ship.shipping_country,
     shipping_address: ship.shipping_address,
+    // Do NOT set fulfillment_* here: DB defaults apply on INSERT, and
+    // webhook retries must not reset an admin's shipped/completed status.
     metadata: {
       cart: (session.metadata && session.metadata.cart) || null,
       source: (session.metadata && session.metadata.source) || null,

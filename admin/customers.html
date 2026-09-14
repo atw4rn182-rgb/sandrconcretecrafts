@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Orders — S&amp;R Concrete Crafts Admin</title>
+  <title>Customers — S&amp;R Concrete Crafts Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -40,31 +40,24 @@
         </button>
         <div class="topbar-row">
           <div>
-            <h1>Orders</h1>
-            <p class="desktop-only">Newest Stripe Checkout orders first.</p>
+            <h1>Customers</h1>
+            <p class="desktop-only">People with paid Stripe Checkout orders.</p>
           </div>
         </div>
       </header>
 
-      <div class="filter-chips filter-chip-row orders-filter-chips" id="orderFilterChips" role="group" aria-label="Order filters">
-        <button type="button" class="filter-chip is-active" data-filter="all">All</button>
-        <button type="button" class="filter-chip" data-filter="needs-shipping">Needs Shipping</button>
-        <button type="button" class="filter-chip" data-filter="shipped">Shipped</button>
-        <button type="button" class="filter-chip" data-filter="paid">Paid</button>
-      </div>
-
       <div class="flash" id="flash" hidden role="status"></div>
-      <div id="listState" class="state-box">Loading orders…</div>
-      <div id="orderList" class="order-card-list" hidden></div>
+      <div id="listState" class="state-box">Loading customers…</div>
+      <div id="customerList" class="customer-card-list" hidden></div>
     </main>
   </div>
 
-  <div id="orderDetailSheet" class="action-sheet" hidden>
-    <div class="action-sheet-backdrop" id="orderDetailBackdrop" hidden></div>
-    <div class="action-sheet-panel order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle">
-      <h2 id="orderDetailTitle">Order</h2>
-      <div id="orderDetailBody" class="order-detail-body"></div>
-      <button type="button" class="btn btn-ghost btn-block" id="orderDetailClose">Close</button>
+  <div id="customerDetailSheet" class="action-sheet" hidden>
+    <div class="action-sheet-backdrop" id="customerDetailBackdrop" hidden></div>
+    <div class="action-sheet-panel order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="customerDetailTitle">
+      <h2 id="customerDetailTitle">Customer</h2>
+      <div id="customerDetailBody" class="order-detail-body"></div>
+      <button type="button" class="btn btn-ghost btn-block" id="customerDetailClose">Close</button>
     </div>
   </div>
 
@@ -75,6 +68,6 @@
   <script src="/admin/admin-shell.js"></script>
   <script src="/admin/catalog-api.js"></script>
   <script src="/admin/sales-lib.js"></script>
-  <script src="/admin/orders.js"></script>
+  <script src="/admin/customers.js"></script>
 </body>
 </html>
