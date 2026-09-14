@@ -13,6 +13,8 @@
     seasonal_theme: "off",
     accent: "terracotta",
     decorative_accent: "none",
+    holiday_decorations: true,
+    decoration_intensity: "subtle",
     hero_overlay: "medium",
     hero_text_position: "left",
     background_style: "warm_cream",
@@ -33,8 +35,23 @@
   var HERO_Y = ["top", "center", "bottom"];
   var BACKGROUNDS = ["warm_cream", "soft_sandstone", "light_peach"];
   var CARD_STYLES = ["soft", "elevated"];
-  var SEASONAL = ["off", "halloween", "christmas", "fourth_of_july", "easter"];
+  var SEASONAL = [
+    "off",
+    "halloween",
+    "christmas",
+    "fourth_of_july",
+    "easter",
+    "thanksgiving",
+  ];
   var MODES = ["manual", "automatic"];
+  var DECOR_INTENSITIES = ["subtle", "festive", "extra_festive"];
+
+  function asBool(v, fallback) {
+    if (typeof v === "boolean") return v;
+    if (v === "true" || v === 1 || v === "1") return true;
+    if (v === "false" || v === 0 || v === "0") return false;
+    return fallback;
+  }
 
   var POSITION_PCT = {
     left: "22%",
@@ -77,6 +94,15 @@
         src.decorative_accent,
         DECORATIVE,
         DEFAULTS.decorative_accent
+      ),
+      holiday_decorations: asBool(
+        src.holiday_decorations,
+        DEFAULTS.holiday_decorations
+      ),
+      decoration_intensity: pick(
+        src.decoration_intensity,
+        DECOR_INTENSITIES,
+        DEFAULTS.decoration_intensity
       ),
       hero_overlay: pick(src.hero_overlay, HERO_OVERLAYS, DEFAULTS.hero_overlay),
       hero_text_position: pick(
@@ -150,6 +176,7 @@
     var month = d.getMonth();
     var day = d.getDate();
     if (month === 9) return "halloween";
+    if (month === 10) return "thanksgiving";
     if (month === 11) return "christmas";
     if (month === 5 && day >= 20) return "fourth_of_july";
     if (month === 6 && day <= 10) return "fourth_of_july";
@@ -177,6 +204,11 @@
         start: new Date(year, 5, 20),
       },
       { key: "halloween", label: "Halloween", start: new Date(year, 9, 1) },
+      {
+        key: "thanksgiving",
+        label: "Thanksgiving",
+        start: new Date(year, 10, 1),
+      },
       { key: "christmas", label: "Christmas", start: new Date(year, 11, 1) },
       {
         key: "easter",
@@ -192,6 +224,11 @@
         key: "halloween",
         label: "Halloween",
         start: new Date(year + 1, 9, 1),
+      },
+      {
+        key: "thanksgiving",
+        label: "Thanksgiving",
+        start: new Date(year + 1, 10, 1),
       },
       {
         key: "christmas",
@@ -251,6 +288,11 @@
     el.setAttribute("data-season", seasonal === "off" ? "off" : seasonal);
     el.setAttribute("data-accent", a.accent);
     el.setAttribute("data-decor", a.decorative_accent);
+    el.setAttribute(
+      "data-holiday-decor",
+      seasonal !== "off" && a.holiday_decorations ? "on" : "off"
+    );
+    el.setAttribute("data-decor-intensity", a.decoration_intensity);
     el.setAttribute("data-hero-overlay", a.hero_overlay);
     el.setAttribute("data-hero-text", a.hero_text_position);
     el.setAttribute("data-bg", a.background_style);
@@ -315,6 +357,7 @@
     CARD_STYLES: CARD_STYLES,
     SEASONAL: SEASONAL,
     MODES: MODES,
+    DECOR_INTENSITIES: DECOR_INTENSITIES,
     normalize: normalize,
     cloneDefaults: cloneDefaults,
     resolveHeroUrl: resolveHeroUrl,

@@ -63,8 +63,9 @@
             </div>
           </div>
           <div class="appearance-preview-frame" id="previewFrame" data-device="desktop">
-            <div class="sf-preview" id="sfPreview" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
+            <div class="sf-preview" id="sfPreview" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-holiday-decor="off" data-decor-intensity="subtle" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
               <header class="sf-prev-header">
+                <div class="season-decor season-decor--header" aria-hidden="true"></div>
                 <div class="sf-prev-brand">
                   <img src="/assets/sandrlogo.jpg" alt="" width="36" height="36" />
                   <div>
@@ -84,7 +85,9 @@
                   <span class="sf-prev-btn">Shop the Collection</span>
                 </div>
                 <div class="sf-prev-decor" aria-hidden="true"></div>
+                <div class="season-decor season-decor--hero" aria-hidden="true"></div>
               </div>
+              <div class="season-decor season-decor--divider" aria-hidden="true"></div>
               <div class="sf-prev-products">
                 <p class="sf-prev-eyebrow">The Collection</p>
                 <div class="sf-prev-cards">
@@ -121,6 +124,7 @@
                 <span>Handcrafted in Small Batches</span>
               </div>
               <footer class="sf-prev-footer">
+                <div class="season-decor season-decor--footer" aria-hidden="true"></div>
                 <strong>S&amp;R Concrete Crafts</strong>
                 <span>Hand-cast in Milan, New Mexico</span>
               </footer>
@@ -184,6 +188,26 @@
                 <span class="theme-card-label">Easter</span>
                 <span class="theme-card-desc">Soft spring tones</span>
               </button>
+              <button type="button" class="theme-card" data-field="seasonal_theme" data-value="thanksgiving" aria-pressed="false">
+                <span class="theme-swatch theme-swatch--thanksgiving" aria-hidden="true"></span>
+                <span class="theme-card-label">Thanksgiving</span>
+                <span class="theme-card-desc">Harvest rust &amp; gold</span>
+              </button>
+            </div>
+            <div class="holiday-decor-controls" id="holidayDecorControls">
+              <div class="toggle-row">
+                <label class="toggle">
+                  <input type="checkbox" id="holidayDecorationsToggle" checked />
+                  <span>Show holiday decorations</span>
+                </label>
+              </div>
+              <p class="option-group-label" id="decorIntensityLabel">Decoration intensity</p>
+              <div class="option-chip-grid" role="radiogroup" aria-labelledby="decorIntensityLabel">
+                <button type="button" class="option-chip is-selected" data-field="decoration_intensity" data-value="subtle" aria-pressed="true">Subtle</button>
+                <button type="button" class="option-chip" data-field="decoration_intensity" data-value="festive" aria-pressed="false">Festive</button>
+                <button type="button" class="option-chip" data-field="decoration_intensity" data-value="extra_festive" aria-pressed="false">Extra Festive</button>
+              </div>
+              <p class="field-hint">Subtle is recommended for everyday shopping. Extra Festive is for peak holiday weeks.</p>
             </div>
           </fieldset>
 

@@ -1116,6 +1116,8 @@
               seasonal_theme: "off",
               accent: "terracotta",
               decorative_accent: "none",
+              holiday_decorations: true,
+              decoration_intensity: "subtle",
               hero_overlay: "medium",
               hero_text_position: "left",
               background_style: "warm_cream",

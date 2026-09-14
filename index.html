@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
+<html lang="en" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-holiday-decor="off" data-decor-intensity="subtle" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -53,6 +53,7 @@
 
   <!-- Header -->
   <header class="site-header">
+    <div class="season-decor season-decor--header" aria-hidden="true"></div>
     <nav class="nav container" aria-label="Primary">
       <a href="#top" class="brand" aria-label="S&amp;R Concrete Crafts — home">
         <img class="brand-logo" src="assets/sandrlogo.jpg" alt="" width="48" height="48" />
@@ -107,6 +108,7 @@
       />
       <div class="hero-scrim"></div>
       <div class="hero-decor" aria-hidden="true"></div>
+      <div class="season-decor season-decor--hero" aria-hidden="true"></div>
     </div>
 
     <div class="container hero-inner">
@@ -126,6 +128,8 @@
       </svg>
     </div>
   </section>
+
+  <div class="season-decor season-decor--divider" aria-hidden="true"></div>
 
   <!-- Products -->
   <section id="products" class="products">
@@ -250,6 +254,7 @@
 
   <!-- Footer -->
   <footer class="site-footer">
+    <div class="season-decor season-decor--footer" aria-hidden="true"></div>
     <div class="footer-desert" aria-hidden="true">
       <svg viewBox="0 0 1440 160" preserveAspectRatio="none" focusable="false">
         <path fill="rgba(90,52,34,0.45)" d="M0 160V70c180-30 340-50 520-35 160 14 260 40 400 35 180-6 280-40 520-25v115H0z"/>

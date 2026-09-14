@@ -2859,6 +2859,31 @@ body.action-sheet-open { overflow: hidden; }
   background:
     linear-gradient(135deg, #f7efe4 0 28%, #7aa8a4 28% 48%, #f0c9a8 48% 68%, #b8a4c8 68% 85%, #8fad7a 85%);
 }
+.theme-swatch--thanksgiving {
+  background:
+    linear-gradient(135deg, #f2e6d4 0 28%, #b85a28 28% 52%, #c9a24a 52% 72%, #7a3a18 72%);
+}
+.holiday-decor-controls {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(58, 42, 34, 0.1);
+}
+.holiday-decor-controls.is-disabled {
+  opacity: 0.55;
+}
+.holiday-decor-controls .toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.holiday-decor-controls .toggle input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #c45c32;
+}
 .option-chip-grid {
   display: flex;
   flex-wrap: wrap;
@@ -3306,6 +3331,34 @@ body.action-sheet-open { overflow: hidden; }
   --accent: #6f9e9a;
   --cream: #f8f2ea;
   --peach: #f2d4c0;
+}
+.sf-preview[data-season="thanksgiving"] {
+  --terracotta: #b85a28;
+  --clay: #b85a28;
+  --clay-deep: #7a3a18;
+  --turquoise: #6b5a3e;
+  --accent: #b85a28;
+  --cream: #f2e6d4;
+  --sand: #c9a24a;
+  --brown: #3a2a1c;
+}
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="subtle"] {
+  --season-decor-opacity: 0.42;
+  --season-decor-scale: 1;
+}
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="festive"] {
+  --season-decor-opacity: 0.68;
+  --season-decor-scale: 1.12;
+}
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="extra_festive"] {
+  --season-decor-opacity: 0.9;
+  --season-decor-scale: 1.28;
+}
+.sf-prev-header,
+.sf-prev-hero,
+.sf-prev-footer {
+  position: relative;
+  overflow: hidden;
 }
 
 @media (min-width: 960px) {

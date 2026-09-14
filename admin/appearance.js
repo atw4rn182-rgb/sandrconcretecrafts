@@ -96,6 +96,20 @@
       });
     }
 
+    var holidayOn = resolvedSeason !== "off" && draft.holiday_decorations;
+    var holidayToggle = $("holidayDecorationsToggle");
+    if (holidayToggle) {
+      holidayToggle.checked = !!draft.holiday_decorations;
+      holidayToggle.disabled = resolvedSeason === "off";
+    }
+    var decorControls = $("holidayDecorControls");
+    if (decorControls) {
+      decorControls.classList.toggle("is-disabled", resolvedSeason === "off");
+    }
+    document.querySelectorAll('[data-field="decoration_intensity"]').forEach(function (btn) {
+      btn.disabled = resolvedSeason === "off" || !draft.holiday_decorations;
+    });
+
     updateReminder();
   }
 
@@ -209,6 +223,15 @@
         setField(btn.getAttribute("data-field"), btn.getAttribute("data-value"));
       });
     });
+
+    var holidayToggle = $("holidayDecorationsToggle");
+    if (holidayToggle) {
+      holidayToggle.addEventListener("change", function () {
+        draft.holiday_decorations = !!holidayToggle.checked;
+        draft = SRAppearance.normalize(draft);
+        refreshPreview();
+      });
+    }
 
     document.querySelectorAll(".preview-device-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
