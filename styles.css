@@ -1022,21 +1022,22 @@ html {
   --hero-scrim-opacity: 1;
 }
 
-/* Accent — buttons, badges, prices, links (not product photos) */
+/* Accent — buttons, badges, prices, links (not product photos).
+   Use palette variables (not fixed hex) so seasonal themes can retint chrome. */
 html[data-accent="turquoise"],
 body[data-accent="turquoise"] {
-  --accent: #2a6b68;
-  --accent-soft: #3f8582;
+  --accent: var(--turquoise);
+  --accent-soft: var(--turquoise-soft);
 }
 html[data-accent="terracotta"],
 body[data-accent="terracotta"] {
-  --accent: #c45c32;
-  --accent-soft: #d4724a;
+  --accent: var(--terracotta);
+  --accent-soft: var(--clay-soft);
 }
 html[data-accent="sandstone"],
 body[data-accent="sandstone"] {
-  --accent: #a67c52;
-  --accent-soft: #c9a87a;
+  --accent: var(--sand);
+  --accent-soft: #d4bc94;
 }
 html[data-accent="desert_teal"],
 body[data-accent="desert_teal"] {
@@ -1189,17 +1190,22 @@ body[data-decor="desert_pattern"] .hero-decor {
     radial-gradient(circle at 78% 62%, currentColor 0 2.2px, transparent 2.8px);
 }
 
-/* Seasonal overlays — tasteful, keep Southwestern identity */
+/* Seasonal overlays — tasteful, keep Southwestern identity.
+   These retint --terracotta/--clay/--turquoise/--cream so accent chrome follows. */
 html[data-season="halloween"],
 body[data-season="halloween"] {
   --terracotta: #b85428;
   --clay: #b85428;
   --clay-deep: #7a3a1e;
   --clay-soft: #d4724a;
-  --cream: #f3e8d8;
-  --cream-soft: #faf3ea;
+  --cream: #efe2d0;
+  --cream-soft: #f7edea;
   --brown: #2a221c;
   --evening: #c45c32;
+  --sand: #a67c52;
+}
+html[data-season="halloween"] .section-eyebrow {
+  color: #b85428;
 }
 html[data-season="halloween"] .hero::after,
 body[data-season="halloween"] .hero::after {
@@ -1209,10 +1215,10 @@ body[data-season="halloween"] .hero::after {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 86% 14%, rgba(255, 248, 220, 0.38) 0 7px, transparent 8px),
-    radial-gradient(circle at 78% 24%, rgba(255, 248, 220, 0.22) 0 2px, transparent 3px),
-    radial-gradient(circle at 92% 30%, rgba(255, 248, 220, 0.18) 0 1.5px, transparent 2.5px),
-    radial-gradient(ellipse 18px 8px at 72% 18%, rgba(30, 22, 18, 0.35), transparent 70%);
+    radial-gradient(circle at 88% 12%, rgba(255, 236, 180, 0.55) 0 9px, transparent 11px),
+    radial-gradient(circle at 78% 22%, rgba(255, 248, 220, 0.35) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 93% 28%, rgba(255, 248, 220, 0.28) 0 2px, transparent 3px),
+    radial-gradient(ellipse 22px 10px at 70% 16%, rgba(20, 14, 10, 0.45), transparent 72%);
 }
 
 html[data-season="christmas"],
@@ -1220,9 +1226,10 @@ body[data-season="christmas"] {
   --terracotta: #8f3f3f;
   --clay: #8f3f3f;
   --clay-deep: #6e3030;
+  --clay-soft: #b45a5a;
   --turquoise: #2f5d45;
   --turquoise-soft: #3f7358;
-  --cream: #f4efe6;
+  --cream: #f0ebe1;
   --cream-soft: #fbf8f2;
   --sand: #c9a24a;
 }
@@ -1237,8 +1244,9 @@ body[data-season="christmas"] .hero::after {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 88% 16%, rgba(201, 162, 74, 0.28) 0 3px, transparent 4px),
-    radial-gradient(circle at 80% 28%, rgba(255, 248, 240, 0.2) 0 1.5px, transparent 2.5px);
+    radial-gradient(circle at 88% 14%, rgba(201, 162, 74, 0.45) 0 4px, transparent 5.5px),
+    radial-gradient(circle at 80% 26%, rgba(255, 248, 240, 0.35) 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 30%, rgba(201, 162, 74, 0.28) 0 2px, transparent 3px);
 }
 
 html[data-season="fourth_of_july"],
@@ -1246,10 +1254,15 @@ body[data-season="fourth_of_july"] {
   --terracotta: #9b4545;
   --clay: #9b4545;
   --clay-deep: #7a3535;
+  --clay-soft: #b86868;
   --turquoise: #4a5f7a;
   --turquoise-soft: #5c7391;
-  --cream: #f5efe6;
+  --cream: #efe8dc;
   --cream-soft: #fbf7f0;
+  --sand: #c9a87a;
+}
+html[data-season="fourth_of_july"] .section-eyebrow {
+  color: #4a5f7a;
 }
 html[data-season="fourth_of_july"] .hero::after,
 body[data-season="fourth_of_july"] .hero::after {
@@ -1259,9 +1272,10 @@ body[data-season="fourth_of_july"] .hero::after {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 84% 18%, rgba(255, 248, 240, 0.35) 0 2px, transparent 3px),
-    radial-gradient(circle at 90% 28%, rgba(255, 248, 240, 0.22) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 76% 26%, rgba(255, 248, 240, 0.2) 0 1px, transparent 2px);
+    radial-gradient(circle at 84% 16%, rgba(255, 248, 240, 0.55) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 90% 26%, rgba(255, 248, 240, 0.4) 0 2px, transparent 3px),
+    radial-gradient(circle at 76% 24%, rgba(255, 248, 240, 0.35) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 88% 34%, rgba(200, 210, 230, 0.3) 0 1.5px, transparent 2.5px);
 }
 
 html[data-season="easter"],
@@ -1269,12 +1283,14 @@ body[data-season="easter"] {
   --terracotta: #d08a6a;
   --clay: #d08a6a;
   --clay-deep: #b06e52;
+  --clay-soft: #e0a888;
   --turquoise: #6f9e9a;
   --turquoise-soft: #84b0ac;
-  --cream: #f8f2ea;
+  --cream: #f5eee6;
   --cream-soft: #fffaf4;
   --peach: #f2d4c0;
   --evening: #b8a4c8;
+  --sand: #d2b896;
 }
 html[data-season="easter"] .section-eyebrow {
   color: #6f9e9a;

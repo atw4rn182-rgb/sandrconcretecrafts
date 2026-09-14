@@ -119,8 +119,16 @@ if (fs.existsSync(indexPath)) {
   var html = fs.readFileSync(indexPath, "utf8");
   var next = html
     .replace(
+      /href="\/styles\.css(?:\?v=[^"]*)?"/g,
+      'href="/styles.css?v=' + buildStamp + '"'
+    )
+    .replace(
       /src="\/js\/env\.js(?:\?v=[^"]*)?"/g,
       'src="/js/env.js?v=' + buildStamp + '"'
+    )
+    .replace(
+      /src="\/js\/appearance\.js(?:\?v=[^"]*)?"/g,
+      'src="/js/appearance.js?v=' + buildStamp + '"'
     )
     .replace(
       /src="\/app\.js(?:\?v=[^"]*)?"/g,

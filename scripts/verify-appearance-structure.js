@@ -27,6 +27,9 @@ var checks = [
   ["site-assets bucket", api.indexOf("site-assets") >= 0],
   ["hero positions model", model.indexOf("hero_position_desktop_x") >= 0],
   ["season CSS halloween", css.indexOf('data-season="halloween"') >= 0],
+  ["accent follows terracotta var", css.indexOf("--accent: var(--terracotta)") >= 0],
+  ["accent follows turquoise var", css.indexOf("--accent: var(--turquoise)") >= 0],
+  ["no hardcoded terracotta accent hex", css.indexOf('data-accent="terracotta"]') >= 0 && !/data-accent="terracotta"\][^{]*\{\s*--accent:\s*#c45c32/.test(css)],
   ["no secrets in appearance files", !/SERVICE_ROLE|sk_live_|sk_test_|rk_live_/.test(html + model + adminJs)],
 ];
 
