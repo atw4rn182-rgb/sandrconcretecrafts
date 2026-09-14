@@ -1187,10 +1187,28 @@
     }
   }
 
+  async function loadAppearance() {
+    try {
+      if (typeof SRAppearance === "undefined") return;
+      var client =
+        typeof SRSupabase !== "undefined" && SRSupabase.isConfigured()
+          ? SRSupabase.createClient()
+          : null;
+      var appearance = await SRAppearance.fetchAppearance(client);
+      SRAppearance.applyToDocument(appearance);
+    } catch (err) {
+      if (typeof SRAppearance !== "undefined") {
+        SRAppearance.applyToDocument(SRAppearance.cloneDefaults());
+      }
+    }
+  }
+
   async function init() {
     bind();
     syncCheckoutButtonLabel();
     handleCheckoutReturn();
+    // Theme first so paint settles quickly; catalog can follow.
+    await loadAppearance();
     if (liveMode) {
       await loadLiveCatalog(false);
     } else {

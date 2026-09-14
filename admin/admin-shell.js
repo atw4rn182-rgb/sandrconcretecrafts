@@ -42,7 +42,7 @@
       link("/admin/categories.html", "categories", "Categories", "▤") +
       link("/admin/orders.html", "orders", "Orders", "☰") +
       link("/admin/customers.html", "customers", "Customers", "☺") +
-      '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">◈</span> Appearance</a>' +
+      link("/admin/appearance.html", "appearance", "Appearance", "◈") +
       '<a class="nav-link is-disabled" href="#" aria-disabled="true" title="Coming soon"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</a>'
     );
   }
@@ -93,7 +93,9 @@
         '<a class="admin-more-link" href="/admin/customers.html"><span>Customers</span><span class="chev" aria-hidden="true">' +
         ICONS.chevron +
         "</span></a>" +
-        '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Appearance <em>Coming soon</em></span></a>' +
+        '<a class="admin-more-link" href="/admin/appearance.html"><span>Appearance</span><span class="chev" aria-hidden="true">' +
+        ICONS.chevron +
+        "</span></a>" +
         '<a class="admin-more-link is-disabled" href="#" aria-disabled="true"><span>Settings <em>Coming soon</em></span></a>' +
         '<button type="button" class="admin-more-link admin-more-signout" id="moreSignOutBtn">Sign Out</button>' +
         "</div>" +
@@ -103,7 +105,14 @@
     }
 
     var key = active || "dashboard";
-    if (key === "categories" || key === "customers" || key === "settings") key = "more";
+    if (
+      key === "categories" ||
+      key === "customers" ||
+      key === "appearance" ||
+      key === "settings"
+    ) {
+      key = "more";
+    }
     document.querySelectorAll(".bottom-nav-item[data-nav]").forEach(function (el) {
       var on = el.getAttribute("data-nav") === key;
       el.classList.toggle("is-active", on);

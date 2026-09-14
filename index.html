@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -97,8 +97,10 @@
         width="1920"
         height="1080"
         fetchpriority="high"
+        data-appearance-hero
       />
       <div class="hero-scrim"></div>
+      <div class="hero-decor" aria-hidden="true"></div>
     </div>
 
     <div class="container hero-inner">
@@ -356,6 +358,7 @@
   <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
   <script src="/js/supabase-client.js"></script>
+  <script src="/js/appearance.js"></script>
   <script src="/js/storefront-catalog.js"></script>
   <script src="/app.js"></script>
 </body>

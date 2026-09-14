@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Appearance — S&amp;R Concrete Crafts Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="admin-gate" id="adminGate">Checking your access…</div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+    <aside class="admin-sidebar" aria-label="Admin menu">
+      <div class="sidebar-brand">
+        <img src="/assets/sandrlogo.jpg" alt="" width="44" height="44" />
+        <div>
+          <strong>S&amp;R Concrete Crafts</strong>
+          <span>Shop manager</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
+      <div class="sidebar-foot">
+        <div class="account-chip">
+          <span class="label">Signed in as</span>
+          <span class="email" id="ownerEmail">—</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="signOutBtn">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main appearance-main">
+      <header class="admin-topbar">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-row appearance-topbar-row">
+          <div>
+            <h1>Appearance</h1>
+            <p class="desktop-only">Choose how your shop looks. Preview updates instantly — Save when you’re happy.</p>
+          </div>
+          <div class="appearance-top-actions" id="appearanceTopActions">
+            <span class="unsaved-pill" id="unsavedPill" hidden>Unsaved changes</span>
+            <a class="btn btn-ghost" href="/" target="_blank" rel="noopener noreferrer">Preview Storefront</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="flash" id="flash" hidden role="status"></div>
+
+      <div class="appearance-layout" id="appearanceLayout">
+        <!-- Preview column (first on mobile) -->
+        <section class="appearance-preview-col" aria-labelledby="previewHeading">
+          <div class="appearance-preview-head">
+            <h2 id="previewHeading">Storefront Preview</h2>
+            <div class="preview-device-toggle" role="group" aria-label="Preview size">
+              <button type="button" class="preview-device-btn is-active" data-device="desktop" aria-pressed="true">Desktop</button>
+              <button type="button" class="preview-device-btn" data-device="mobile" aria-pressed="false">Mobile</button>
+            </div>
+          </div>
+          <div class="appearance-preview-frame" id="previewFrame" data-device="desktop">
+            <div class="sf-preview" id="sfPreview" data-theme="southwestern" data-season="off" data-accent="terracotta" data-decor="none" data-hero-overlay="medium" data-hero-text="left" data-bg="warm_cream" data-cards="soft">
+              <header class="sf-prev-header">
+                <div class="sf-prev-brand">
+                  <img src="/assets/sandrlogo.jpg" alt="" width="36" height="36" />
+                  <div>
+                    <strong>S&amp;R Concrete Crafts</strong>
+                    <span>Handmade in Milan, NM</span>
+                  </div>
+                </div>
+                <span class="sf-prev-cart" aria-hidden="true">Cart</span>
+              </header>
+              <div class="sf-prev-hero">
+                <img class="sf-prev-hero-img" src="/assets/hero-porch-fullbleed.jpg" alt="" data-appearance-hero />
+                <div class="sf-prev-hero-scrim"></div>
+                <div class="sf-prev-hero-copy">
+                  <p class="sf-prev-hero-brand">S&amp;R Concrete Crafts</p>
+                  <p class="sf-prev-hero-title">Handcrafted concrete for home &amp; garden</p>
+                  <p class="sf-prev-hero-lead">Beautifully imperfect pieces, made with care in Milan, New Mexico.</p>
+                  <span class="sf-prev-btn">Shop the Collection</span>
+                </div>
+                <div class="sf-prev-decor" aria-hidden="true"></div>
+              </div>
+              <div class="sf-prev-products">
+                <p class="sf-prev-eyebrow">The Collection</p>
+                <div class="sf-prev-cards">
+                  <article class="sf-prev-card">
+                    <div class="sf-prev-card-img">
+                      <span class="sf-prev-badge">Featured</span>
+                    </div>
+                    <div class="sf-prev-card-body">
+                      <h3>Sample piece</h3>
+                      <p>Hand-cast concrete decor</p>
+                      <div class="sf-prev-card-foot">
+                        <span class="sf-prev-price">$—</span>
+                        <span class="sf-prev-add">Add</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="sf-prev-card">
+                    <div class="sf-prev-card-img">
+                      <span class="sf-prev-badge sf-prev-badge--soft">New</span>
+                    </div>
+                    <div class="sf-prev-card-body">
+                      <h3>Garden accent</h3>
+                      <p>Painted or raw finish</p>
+                      <div class="sf-prev-card-foot">
+                        <span class="sf-prev-price">$—</span>
+                        <span class="sf-prev-add">Add</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+              <div class="sf-prev-trust">
+                <span>Based in Milan, NM</span>
+                <span>Handcrafted in Small Batches</span>
+              </div>
+              <footer class="sf-prev-footer">
+                <strong>S&amp;R Concrete Crafts</strong>
+                <span>Hand-cast in Milan, New Mexico</span>
+              </footer>
+            </div>
+          </div>
+          <p class="appearance-preview-note muted">Preview updates as you change options. Your live shop changes only after you Save.</p>
+        </section>
+
+        <!-- Controls -->
+        <section class="appearance-controls" aria-labelledby="controlsHeading">
+          <h2 id="controlsHeading" class="sr-only">Appearance controls</h2>
+
+          <div class="appearance-reminder" id="seasonReminder" hidden>
+            <strong id="seasonReminderTitle">Upcoming season</strong>
+            <p id="seasonReminderBody"></p>
+          </div>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Base Theme</legend>
+            <p class="field-hint">Your Southwestern look stays the foundation year-round.</p>
+            <div class="theme-card-grid" role="radiogroup" aria-label="Base theme">
+              <button type="button" class="theme-card is-selected" data-field="base_theme" data-value="southwestern" aria-pressed="true">
+                <span class="theme-swatch theme-swatch--sw" aria-hidden="true"></span>
+                <span class="theme-card-label">Southwestern</span>
+                <span class="theme-card-desc">Default — cream, terracotta &amp; turquoise</span>
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Seasonal Theme</legend>
+            <p class="field-hint">A tasteful overlay on your Southwestern shop — not a whole new website.</p>
+            <div class="season-mode-row" role="group" aria-label="Seasonal mode">
+              <button type="button" class="season-mode-btn is-active" data-field="seasonal_mode" data-value="manual" aria-pressed="true">Manual</button>
+              <button type="button" class="season-mode-btn" data-field="seasonal_mode" data-value="automatic" aria-pressed="false">Automatic</button>
+            </div>
+            <p class="field-hint" id="seasonModeHint">Manual: you pick the season. It always overrides Automatic.</p>
+            <div class="theme-card-grid" id="seasonalThemeGrid" role="radiogroup" aria-label="Seasonal theme">
+              <button type="button" class="theme-card is-selected" data-field="seasonal_theme" data-value="off" aria-pressed="true">
+                <span class="theme-swatch theme-swatch--sw" aria-hidden="true"></span>
+                <span class="theme-card-label">Off / Default</span>
+                <span class="theme-card-desc">Classic Southwestern</span>
+              </button>
+              <button type="button" class="theme-card" data-field="seasonal_theme" data-value="halloween" aria-pressed="false">
+                <span class="theme-swatch theme-swatch--halloween" aria-hidden="true"></span>
+                <span class="theme-card-label">Halloween</span>
+                <span class="theme-card-desc">Burnt orange &amp; charcoal</span>
+              </button>
+              <button type="button" class="theme-card" data-field="seasonal_theme" data-value="christmas" aria-pressed="false">
+                <span class="theme-swatch theme-swatch--christmas" aria-hidden="true"></span>
+                <span class="theme-card-label">Christmas</span>
+                <span class="theme-card-desc">Evergreen &amp; muted gold</span>
+              </button>
+              <button type="button" class="theme-card" data-field="seasonal_theme" data-value="fourth_of_july" aria-pressed="false">
+                <span class="theme-swatch theme-swatch--july" aria-hidden="true"></span>
+                <span class="theme-card-label">Fourth of July</span>
+                <span class="theme-card-desc">Muted red &amp; dusty blue</span>
+              </button>
+              <button type="button" class="theme-card" data-field="seasonal_theme" data-value="easter" aria-pressed="false">
+                <span class="theme-swatch theme-swatch--easter" aria-hidden="true"></span>
+                <span class="theme-card-label">Easter</span>
+                <span class="theme-card-desc">Soft spring tones</span>
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Accent Color</legend>
+            <p class="field-hint">Buttons, highlights, badges, and links — not product photos.</p>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Accent color">
+              <button type="button" class="option-chip" data-field="accent" data-value="turquoise" aria-pressed="false">
+                <span class="chip-dot chip-dot--turquoise" aria-hidden="true"></span> Turquoise
+              </button>
+              <button type="button" class="option-chip is-selected" data-field="accent" data-value="terracotta" aria-pressed="true">
+                <span class="chip-dot chip-dot--terracotta" aria-hidden="true"></span> Terracotta
+              </button>
+              <button type="button" class="option-chip" data-field="accent" data-value="sandstone" aria-pressed="false">
+                <span class="chip-dot chip-dot--sandstone" aria-hidden="true"></span> Sandstone
+              </button>
+              <button type="button" class="option-chip" data-field="accent" data-value="desert_teal" aria-pressed="false">
+                <span class="chip-dot chip-dot--desert-teal" aria-hidden="true"></span> Desert Teal
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Decorative Accent</legend>
+            <p class="field-hint">A subtle Southwestern touch in the hero — keep it light.</p>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Decorative accent">
+              <button type="button" class="option-chip is-selected" data-field="decorative_accent" data-value="none" aria-pressed="true">None</button>
+              <button type="button" class="option-chip" data-field="decorative_accent" data-value="zia" aria-pressed="false">Zia Accent</button>
+              <button type="button" class="option-chip" data-field="decorative_accent" data-value="roadrunner" aria-pressed="false">Roadrunner Accent</button>
+              <button type="button" class="option-chip" data-field="decorative_accent" data-value="desert_pattern" aria-pressed="false">Desert Pattern</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Hero Image</legend>
+            <p class="field-hint">Change the big photo at the top of your shop. Preview updates right away — Save when you’re happy.</p>
+            <div class="hero-image-panel">
+              <div class="hero-image-thumb-wrap">
+                <img id="heroThumb" class="hero-image-thumb" src="/assets/hero-porch-fullbleed.jpg" alt="Current hero preview" />
+              </div>
+              <div class="hero-image-actions">
+                <label class="btn btn-primary hero-upload-label" for="heroFileInput">
+                  Change Hero Image
+                </label>
+                <input type="file" id="heroFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden />
+                <button type="button" class="btn btn-ghost" id="restoreSavedHeroBtn">Restore Current Saved Image</button>
+                <button type="button" class="btn btn-ghost" id="restoreDefaultHeroBtn">Restore Default Hero</button>
+              </div>
+              <p class="muted" id="heroImageStatus" aria-live="polite"></p>
+            </div>
+            <p class="option-group-label" id="heroPosDesktopLabel">Photo position — Desktop</p>
+            <p class="field-hint">Aim the important part of the photo for wide screens.</p>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Desktop horizontal position">
+              <button type="button" class="option-chip" data-field="hero_position_desktop_x" data-value="left" aria-pressed="false">Left</button>
+              <button type="button" class="option-chip" data-field="hero_position_desktop_x" data-value="center" aria-pressed="false">Center</button>
+              <button type="button" class="option-chip is-selected" data-field="hero_position_desktop_x" data-value="right" aria-pressed="true">Right</button>
+            </div>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Desktop vertical position">
+              <button type="button" class="option-chip" data-field="hero_position_desktop_y" data-value="top" aria-pressed="false">Top</button>
+              <button type="button" class="option-chip is-selected" data-field="hero_position_desktop_y" data-value="center" aria-pressed="true">Center</button>
+              <button type="button" class="option-chip" data-field="hero_position_desktop_y" data-value="bottom" aria-pressed="false">Bottom</button>
+            </div>
+            <p class="option-group-label" id="heroPosMobileLabel">Photo position — Phone</p>
+            <p class="field-hint">Aim the important part for phone screens (use the Mobile preview toggle).</p>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Phone horizontal position">
+              <button type="button" class="option-chip" data-field="hero_position_mobile_x" data-value="left" aria-pressed="false">Left</button>
+              <button type="button" class="option-chip is-selected" data-field="hero_position_mobile_x" data-value="center" aria-pressed="true">Center</button>
+              <button type="button" class="option-chip" data-field="hero_position_mobile_x" data-value="right" aria-pressed="false">Right</button>
+            </div>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Phone vertical position">
+              <button type="button" class="option-chip" data-field="hero_position_mobile_y" data-value="top" aria-pressed="false">Top</button>
+              <button type="button" class="option-chip is-selected" data-field="hero_position_mobile_y" data-value="center" aria-pressed="true">Center</button>
+              <button type="button" class="option-chip" data-field="hero_position_mobile_y" data-value="bottom" aria-pressed="false">Bottom</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Hero Options</legend>
+            <p class="field-hint">Overlay darkens the photo so text stays readable.</p>
+            <p class="option-group-label" id="heroOverlayLabel">Overlay strength</p>
+            <div class="option-chip-grid" role="radiogroup" aria-labelledby="heroOverlayLabel">
+              <button type="button" class="option-chip" data-field="hero_overlay" data-value="light" aria-pressed="false">Light</button>
+              <button type="button" class="option-chip is-selected" data-field="hero_overlay" data-value="medium" aria-pressed="true">Medium</button>
+              <button type="button" class="option-chip" data-field="hero_overlay" data-value="strong" aria-pressed="false">Strong</button>
+            </div>
+            <p class="option-group-label" id="heroTextLabel">Text position</p>
+            <div class="option-chip-grid" role="radiogroup" aria-labelledby="heroTextLabel">
+              <button type="button" class="option-chip is-selected" data-field="hero_text_position" data-value="left" aria-pressed="true">Left</button>
+              <button type="button" class="option-chip" data-field="hero_text_position" data-value="center" aria-pressed="false">Center</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Background</legend>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Page background">
+              <button type="button" class="option-chip is-selected" data-field="background_style" data-value="warm_cream" aria-pressed="true">
+                <span class="chip-dot chip-dot--cream" aria-hidden="true"></span> Warm Cream
+              </button>
+              <button type="button" class="option-chip" data-field="background_style" data-value="soft_sandstone" aria-pressed="false">
+                <span class="chip-dot chip-dot--sand" aria-hidden="true"></span> Soft Sandstone
+              </button>
+              <button type="button" class="option-chip" data-field="background_style" data-value="light_peach" aria-pressed="false">
+                <span class="chip-dot chip-dot--peach" aria-hidden="true"></span> Light Peach
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="appearance-fieldset">
+            <legend>Product Cards</legend>
+            <p class="field-hint">Look only — product names, prices, and inventory stay the same.</p>
+            <div class="option-chip-grid" role="radiogroup" aria-label="Product card style">
+              <button type="button" class="option-chip is-selected" data-field="product_card_style" data-value="soft" aria-pressed="true">Soft</button>
+              <button type="button" class="option-chip" data-field="product_card_style" data-value="elevated" aria-pressed="false">Elevated</button>
+            </div>
+          </fieldset>
+
+          <div class="appearance-actions">
+            <button type="button" class="btn btn-primary" id="saveAppearanceBtn">Save Appearance</button>
+            <button type="button" class="btn btn-ghost" id="resetSavedBtn">Reset to Saved</button>
+            <button type="button" class="btn btn-ghost" id="resetDefaultBtn">Reset to Southwestern Default</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
+  <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/appearance.js"></script>
+  <script src="/admin/admin-auth.js"></script>
+  <script src="/admin/admin-shell.js"></script>
+  <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/appearance.js"></script>
+</body>
+</html>

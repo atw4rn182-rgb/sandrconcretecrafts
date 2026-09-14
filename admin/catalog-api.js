@@ -6,6 +6,7 @@
   "use strict";
 
   var BUCKET = "product-images";
+  var SITE_ASSETS_BUCKET = "site-assets";
   var ALLOWED_TYPES = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -14,6 +15,10 @@
     "image/avif": "avif",
   };
   var MAX_BYTES = 10 * 1024 * 1024;
+  var HERO_MAX_BYTES = 10 * 1024 * 1024;
+  var HERO_MAX_EDGE = 2400;
+  var HERO_MIN_WIDTH = 800;
+  var HERO_MIN_HEIGHT = 450;
 
   function client() {
     return SRAdminAuth.getClient();
@@ -1082,6 +1087,252 @@
     };
   }
 
+  async function getSiteSettingsRow() {
+    var supabase = await client();
+    var result = await supabase
+      .from("site_settings")
+      .select("id, config")
+      .limit(1)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t load site settings."));
+    }
+    return {
+      id: result.data && result.data.id,
+      config: (result.data && result.data.config) || {},
+    };
+  }
+
+  async function getAppearance() {
+    var row = await getSiteSettingsRow();
+    var appearance =
+      typeof SRAppearance !== "undefined"
+        ? SRAppearance.normalize(row.config && row.config.appearance)
+        : Object.assign(
+            {},
+            {
+              base_theme: "southwestern",
+              seasonal_mode: "manual",
+              seasonal_theme: "off",
+              accent: "terracotta",
+              decorative_accent: "none",
+              hero_overlay: "medium",
+              hero_text_position: "left",
+              background_style: "warm_cream",
+              product_card_style: "soft",
+              hero_image_url: null,
+              hero_storage_path: null,
+              hero_position_desktop_x: "right",
+              hero_position_desktop_y: "center",
+              hero_position_mobile_x: "center",
+              hero_position_mobile_y: "center",
+            },
+            (row.config && row.config.appearance) || {}
+          );
+    return {
+      id: row.id,
+      appearance: appearance,
+      config: row.config || {},
+    };
+  }
+
+  async function saveAppearance(appearanceInput, options) {
+    var opts = options || {};
+    var current = await getAppearance();
+    if (!current.id) {
+      throw new Error("Site settings aren’t set up yet.");
+    }
+    var appearance =
+      typeof SRAppearance !== "undefined"
+        ? SRAppearance.normalize(appearanceInput)
+        : appearanceInput;
+
+    var previousPath = current.appearance && current.appearance.hero_storage_path;
+    var pendingFile = opts.pendingHeroFile || null;
+
+    if (pendingFile) {
+      var uploaded = await uploadHeroImage(pendingFile);
+      appearance.hero_image_url = uploaded.image_url;
+      appearance.hero_storage_path = uploaded.path;
+    }
+
+    if (opts.useDefaultHero) {
+      appearance.hero_image_url = null;
+      appearance.hero_storage_path = null;
+    }
+
+    appearance =
+      typeof SRAppearance !== "undefined"
+        ? SRAppearance.normalize(appearance)
+        : appearance;
+
+    var nextConfig = Object.assign({}, current.config || {}, {
+      appearance: appearance,
+    });
+    var supabase = await client();
+    var result = await supabase
+      .from("site_settings")
+      .update({ config: nextConfig })
+      .eq("id", current.id)
+      .select("id, config")
+      .maybeSingle();
+    if (result.error) {
+      // If we uploaded a new hero but failed to save settings, try to remove the orphan.
+      if (pendingFile && appearance.hero_storage_path) {
+        try {
+          await supabase.storage
+            .from(SITE_ASSETS_BUCKET)
+            .remove([appearance.hero_storage_path]);
+        } catch (cleanupErr) {
+          /* ignore */
+        }
+      }
+      throw new Error(friendlyDbError(result.error, "Couldn’t save appearance."));
+    }
+
+    // After successful save, remove previous uploaded hero if replaced or restored to default.
+    if (
+      previousPath &&
+      previousPath !== appearance.hero_storage_path &&
+      String(previousPath).indexOf("hero/") === 0
+    ) {
+      try {
+        await supabase.storage.from(SITE_ASSETS_BUCKET).remove([previousPath]);
+      } catch (cleanupErr) {
+        /* non-fatal */
+      }
+    }
+
+    return appearance;
+  }
+
+  function validateHeroImageFile(file) {
+    if (!file) return "Choose a hero image.";
+    if (!ALLOWED_TYPES[file.type]) {
+      return "Use JPEG, PNG, WebP, GIF, or AVIF for the hero image.";
+    }
+    if (file.size > HERO_MAX_BYTES) {
+      return "Hero image must be 10 MB or smaller.";
+    }
+    return null;
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("That image couldn’t be read. Try another file."));
+      };
+      img.src = url;
+    });
+  }
+
+  /**
+   * Resize oversized heroes client-side (max edge 2400) as JPEG/WebP when possible.
+   * Returns { file, width, height, warning }.
+   */
+  async function prepareHeroImageFile(file) {
+    var err = validateHeroImageFile(file);
+    if (err) throw new Error(err);
+
+    var img = await loadImageFromFile(file);
+    var width = img.naturalWidth || img.width;
+    var height = img.naturalHeight || img.height;
+    var warning = null;
+
+    if (width < HERO_MIN_WIDTH || height < HERO_MIN_HEIGHT) {
+      warning =
+        "This image is smaller than recommended (" +
+        width +
+        "×" +
+        height +
+        "). It may look soft or pixelated on large screens.";
+    }
+
+    var needsResize = width > HERO_MAX_EDGE || height > HERO_MAX_EDGE;
+    if (!needsResize || typeof document === "undefined") {
+      return { file: file, width: width, height: height, warning: warning };
+    }
+
+    var scale = Math.min(HERO_MAX_EDGE / width, HERO_MAX_EDGE / height, 1);
+    var tw = Math.max(1, Math.round(width * scale));
+    var th = Math.max(1, Math.round(height * scale));
+    var canvas = document.createElement("canvas");
+    canvas.width = tw;
+    canvas.height = th;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return { file: file, width: width, height: height, warning: warning };
+    }
+    ctx.drawImage(img, 0, 0, tw, th);
+
+    var outType =
+      file.type === "image/png" || file.type === "image/webp"
+        ? file.type
+        : "image/jpeg";
+    var quality = outType === "image/png" ? undefined : 0.86;
+
+    var blob = await new Promise(function (resolve) {
+      canvas.toBlob(function (b) {
+        resolve(b);
+      }, outType, quality);
+    });
+
+    if (!blob) {
+      return { file: file, width: width, height: height, warning: warning };
+    }
+
+    var name = String(file.name || "hero").replace(/\.[^.]+$/, "");
+    var ext = ALLOWED_TYPES[outType] || "jpg";
+    var next = new File([blob], name + "-hero." + ext, { type: outType });
+    return { file: next, width: tw, height: th, warning: warning };
+  }
+
+  function publicUrlForSiteAsset(supabase, path) {
+    var result = supabase.storage.from(SITE_ASSETS_BUCKET).getPublicUrl(path);
+    return result.data && result.data.publicUrl;
+  }
+
+  async function uploadHeroImage(file) {
+    var prepared = await prepareHeroImageFile(file);
+    var supabase = await client();
+    var ext = ALLOWED_TYPES[prepared.file.type] || "jpg";
+    var path =
+      "hero/" +
+      (global.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now()) + "-" + Math.random().toString(16).slice(2)) +
+      "." +
+      ext;
+
+    var up = await supabase.storage.from(SITE_ASSETS_BUCKET).upload(path, prepared.file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: prepared.file.type,
+    });
+    if (up.error) {
+      throw new Error(
+        friendlyDbError(
+          up.error,
+          "Hero upload failed. If this is the first time, the site-assets storage migration may still need to be applied."
+        )
+      );
+    }
+    return {
+      path: path,
+      image_url: publicUrlForSiteAsset(supabase, path),
+      width: prepared.width,
+      height: prepared.height,
+      warning: prepared.warning,
+    };
+  }
+
   global.SRCatalog = {
     BUCKET: BUCKET,
     MAX_BYTES: MAX_BYTES,
@@ -1115,6 +1366,12 @@
     updateOrderFulfillment: updateOrderFulfillment,
     getSalesGoals: getSalesGoals,
     saveSalesGoals: saveSalesGoals,
+    getAppearance: getAppearance,
+    saveAppearance: saveAppearance,
+    validateHeroImageFile: validateHeroImageFile,
+    prepareHeroImageFile: prepareHeroImageFile,
+    uploadHeroImage: uploadHeroImage,
+    SITE_ASSETS_BUCKET: SITE_ASSETS_BUCKET,
     validateProductInput: validateProductInput,
     createProduct: createProduct,
     updateProduct: updateProduct,
