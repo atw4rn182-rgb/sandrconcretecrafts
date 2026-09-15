@@ -336,7 +336,8 @@
     }
   }
 
-  function toggleNav() {
+  function toggleNav(e) {
+    if (e) e.stopPropagation();
     var open = !document.body.classList.contains("nav-open");
     document.body.classList.toggle("nav-open", open);
     if (navToggle) {
@@ -1099,6 +1100,14 @@
     }
     document.querySelectorAll(".nav-links a").forEach(function (link) {
       link.addEventListener("click", closeNav);
+    });
+    document.addEventListener("click", function (e) {
+      if (!document.body.classList.contains("nav-open")) return;
+      if (e.target.closest("#navToggle") || e.target.closest("#primaryNav")) return;
+      closeNav();
+    });
+    window.addEventListener("resize", function () {
+      if (window.matchMedia("(min-width: 961px)").matches) closeNav();
     });
 
     if (filterChips) {

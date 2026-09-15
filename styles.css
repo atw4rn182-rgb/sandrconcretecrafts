@@ -141,8 +141,9 @@ img { max-width: 100%; display: block; }
 
 .site-header {
   position: sticky; top: 0; z-index: 40;
-  background: rgba(255, 248, 240, 0.94);
-  backdrop-filter: blur(12px);
+  /* Solid-tint only: backdrop-filter on this element creates a containing block that
+     traps position:fixed .nav-panel inside the header (~120px) on mobile. */
+  background: rgba(255, 248, 240, 0.97);
   border-bottom: 1px solid rgba(160, 74, 40, 0.1);
 }
 .nav {
@@ -152,6 +153,8 @@ img { max-width: 100%; display: block; }
   gap: 0.85rem;
   padding: 0.55rem 0;
   min-height: 68px;
+  position: relative;
+  z-index: 2;
 }
 .brand {
   display: flex; align-items: center; gap: 0.7rem; z-index: 2; min-width: 0;
@@ -205,10 +208,14 @@ img { max-width: 100%; display: block; }
 }
 
 .nav-toggle {
-  display: none; width: 46px; height: 46px; border-radius: 12px;
+  display: none; width: 46px; height: 46px; min-width: 46px; min-height: 46px; border-radius: 12px;
   border: 1.5px solid rgba(58, 42, 34, 0.16); background: var(--cream-soft);
   cursor: pointer; padding: 0; flex-direction: column; justify-content: center;
-  align-items: center; gap: 5px; z-index: 2;
+  align-items: center; gap: 5px; z-index: 3; position: relative;
+}
+.nav-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
 }
 .nav-toggle-bar {
   display: block; width: 18px; height: 2px; background: var(--brown); border-radius: 2px;
@@ -988,22 +995,38 @@ img { max-width: 100%; display: block; }
   .checkout-summary { position: static; order: -1; }
   .nav { grid-template-columns: auto auto 1fr; }
   .nav-toggle { display: inline-flex; justify-self: start; }
-  .cart-btn { grid-column: 3; }
+  .cart-btn { grid-column: 3; position: relative; z-index: 3; }
   .nav-panel {
-    position: fixed; inset: 0; z-index: 1; display: block;
-    padding: 5.5rem 1.4rem 2rem; background: rgba(255, 248, 240, 0.98);
-    backdrop-filter: blur(10px); opacity: 0; visibility: hidden; pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    display: block;
+    padding: max(5.75rem, calc(env(safe-area-inset-top, 0px) + 4.75rem)) 1.25rem 2rem;
+    background: rgba(255, 248, 240, 0.98);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transition: opacity 0.22s var(--ease), visibility 0.22s;
   }
-  body.nav-open .nav-panel { opacity: 1; visibility: visible; pointer-events: auto; }
+  body.nav-open .nav-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
   .nav-links { flex-direction: column; gap: 0.35rem; align-items: stretch; }
   .nav-links a {
     display: block; padding: 0.95rem 0.85rem; font-size: 1.2rem;
-    border-radius: 12px; border-bottom: none;
+    min-height: 44px; border-radius: 12px; border-bottom: none;
   }
   .nav-links a[href="#top"],
   .nav-links a.is-active { border-bottom: none; color: var(--terracotta); }
   .nav-links a:hover { background: rgba(196, 92, 50, 0.12); }
+  .nav-links a:focus-visible {
+    outline: none;
+    box-shadow: var(--focus);
+  }
 }
 
 @media (max-width: 560px) {
