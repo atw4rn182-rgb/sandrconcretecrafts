@@ -974,10 +974,6 @@
           return;
         }
         if (data && data.code === "STRIPE_LIVE_BLOCKED") {
-          // TEMP: surface non-secret server debug in the console for owners.
-          if (data.debug) {
-            console.warn("[checkout] server allow-live debug", data.debug);
-          }
           toast(
             "Checkout couldn’t start — the server isn’t ready for live payments yet. Please try again shortly."
           );

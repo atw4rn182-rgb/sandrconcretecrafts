@@ -228,7 +228,7 @@
     var wrap = $("badgeChecks");
     if (!badges.length) {
       wrap.innerHTML =
-        '<p class="muted">No badges found. Run the badge seed migration in Supabase.</p>';
+        '<p class="muted">No badges yet. Ask your web helper if you expected badge options here.</p>';
       return;
     }
     wrap.innerHTML = badges

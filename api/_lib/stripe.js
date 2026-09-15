@@ -82,9 +82,7 @@ function appendForm(params, key, value) {
  * @param {object} [input.metadata]
  */
 async function createCheckoutSession(input) {
-  // TEMP debug — remove after diagnosing allow-live on Vercel (never logs secrets).
   var allowDebug = stripeAllowLiveDebug();
-  console.log("[stripe-debug] " + JSON.stringify(allowDebug));
 
   var secret = stripeSecretKey();
   if (!secret) {
