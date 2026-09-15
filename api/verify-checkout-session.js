@@ -17,11 +17,10 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    var sessionId =
-      (req.query && req.query.session_id) ||
-      new URL(req.url || "/", "https://local.invalid").searchParams.get(
-        "session_id"
-      );
+    var sessionId = new URL(
+      req.url || "/",
+      "https://local.invalid"
+    ).searchParams.get("session_id");
     sessionId = String(sessionId || "").trim();
     if (!/^cs_(?:test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
       sendJson(res, 400, {
