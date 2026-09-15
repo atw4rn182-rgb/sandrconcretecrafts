@@ -966,7 +966,7 @@
         ? modalOverlay.querySelector('input[name="modalFinish"]:checked')
         : $("#modalClose");
       if (target) target.focus();
-    }, 0);
+    }, 50);
   }
   function closeModal() {
     var restoreFocus = modalReturnFocus;
