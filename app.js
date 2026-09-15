@@ -895,6 +895,16 @@
   }
 
   const modalOverlay = $("#modalOverlay");
+  let modalReturnFocus = null;
+  function modalFocusableElements() {
+    return Array.from(
+      modalOverlay.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter(function (el) {
+      return !el.closest("[hidden]");
+    });
+  }
   function openModal(id) {
     closeNav();
     modalProduct = findProduct(id);
@@ -902,6 +912,7 @@
       toast("That item is no longer available.");
       return;
     }
+    modalReturnFocus = document.activeElement;
     modalQty = 1;
     modalFinish = "raw";
     const img = $("#modalImg");
@@ -950,11 +961,20 @@
     modalOverlay.classList.add("open");
     modalOverlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
+    window.setTimeout(function () {
+      var target = hasPaintedOption(modalProduct)
+        ? modalOverlay.querySelector('input[name="modalFinish"]:checked')
+        : $("#modalClose");
+      if (target) target.focus();
+    }, 0);
   }
   function closeModal() {
+    var restoreFocus = modalReturnFocus;
+    modalReturnFocus = null;
     modalOverlay.classList.remove("open");
     modalOverlay.setAttribute("aria-hidden", "true");
     if (!isCartOpen() && !isCheckoutOpen()) document.body.classList.remove("no-scroll");
+    if (restoreFocus && document.contains(restoreFocus)) restoreFocus.focus();
   }
   const isCartOpen = () => cartDrawer.classList.contains("open");
 
@@ -966,7 +986,11 @@
     try {
       var fresh = await Cat.fetchStorefrontProducts();
       products = fresh;
-      await loadStorefrontCategories();
+      try {
+        await loadStorefrontCategories();
+      } catch (categoryErr) {
+        storefrontCategories = [];
+      }
       catalogReady = true;
       catalogError = null;
       reconcileCart(true);
@@ -1125,25 +1149,52 @@
     await openDemoCheckout();
   }
 
-  function handleCheckoutReturn() {
+  async function handleCheckoutReturn() {
+    var params;
+    var status;
     try {
-      var params = new URLSearchParams(window.location.search);
-      var status = params.get("checkout");
+      params = new URLSearchParams(window.location.search);
+      status = params.get("checkout");
       if (!status) return;
       if (status === "success") {
-        cart = [];
-        updateCart();
-        toast("Payment received — thank you!");
+        var sessionId = params.get("session_id");
+        var verified = false;
+        if (sessionId) {
+          var response = await fetch(
+            "/api/verify-checkout-session?session_id=" +
+              encodeURIComponent(sessionId),
+            { headers: { Accept: "application/json" } }
+          );
+          var result = await response.json().catch(function () {
+            return null;
+          });
+          verified = response.ok && result && result.verified === true;
+        }
+        if (verified) {
+          cart = [];
+          updateCart();
+          toast("Payment received — thank you!");
+        } else {
+          toast("Payment couldn’t be verified yet. Your cart was kept.");
+        }
       } else if (status === "cancel") {
         toast("Checkout canceled. Your cart is still here.");
       }
-      params.delete("checkout");
-      params.delete("session_id");
-      var next = params.toString();
-      var url = window.location.pathname + (next ? "?" + next : "") + window.location.hash;
-      window.history.replaceState({}, "", url);
     } catch (e) {
-      /* ignore */
+      if (status === "success") {
+        toast("Payment couldn’t be verified yet. Your cart was kept.");
+      }
+    } finally {
+      if (status && params) {
+        params.delete("checkout");
+        params.delete("session_id");
+        var next = params.toString();
+        var url =
+          window.location.pathname +
+          (next ? "?" + next : "") +
+          window.location.hash;
+        window.history.replaceState({}, "", url);
+      }
     }
   }
   function closeCheckout() {
@@ -1327,6 +1378,24 @@
     });
 
     document.addEventListener("keydown", function (e) {
+      if (e.key === "Tab" && modalOverlay.classList.contains("open")) {
+        var focusable = modalFocusableElements();
+        if (!focusable.length) {
+          e.preventDefault();
+          return;
+        }
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        var activeInside = modalOverlay.contains(document.activeElement);
+        if (e.shiftKey && (!activeInside || document.activeElement === first)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (!activeInside || document.activeElement === last)) {
+          e.preventDefault();
+          first.focus();
+        }
+        return;
+      }
       if (e.key !== "Escape") return;
       if (isCheckoutOpen()) closeCheckout();
       else if (modalOverlay.classList.contains("open")) closeModal();
@@ -1342,7 +1411,12 @@
     showCatalogStatus("loading", "Loading the collection…", false);
     try {
       products = await Cat.fetchStorefrontProducts();
-      await loadStorefrontCategories();
+      try {
+        await loadStorefrontCategories();
+      } catch (categoryErr) {
+        // Keep the independently loaded products purchasable under ALL.
+        storefrontCategories = [];
+      }
       catalogReady = true;
       catalogError = null;
       reconcileCart(true);
@@ -1415,7 +1489,7 @@
   async function init() {
     bind();
     syncCheckoutButtonLabel();
-    handleCheckoutReturn();
+    await handleCheckoutReturn();
     // Theme + settings first so paint settles quickly; catalog can follow.
     await loadAppearance();
     await loadStoreSettings();

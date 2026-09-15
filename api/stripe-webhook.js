@@ -86,8 +86,9 @@ function isUuid(value) {
   );
 }
 
-function lineItemsFromSession(session, cartLines) {
+function lineItemsFromSession(session, cartLines, retrievedLineItems) {
   var data =
+    (Array.isArray(retrievedLineItems) && retrievedLineItems) ||
     (session &&
       session.line_items &&
       Array.isArray(session.line_items.data) &&
@@ -158,6 +159,8 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
 
   // Re-fetch with expansions so we have line items + product metadata.
   var session = await stripe.retrieveCheckoutSession(sessionId);
+  var retrievedLineItems =
+    await stripe.retrieveCheckoutSessionLineItems(sessionId);
   var details = session.customer_details || {};
   var ship = pickAddress(session);
   var paymentIntent =
@@ -202,7 +205,7 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
   };
 
   var cartLines = parseCartMetadata(session.metadata && session.metadata.cart);
-  var items = lineItemsFromSession(session, cartLines);
+  var items = lineItemsFromSession(session, cartLines, retrievedLineItems);
 
   var saved = await adminDb.upsertOrderWithItems(order, items);
 

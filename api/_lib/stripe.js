@@ -237,6 +237,64 @@ async function retrieveCheckoutSession(sessionId) {
 }
 
 /**
+ * Retrieve every Checkout Session line item, including trusted product metadata.
+ * Stripe paginates this endpoint; never rely on the Session's first expanded page.
+ */
+async function retrieveCheckoutSessionLineItems(sessionId) {
+  var secret = stripeSecretKey();
+  if (!secret) {
+    var cfgErr = new Error("Stripe isn’t configured on the server yet.");
+    cfgErr.code = "STRIPE_NOT_CONFIGURED";
+    throw cfgErr;
+  }
+  var id = String(sessionId || "").trim();
+  if (!id) {
+    var miss = new Error("Missing Checkout Session id.");
+    miss.code = "STRIPE_SESSION_MISSING";
+    throw miss;
+  }
+
+  var all = [];
+  var startingAfter = null;
+  do {
+    var qs = new URLSearchParams();
+    qs.append("limit", "100");
+    qs.append("expand[]", "data.price.product");
+    if (startingAfter) qs.append("starting_after", startingAfter);
+
+    var res = await fetch(
+      "https://api.stripe.com/v1/checkout/sessions/" +
+        encodeURIComponent(id) +
+        "/line_items?" +
+        qs.toString(),
+      {
+        method: "GET",
+        headers: { Authorization: "Bearer " + secret },
+      }
+    );
+    var body = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok) {
+      var message =
+        (body && body.error && body.error.message) ||
+        "Couldn’t load Checkout Session line items.";
+      var apiErr = new Error(message);
+      apiErr.code = "STRIPE_API_ERROR";
+      apiErr.status = res.status;
+      throw apiErr;
+    }
+
+    var page = body && Array.isArray(body.data) ? body.data : [];
+    all = all.concat(page);
+    startingAfter =
+      body && body.has_more && page.length ? page[page.length - 1].id : null;
+  } while (startingAfter);
+
+  return all;
+}
+
+/**
  * Verify Stripe-Signature and return the parsed event object.
  * @param {Buffer|string} rawBody
  * @param {string} signatureHeader
@@ -322,6 +380,7 @@ module.exports = {
   stripeSecretKey: stripeSecretKey,
   createCheckoutSession: createCheckoutSession,
   retrieveCheckoutSession: retrieveCheckoutSession,
+  retrieveCheckoutSessionLineItems: retrieveCheckoutSessionLineItems,
   constructEvent: constructEvent,
   readRawBody: readRawBody,
   stripeLiveAllowed: stripeLiveAllowed,

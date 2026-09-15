@@ -95,6 +95,7 @@ const app = read("app.js");
 const checkout = read("api/create-checkout-session.js");
 const stripe = read("api/_lib/stripe.js");
 const webhook = read("api/stripe-webhook.js");
+const verifyApi = read("api/verify-checkout-session.js");
 const editor = read("admin/product-edit.html");
 const orders = read("admin/orders.js");
 
@@ -106,8 +107,20 @@ assert(editor.includes("Leave Painted Price blank"), "admin helper text present"
 assert(checkout.includes("catalog.assertPurchasable"), "server validates catalog data");
 assert(!checkout.includes("row.price_cents"), "checkout does not accept browser prices");
 assert(stripe.includes("[metadata][finish]"), "Stripe product metadata carries finish");
+assert(
+  stripe.includes("starting_after"),
+  "Stripe line-item retrieval follows pagination"
+);
 assert(webhook.includes("finish: finish"), "webhook persists trusted finish");
+assert(
+  webhook.includes("retrieveCheckoutSessionLineItems"),
+  "webhook retrieves every Stripe line-item page"
+);
 assert(orders.includes("Finish: "), "Admin Orders renders finish");
+assert(
+  verifyApi.includes('session.metadata.source === "storefront"'),
+  "checkout success verification requires a storefront session"
+);
 
 (async function verifyCheckoutHandler() {
   const catalogPath = require.resolve(
@@ -117,6 +130,36 @@ assert(orders.includes("Finish: "), "Admin Orders renders finish");
   const checkoutPath = require.resolve(
     path.join(root, "api/create-checkout-session.js")
   );
+  const verifyPath = require.resolve(
+    path.join(root, "api/verify-checkout-session.js")
+  );
+  const realStripe = require(stripePath);
+  const originalFetch = global.fetch;
+  const originalStripeKey = process.env.STRIPE_SECRET_KEY;
+  process.env.STRIPE_SECRET_KEY = "sk_test_mock";
+  let pageCalls = 0;
+  global.fetch = async function () {
+    pageCalls += 1;
+    return {
+      ok: true,
+      json: async () =>
+        pageCalls === 1
+          ? { data: [{ id: "li_1" }], has_more: true }
+          : { data: [{ id: "li_2" }], has_more: false },
+    };
+  };
+  const pagedItems = await realStripe.retrieveCheckoutSessionLineItems(
+    "cs_test_mock"
+  );
+  assert.deepStrictEqual(
+    pagedItems.map((item) => item.id),
+    ["li_1", "li_2"]
+  );
+  assert.strictEqual(pageCalls, 2);
+  global.fetch = originalFetch;
+  if (originalStripeKey == null) delete process.env.STRIPE_SECRET_KEY;
+  else process.env.STRIPE_SECRET_KEY = originalStripeKey;
+
   let stripeInput = null;
   const trusted = Object.assign({}, product, {
     id: "11111111-1111-4111-8111-111111111111",
@@ -229,6 +272,40 @@ assert(orders.includes("Finish: "), "Admin Orders renders finish");
   assert.strictEqual(res.statusCode, 400);
   assert.match(res.body.error, /Only 3 available/i);
   assert.strictEqual(stripeInput, null, "combined finish quantities cannot oversell");
+
+  require.cache[stripePath].exports.retrieveCheckoutSession = async () => ({
+    payment_status: "paid",
+    metadata: { source: "storefront" },
+  });
+  delete require.cache[verifyPath];
+  const verifyHandler = require(verifyPath);
+  res = responseCapture();
+  await verifyHandler(
+    {
+      method: "GET",
+      query: { session_id: "cs_test_verified" },
+      url: "/api/verify-checkout-session?session_id=cs_test_verified",
+    },
+    res
+  );
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.verified, true);
+
+  require.cache[stripePath].exports.retrieveCheckoutSession = async () => ({
+    payment_status: "unpaid",
+    metadata: { source: "storefront" },
+  });
+  res = responseCapture();
+  await verifyHandler(
+    {
+      method: "GET",
+      query: { session_id: "cs_test_unpaid" },
+      url: "/api/verify-checkout-session?session_id=cs_test_unpaid",
+    },
+    res
+  );
+  assert.strictEqual(res.statusCode, 409);
+  assert.strictEqual(res.body.verified, false);
 
   console.log("All painted pricing and finish checks passed.");
 })().catch(function (err) {
