@@ -1010,7 +1010,8 @@ img { max-width: 100%; display: block; }
     -webkit-overflow-scrolling: touch;
     transition: opacity 0.22s var(--ease), visibility 0.22s;
   }
-  body.nav-open .nav-panel {
+  body.nav-open .nav-panel,
+  .nav-panel.is-open {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;

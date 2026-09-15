@@ -326,24 +326,46 @@
   const filterWrap = $("#collectionFilters");
   const filterChips = $("#filterChips");
   const navToggle = $("#navToggle");
+  const navPanel = $("#primaryNav");
   const aboutPhoto = $("#aboutPhoto");
+  var navOutsideArmed = false;
 
   function closeNav() {
+    navOutsideArmed = false;
     document.body.classList.remove("nav-open");
+    if (navPanel) {
+      navPanel.classList.remove("is-open");
+      navPanel.setAttribute("aria-hidden", "true");
+    }
     if (navToggle) {
       navToggle.setAttribute("aria-expanded", "false");
       navToggle.setAttribute("aria-label", "Open menu");
     }
   }
 
-  function toggleNav(e) {
-    if (e) e.stopPropagation();
-    var open = !document.body.classList.contains("nav-open");
-    document.body.classList.toggle("nav-open", open);
-    if (navToggle) {
-      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-      navToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  function openNav() {
+    document.body.classList.add("nav-open");
+    if (navPanel) {
+      navPanel.classList.add("is-open");
+      navPanel.setAttribute("aria-hidden", "false");
     }
+    if (navToggle) {
+      navToggle.setAttribute("aria-expanded", "true");
+      navToggle.setAttribute("aria-label", "Close menu");
+    }
+    // Arm outside-tap close after this gesture finishes (avoids same-tap close).
+    window.setTimeout(function () {
+      if (document.body.classList.contains("nav-open")) navOutsideArmed = true;
+    }, 0);
+  }
+
+  function toggleNav(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (document.body.classList.contains("nav-open")) closeNav();
+    else openNav();
   }
 
   function renderHeroGallery() {
@@ -1098,11 +1120,14 @@
     if (navToggle) {
       navToggle.addEventListener("click", toggleNav);
     }
+    if (navPanel) {
+      navPanel.setAttribute("aria-hidden", "true");
+    }
     document.querySelectorAll(".nav-links a").forEach(function (link) {
       link.addEventListener("click", closeNav);
     });
     document.addEventListener("click", function (e) {
-      if (!document.body.classList.contains("nav-open")) return;
+      if (!navOutsideArmed || !document.body.classList.contains("nav-open")) return;
       if (e.target.closest("#navToggle") || e.target.closest("#primaryNav")) return;
       closeNav();
     });
