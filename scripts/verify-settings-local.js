@@ -61,4 +61,9 @@ assert(api.indexOf("saveStoreSettings") >= 0, "save api");
 assert(api.indexOf("appearance: appearance") >= 0 || api.indexOf("appearance:appearance") >= 0 || api.indexOf("config.appearance") >= 0 || api.indexOf("appearance: appearance") >= 0, "appearance preserved path exists");
 assert(api.indexOf("sales_goals") >= 0, "sales goals untouched elsewhere");
 
+var pageJs = fs.readFileSync("admin/settings.js", "utf8");
+assert(pageJs.indexOf("SRAdminShell.boot({") >= 0, "settings uses SRAdminShell.boot");
+assert(pageJs.indexOf("bootAdminShell(") < 0, "settings does not call missing bootAdminShell API");
+assert(pageJs.indexOf("if (!check || !check.ok) return") >= 0, "settings waits for auth check");
+
 console.log("store settings OK");

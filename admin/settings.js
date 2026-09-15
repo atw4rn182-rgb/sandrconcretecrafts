@@ -231,23 +231,29 @@
     });
   }
 
-  async function boot() {
-    await SRAdminShell.bootAdminShell({ activeNav: "settings" });
-    bind();
-    try {
-      var row = await SRCatalog.getStoreSettings();
-      saved = SRStoreSettings.normalize(row.settings);
-      draft = SRStoreSettings.normalize(row.settings);
-      fillForm(saved);
-      refreshSummary();
-    } catch (err) {
-      saved = SRStoreSettings.cloneDefaults();
-      draft = SRStoreSettings.cloneDefaults();
-      fillForm(draft);
-      refreshSummary();
-      showFlash((err && err.message) || "Couldn’t load settings.", false);
-    }
+  function loadSettings() {
+    return SRCatalog.getStoreSettings()
+      .then(function (row) {
+        saved = SRStoreSettings.normalize(row.settings);
+        draft = SRStoreSettings.normalize(row.settings);
+        fillForm(saved);
+        refreshSummary();
+      })
+      .catch(function (err) {
+        // Auth already succeeded — never leave the gate on "Checking your access".
+        saved = SRStoreSettings.cloneDefaults();
+        draft = SRStoreSettings.cloneDefaults();
+        fillForm(draft);
+        refreshSummary();
+        showFlash((err && err.message) || "Couldn’t load settings.", false);
+      });
   }
 
-  boot();
+  // Same proven bootstrap as Appearance / Orders / Products:
+  // SRAdminShell.boot → requireAdminPage first → watchAuth after → then page data.
+  SRAdminShell.boot({ activeNav: "settings" }).then(function (check) {
+    if (!check || !check.ok) return;
+    bind();
+    loadSettings();
+  });
 })();
