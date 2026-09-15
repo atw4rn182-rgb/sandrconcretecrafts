@@ -69,8 +69,22 @@ assert(html.indexOf("extra_festive") >= 0, "extra festive control");
 
 var css = fs.readFileSync("styles.css", "utf8");
 assert(css.indexOf('data-season="thanksgiving"') >= 0, "thanksgiving css");
-assert(css.indexOf("season-decor--hero") >= 0, "hero decor layer");
-assert(css.indexOf("extra_festive") >= 0, "intensity css");
+var decorCss = fs.readFileSync("css/seasonal-decor.css", "utf8");
+assert(decorCss.indexOf("season-decor--hero") >= 0, "hero decor layer");
+assert(decorCss.indexOf("halloween-hero.svg") >= 0, "halloween svg");
+assert(decorCss.indexOf("thanksgiving-hero.svg") >= 0, "thanksgiving svg");
+assert(decorCss.indexOf("christmas-hero.svg") >= 0, "christmas svg");
+assert(decorCss.indexOf("easter-hero.svg") >= 0, "easter svg");
+assert(decorCss.indexOf("july4-hero.svg") >= 0, "july4 svg");
+assert(decorCss.indexOf("extra_festive") >= 0, "intensity css");
+assert(fs.existsSync("assets/seasonal/halloween-hero.svg"), "halloween asset");
+assert(fs.existsSync("assets/seasonal/thanksgiving-hero.svg"), "thanksgiving asset");
+assert(fs.existsSync("assets/seasonal/christmas-hero.svg"), "christmas asset");
+assert(fs.existsSync("assets/seasonal/easter-hero.svg"), "easter asset");
+assert(fs.existsSync("assets/seasonal/july4-hero.svg"), "july4 asset");
+var idx = fs.readFileSync("index.html", "utf8");
+assert(idx.indexOf("seasonal-decor.css") >= 0, "storefront decor css link");
+assert(html.indexOf("seasonal-decor.css") >= 0, "admin decor css link");
 
 var api = fs.readFileSync("admin/catalog-api.js", "utf8");
 assert(api.indexOf("uploadHeroImage") >= 0, "upload helper");

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
+  <!-- left jack-o'-lantern cluster -->
+  <g transform="translate(36,95)">
+    <ellipse cx="54" cy="70" rx="48" ry="40" fill="#c45c28"/>
+    <ellipse cx="30" cy="70" rx="24" ry="36" fill="#d4724a"/>
+    <ellipse cx="78" cy="70" rx="24" ry="36" fill="#a84820"/>
+    <rect x="48" y="22" width="10" height="22" rx="2" fill="#3a5a28"/>
+    <path fill="#1a1410" d="M34 58l12 8-12 8zm40 0l-12 8 12 8z"/>
+    <path fill="#1a1410" d="M46 86c6 8 18 8 24 0l-4 6c-5 4-11 4-16 0z"/>
+    <ellipse cx="120" cy="95" rx="28" ry="22" fill="#b85428"/>
+    <ellipse cx="108" cy="95" rx="14" ry="20" fill="#d4724a"/>
+    <rect x="116" y="70" width="6" height="14" rx="1" fill="#3a5a28"/>
+    <path fill="#1a1410" d="M110 88l7 5-7 5zm16 0l-7 5 7 5zM114 102c3 4 10 4 13 0"/>
+  </g>
+  <!-- right pumpkins + leaves -->
+  <g transform="translate(980,110)">
+    <ellipse cx="40" cy="55" rx="38" ry="32" fill="#b85428"/>
+    <ellipse cx="22" cy="55" rx="18" ry="28" fill="#d4724a"/>
+    <ellipse cx="58" cy="55" rx="18" ry="28" fill="#8f3a18"/>
+    <rect x="35" y="18" width="8" height="18" rx="2" fill="#3a5a28"/>
+    <path fill="#1a1410" d="M26 48l9 6-9 6zm28 0l-9 6 9 6zM36 70c4 6 14 6 18 0"/>
+    <ellipse cx="95" cy="72" rx="22" ry="17" fill="#c45c28"/>
+    <rect x="92" y="52" width="5" height="12" rx="1" fill="#3a5a28"/>
+  </g>
+  <!-- autumn leaves -->
+  <path fill="#c45c28" d="M220 180c20-8 28-24 22-40 18 10 22 28 8 42 12 2 22 12 18 24-16-6-30-4-40-12-6 10-18 14-30 10 10-10 14-20 22-24z"/>
+  <path fill="#8f3a18" d="M860 175c16-6 22-20 16-32 14 8 18 22 6 34 10 2 18 10 14 20-12-4-24-2-32-10-4 8-14 12-24 8 8-8 12-16 20-20z"/>
+  <path fill="#d4783c" d="M300 200c12-4 16-14 12-22 10 6 12 16 4 24 8 1 12 8 10 14-10-2-16-1-22-6-2 6-10 8-16 6 6-6 8-12 12-16z"/>
+  <!-- web accent bottom-right -->
+  <g stroke="#e8dcc8" stroke-width="1.1" opacity="0.55" transform="translate(1080,0)">
+    <path d="M120 0 L40 0 M120 0 L120 80 M120 0 L55 50"/>
+    <path d="M100 18 Q80 28 70 16 M90 32 Q72 44 60 34"/>
+  </g>
+  <!-- bare tree silhouette left -->
+  <path fill="#1a1410" opacity="0.55" d="M8 210c2-40 6-70 4-95 8 12 14 8 18 2-2 20 0 45 2 70 6-18 14-22 22-18-6 22-4 48-2 70H8z"/>
+</svg>

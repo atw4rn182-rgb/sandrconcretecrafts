@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" fill="none" aria-hidden="true">
+  <!-- fireworks bursts -->
+  <g stroke="#9b4545" stroke-width="2" stroke-linecap="round">
+    <path d="M80 40l0-22M80 40l16-16M80 40l22 0M80 40l16 16M80 40l0 22M80 40l-16 16M80 40l-22 0M80 40l-16-16"/>
+  </g>
+  <g stroke="#4a5f7a" stroke-width="2" stroke-linecap="round">
+    <path d="M1120 36l0-20M1120 36l14-14M1120 36l20 0M1120 36l14 14M1120 36l0 20M1120 36l-14 14M1120 36l-20 0M1120 36l-14-14"/>
+  </g>
+  <g stroke="#c9a87a" stroke-width="1.6" stroke-linecap="round">
+    <path d="M200 28l0-14M200 28l10-10M200 28l14 0M200 28l10 10M200 28l0 14M200 28l-10 10M200 28l-14 0M200 28l-10-10"/>
+    <path d="M1000 30l0-14M1000 30l10-10M1000 30l14 0M1000 30l10 10M1000 30l0 14M1000 30l-10 10M1000 30l-14 0M1000 30l-10-10"/>
+  </g>
+  <!-- stars -->
+  <path fill="#f5efe6" d="M140 55l3 8 9 1-7 6 2 9-7-5-7 5 2-9-7-6 9-1z"/>
+  <path fill="#4a5f7a" d="M1060 50l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z"/>
+  <path fill="#9b4545" d="M280 48l2 6 6 1-5 4 1 6-4-3-4 3 1-6-5-4 6-1z"/>
+  <path fill="#f5efe6" d="M920 52l2 6 6 1-5 4 1 6-4-3-4 3 1-6-5-4 6-1z"/>
+  <!-- bunting -->
+  <path stroke="#5a4030" stroke-width="2" fill="none" d="M320 20h560"/>
+  <path fill="#9b4545" d="M340 20l18 32 18-32z"/>
+  <path fill="#f5efe6" d="M390 20l18 32 18-32z"/>
+  <path fill="#4a5f7a" d="M440 20l18 32 18-32z"/>
+  <path fill="#9b4545" d="M490 20l18 32 18-32z"/>
+  <path fill="#f5efe6" d="M540 20l18 32 18-32z"/>
+  <path fill="#4a5f7a" d="M590 20l18 32 18-32z"/>
+  <path fill="#9b4545" d="M640 20l18 32 18-32z"/>
+  <path fill="#f5efe6" d="M690 20l18 32 18-32z"/>
+  <path fill="#4a5f7a" d="M740 20l18 32 18-32z"/>
+  <path fill="#9b4545" d="M790 20l18 32 18-32z"/>
+  <path fill="#f5efe6" d="M840 20l18 32 18-32z"/>
+</svg>

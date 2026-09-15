@@ -1,0 +1,346 @@
+/* Seasonal holiday decorations — shared by storefront + Appearance preview.
+   Requires data-holiday-decor="on" and data-season set to a holiday key. */
+
+.season-decor {
+  display: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+html[data-holiday-decor="on"][data-season]:not([data-season="off"]) .season-decor,
+body[data-holiday-decor="on"][data-season]:not([data-season="off"]) .season-decor,
+.sf-preview[data-holiday-decor="on"][data-season]:not([data-season="off"]) .season-decor {
+  display: block;
+}
+
+html[data-holiday-decor="on"][data-decor-intensity="subtle"],
+body[data-holiday-decor="on"][data-decor-intensity="subtle"],
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="subtle"] {
+  --season-decor-opacity: 0.78;
+  --season-decor-scale: 0.92;
+  --season-decor-extra-opacity: 0;
+  --season-decor-footer-opacity: 0;
+  --season-decor-divider-opacity: 0;
+}
+
+html[data-holiday-decor="on"][data-decor-intensity="festive"],
+body[data-holiday-decor="on"][data-decor-intensity="festive"],
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="festive"] {
+  --season-decor-opacity: 0.95;
+  --season-decor-scale: 1;
+  --season-decor-extra-opacity: 0.85;
+  --season-decor-footer-opacity: 0.8;
+  --season-decor-divider-opacity: 0.9;
+}
+
+html[data-holiday-decor="on"][data-decor-intensity="extra_festive"],
+body[data-holiday-decor="on"][data-decor-intensity="extra_festive"],
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="extra_festive"] {
+  --season-decor-opacity: 1;
+  --season-decor-scale: 1.08;
+  --season-decor-extra-opacity: 1;
+  --season-decor-footer-opacity: 0.95;
+  --season-decor-divider-opacity: 1;
+}
+
+.site-header,
+.sf-prev-header {
+  position: relative;
+}
+
+.season-decor--header {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  z-index: 0;
+  opacity: var(--season-decor-opacity, 0.9);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 100%;
+}
+
+.site-header > .nav,
+.sf-prev-header > *:not(.season-decor) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero layer sits above wave so bottom clusters stay visible */
+.season-decor--hero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3.25rem;
+  height: min(46%, 15rem);
+  z-index: 4;
+  opacity: var(--season-decor-opacity, 0.9);
+  transform: scale(var(--season-decor-scale, 1));
+  transform-origin: bottom center;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% auto;
+  pointer-events: none;
+}
+
+.sf-prev-hero .season-decor--hero {
+  bottom: 0.35rem;
+  height: 42%;
+  z-index: 3;
+}
+
+.season-decor--divider {
+  height: 22px;
+  margin: -0.2rem 0 0.35rem;
+  opacity: var(--season-decor-divider-opacity, 0.9);
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: auto 20px;
+}
+
+.site-footer,
+.sf-prev-footer {
+  position: relative;
+}
+
+.season-decor--footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 56px;
+  z-index: 0;
+  opacity: var(--season-decor-footer-opacity, 0.85);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 100%;
+}
+
+.site-footer > *:not(.season-decor),
+.sf-prev-footer > *:not(.season-decor) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Extra festive overlay accents (second layer) */
+.season-decor--header::after,
+.season-decor--hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--season-decor-extra-opacity, 0);
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+.season-decor--header::after {
+  background-position: center top;
+  background-size: 100% 100%;
+}
+
+.season-decor--hero::after {
+  background-position: center bottom;
+  background-size: 100% auto;
+}
+
+/* ---- Halloween ---- */
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--header,
+body[data-season="halloween"][data-holiday-decor="on"] .season-decor--header,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--header {
+  background-image: url("/assets/seasonal/halloween-header.svg");
+}
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero,
+body[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero {
+  background-image: url("/assets/seasonal/halloween-hero.svg");
+}
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider,
+body[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider {
+  background-image: url("/assets/seasonal/halloween-divider.svg");
+}
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer,
+body[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer {
+  background-image: url("/assets/seasonal/halloween-footer.svg");
+}
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--header::after,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--header::after {
+  background-image: url("/assets/seasonal/halloween-header.svg");
+  transform: scaleX(-1) translateY(6px);
+  opacity: calc(var(--season-decor-extra-opacity, 0) * 0.45);
+}
+html[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero::after,
+.sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero::after {
+  background-image: url("/assets/seasonal/halloween-divider.svg");
+  background-repeat: repeat-x;
+  background-position: center 18%;
+  background-size: auto 28px;
+}
+
+/* ---- Thanksgiving ---- */
+html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header,
+body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header,
+.sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header {
+  background-image: url("/assets/seasonal/thanksgiving-header.svg");
+}
+html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero,
+body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero,
+.sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero {
+  background-image: url("/assets/seasonal/thanksgiving-hero.svg");
+}
+html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider,
+body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider,
+.sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider {
+  background-image: url("/assets/seasonal/thanksgiving-divider.svg");
+}
+html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer,
+body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer,
+.sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer {
+  background-image: url("/assets/seasonal/thanksgiving-footer.svg");
+}
+html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero::after,
+.sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero::after {
+  background-image: url("/assets/seasonal/thanksgiving-divider.svg");
+  background-repeat: repeat-x;
+  background-position: center 12%;
+  background-size: auto 26px;
+}
+
+/* ---- Christmas ---- */
+html[data-season="christmas"][data-holiday-decor="on"] .season-decor--header,
+body[data-season="christmas"][data-holiday-decor="on"] .season-decor--header,
+.sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--header {
+  background-image: url("/assets/seasonal/christmas-header.svg");
+}
+html[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero,
+body[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero,
+.sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero {
+  background-image: url("/assets/seasonal/christmas-hero.svg");
+}
+html[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider,
+body[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider,
+.sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider {
+  background-image: url("/assets/seasonal/christmas-divider.svg");
+}
+html[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer,
+body[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer,
+.sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer {
+  background-image: url("/assets/seasonal/christmas-footer.svg");
+}
+html[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero::after,
+.sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero::after {
+  background-image: url("/assets/seasonal/christmas-divider.svg");
+  background-repeat: repeat-x;
+  background-position: center 8%;
+  background-size: auto 24px;
+}
+
+/* ---- Easter ---- */
+html[data-season="easter"][data-holiday-decor="on"] .season-decor--header,
+body[data-season="easter"][data-holiday-decor="on"] .season-decor--header,
+.sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--header {
+  background-image: url("/assets/seasonal/easter-header.svg");
+}
+html[data-season="easter"][data-holiday-decor="on"] .season-decor--hero,
+body[data-season="easter"][data-holiday-decor="on"] .season-decor--hero,
+.sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--hero {
+  background-image: url("/assets/seasonal/easter-hero.svg");
+}
+html[data-season="easter"][data-holiday-decor="on"] .season-decor--divider,
+body[data-season="easter"][data-holiday-decor="on"] .season-decor--divider,
+.sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--divider {
+  background-image: url("/assets/seasonal/easter-divider.svg");
+}
+html[data-season="easter"][data-holiday-decor="on"] .season-decor--footer,
+body[data-season="easter"][data-holiday-decor="on"] .season-decor--footer,
+.sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--footer {
+  background-image: url("/assets/seasonal/easter-footer.svg");
+}
+html[data-season="easter"][data-holiday-decor="on"] .season-decor--hero::after,
+.sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--hero::after {
+  background-image: url("/assets/seasonal/easter-divider.svg");
+  background-repeat: repeat-x;
+  background-position: center 10%;
+  background-size: auto 24px;
+}
+
+/* ---- Fourth of July ---- */
+html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header,
+body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header,
+.sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header {
+  background-image: url("/assets/seasonal/july4-header.svg");
+}
+html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero,
+body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero,
+.sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero {
+  background-image: url("/assets/seasonal/july4-hero.svg");
+}
+html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider,
+body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider,
+.sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider {
+  background-image: url("/assets/seasonal/july4-divider.svg");
+}
+html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer,
+body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer,
+.sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer {
+  background-image: url("/assets/seasonal/july4-footer.svg");
+}
+html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero::after,
+.sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero::after {
+  background-image: url("/assets/seasonal/july4-divider.svg");
+  background-repeat: repeat-x;
+  background-position: center 10%;
+  background-size: auto 22px;
+}
+
+/* Subtle: keep header + hero only */
+html[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--divider,
+body[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--divider,
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--divider,
+html[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--footer,
+body[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--footer,
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="subtle"][data-season] .season-decor--footer {
+  display: none !important;
+}
+
+html[data-holiday-decor="on"][data-decor-intensity="subtle"] .season-decor--hero,
+body[data-holiday-decor="on"][data-decor-intensity="subtle"] .season-decor--hero,
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="subtle"] .season-decor--hero {
+  height: min(34%, 10.5rem);
+}
+
+html[data-holiday-decor="on"][data-decor-intensity="extra_festive"] .season-decor--hero,
+body[data-holiday-decor="on"][data-decor-intensity="extra_festive"] .season-decor--hero,
+.sf-preview[data-holiday-decor="on"][data-decor-intensity="extra_festive"] .season-decor--hero {
+  height: min(52%, 17rem);
+}
+
+@media (max-width: 640px) {
+  .season-decor--header {
+    background-size: 160% 100%;
+    background-position: center top;
+  }
+  .season-decor--hero {
+    bottom: 2.5rem;
+    height: min(36%, 9.5rem);
+    background-size: 145% auto;
+  }
+  html[data-decor-intensity="subtle"] .season-decor--hero,
+  body[data-decor-intensity="subtle"] .season-decor--hero {
+    height: min(30%, 8rem);
+  }
+  html[data-decor-intensity="extra_festive"] .season-decor--hero,
+  body[data-decor-intensity="extra_festive"] .season-decor--hero {
+    height: min(42%, 11rem);
+    transform: scale(1.04);
+  }
+  .season-decor--footer {
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-decor {
+    transition: none;
+  }
+}

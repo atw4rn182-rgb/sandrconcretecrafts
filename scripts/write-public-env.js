@@ -123,6 +123,10 @@ if (fs.existsSync(indexPath)) {
       'href="/styles.css?v=' + buildStamp + '"'
     )
     .replace(
+      /href="\/css\/seasonal-decor\.css(?:\?v=[^"]*)?"/g,
+      'href="/css/seasonal-decor.css?v=' + buildStamp + '"'
+    )
+    .replace(
       /src="\/js\/env\.js(?:\?v=[^"]*)?"/g,
       'src="/js/env.js?v=' + buildStamp + '"'
     )

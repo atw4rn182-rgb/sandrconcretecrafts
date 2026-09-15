@@ -6,6 +6,7 @@ var idx = fs.readFileSync("index.html", "utf8");
 var shell = fs.readFileSync("admin/admin-shell.js", "utf8");
 var api = fs.readFileSync("admin/catalog-api.js", "utf8");
 var css = fs.readFileSync("styles.css", "utf8");
+var decorCss = fs.readFileSync("css/seasonal-decor.css", "utf8");
 
 var checks = [
   ["heroFileInput", html.indexOf("heroFileInput") >= 0],
@@ -25,13 +26,16 @@ var checks = [
   ["Preview Storefront", html.indexOf("Preview Storefront") >= 0],
   ["appearance.js on index", idx.indexOf("appearance.js") >= 0],
   ["data-appearance-hero", idx.indexOf("data-appearance-hero") >= 0],
+  ["seasonal-decor.css on index", idx.indexOf("seasonal-decor.css") >= 0],
+  ["seasonal-decor.css on appearance", html.indexOf("seasonal-decor.css") >= 0],
   ["nav Appearance link", shell.indexOf("appearance.html") >= 0],
   ["uploadHeroImage API", api.indexOf("uploadHeroImage") >= 0],
   ["site-assets bucket", api.indexOf("site-assets") >= 0],
   ["hero positions model", model.indexOf("hero_position_desktop_x") >= 0],
   ["season CSS halloween", css.indexOf('data-season="halloween"') >= 0],
   ["season CSS thanksgiving", css.indexOf('data-season="thanksgiving"') >= 0],
-  ["season decor layers", css.indexOf("season-decor--hero") >= 0],
+  ["season decor SVG layers", decorCss.indexOf("halloween-hero.svg") >= 0],
+  ["thanksgiving decor SVG", decorCss.indexOf("thanksgiving-hero.svg") >= 0],
   ["accent follows terracotta var", css.indexOf("--accent: var(--terracotta)") >= 0],
   ["accent follows turquoise var", css.indexOf("--accent: var(--turquoise)") >= 0],
   ["no hardcoded terracotta accent hex", css.indexOf('data-accent="terracotta"]') >= 0 && !/data-accent="terracotta"\][^{]*\{\s*--accent:\s*#c45c32/.test(css)],

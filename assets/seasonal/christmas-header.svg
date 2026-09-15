@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" fill="none" aria-hidden="true">
+  <!-- evergreen garland -->
+  <path fill="#2f5d45" d="M0 28c40 24 80 8 120 20s80 4 120 16 80-4 120 12 80 0 120 14 80-8 120 8 80 4 120 12 80-6 120 6 80 2 120 10 80-4 120 4 80 0 120 8v24c-40-10-80-2-120-8s-80 2-120-6-80-8-120-4-80 6-120-2-80-10-120-4-80 8-120 0-80-12-120-2-80 10-120 2-80-14-120-2-80 12-120 4V28z"/>
+  <path fill="#3f7358" d="M0 18c36 18 72 4 108 14s72 2 108 12 72-2 108 10 72 0 108 12 72-6 108 6 72 2 108 10 72-4 108 4 72 0 108 8 72-2 108 4 72 2 108 6v16c-36-6-72 0-108-4s-72 2-108-6-72-8-108-2-72 6-108-2-72-8-108-2-72 8-108 0-72-10-108 0-72 8-108 0-72-12-108 0-72 10-108 2V18z"/>
+  <!-- string lights -->
+  <g>
+    <path stroke="#5a4030" stroke-width="1.5" fill="none" d="M40 36c60 18 120-6 180 10s120-4 180 8 120-8 180 6 120-2 180 8 120-10 180 4 120 0 180 8"/>
+    <circle cx="70" cy="42" r="5" fill="#c9a24a"/><circle cx="70" cy="42" r="2.5" fill="#fff8e8"/>
+    <circle cx="160" cy="48" r="5" fill="#8f3f3f"/><circle cx="160" cy="48" r="2.5" fill="#ffd0d0"/>
+    <circle cx="250" cy="40" r="5" fill="#c9a24a"/><circle cx="250" cy="40" r="2.5" fill="#fff8e8"/>
+    <circle cx="340" cy="50" r="5" fill="#2f5d45"/><circle cx="340" cy="50" r="2.5" fill="#c8e8d4"/>
+    <circle cx="430" cy="38" r="5" fill="#8f3f3f"/><circle cx="430" cy="38" r="2.5" fill="#ffd0d0"/>
+    <circle cx="520" cy="46" r="5" fill="#c9a24a"/><circle cx="520" cy="46" r="2.5" fill="#fff8e8"/>
+    <circle cx="610" cy="40" r="5" fill="#8f3f3f"/><circle cx="610" cy="40" r="2.5" fill="#ffd0d0"/>
+    <circle cx="700" cy="48" r="5" fill="#c9a24a"/><circle cx="700" cy="48" r="2.5" fill="#fff8e8"/>
+    <circle cx="790" cy="36" r="5" fill="#2f5d45"/><circle cx="790" cy="36" r="2.5" fill="#c8e8d4"/>
+    <circle cx="880" cy="44" r="5" fill="#8f3f3f"/><circle cx="880" cy="44" r="2.5" fill="#ffd0d0"/>
+    <circle cx="970" cy="40" r="5" fill="#c9a24a"/><circle cx="970" cy="40" r="2.5" fill="#fff8e8"/>
+    <circle cx="1060" cy="46" r="5" fill="#8f3f3f"/><circle cx="1060" cy="46" r="2.5" fill="#ffd0d0"/>
+    <circle cx="1140" cy="38" r="5" fill="#c9a24a"/><circle cx="1140" cy="38" r="2.5" fill="#fff8e8"/>
+  </g>
+  <!-- red bow center -->
+  <g transform="translate(560,55)">
+    <path fill="#8f3f3f" d="M40 20c-16-18-36-14-40-4 12 2 22 10 28 20-10 4-18 14-20 28 14-8 30-10 40-8 10-2 26 0 40 8-2-14-10-24-20-28 6-10 16-18 28-20-4-10-24-14-40 4z"/>
+    <circle cx="40" cy="28" r="10" fill="#6e3030"/>
+  </g>
+</svg>
