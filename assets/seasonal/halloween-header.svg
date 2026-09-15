@@ -1,28 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" fill="none" aria-hidden="true">
-  <!-- moon -->
-  <circle cx="1120" cy="36" r="22" fill="#f6e7a8" opacity="0.9"/>
-  <circle cx="1128" cy="30" r="18" fill="#2a221c" opacity="0.35"/>
-  <!-- bats -->
-  <path fill="#1a1410" d="M70 28c6 2 10 8 12 14 4-8 10-12 18-14-4 6-5 12-4 18-6-2-11 0-16 4-5-4-10-6-16-4 1-6 0-12-4-18z"/>
-  <path fill="#1a1410" d="M180 18c5 2 8 7 10 12 3-7 8-10 15-12-3 5-4 10-3 15-5-2-9 0-13 3-4-3-8-5-13-3 1-5 0-10-3-15z"/>
-  <path fill="#1a1410" d="M980 22c5 2 8 7 10 12 3-7 8-10 15-12-3 5-4 10-3 15-5-2-9 0-13 3-4-3-8-5-13-3 1-5 0-10-3-15z"/>
-  <!-- spider web corners -->
-  <g stroke="#d8c4a8" stroke-width="1.2" opacity="0.75">
-    <path d="M0 0 L90 0 M0 0 L0 90 M0 0 L70 55 M0 0 L55 70"/>
-    <path d="M18 18 Q40 28 55 18 M28 28 Q48 42 62 32 M38 40 Q52 54 68 48"/>
-    <path d="M1200 0 L1110 0 M1200 0 L1200 90 M1200 0 L1130 55 M1200 0 L1145 70"/>
-    <path d="M1182 18 Q1160 28 1145 18 M1172 28 Q1152 42 1138 32"/>
+  <circle cx="1145" cy="28" r="20" fill="#f6e7a8"/>
+  <circle cx="1152" cy="22" r="16" fill="#2a221c" opacity="0.28"/>
+  <path fill="#1a1410" d="M55 32c8 3 14 10 16 18 5-10 13-16 24-18-5 8-6 16-5 24-8-3-14 0-21 5-6-5-13-8-21-5 1-8 0-16-5-24z"/>
+  <path fill="#1a1410" d="M160 22c7 2 11 9 13 15 4-9 11-14 20-16-4 7-5 13-4 20-7-2-12 0-17 4-5-4-11-7-18-4 1-7 0-13-4-19z"/>
+  <path fill="#1a1410" d="M980 26c7 2 11 9 13 15 4-9 11-14 20-16-4 7-5 13-4 20-7-2-12 0-17 4-5-4-11-7-18-4 1-7 0-13-4-19z"/>
+  <path fill="#1a1410" d="M1080 38c6 2 9 7 11 13 3-7 9-11 16-13-3 5-4 11-3 16-5-2-9 0-14 3-4-3-9-5-14-3 1-5 0-11-3-16z"/>
+  <g stroke="#5a4030" stroke-width="1.4" opacity="0.8">
+    <path d="M0 0 L110 0 M0 0 L0 100 M0 0 L85 65 M0 0 L65 85"/>
+    <path d="M22 22 Q48 34 68 22 M34 36 Q58 52 78 40 M46 50 Q66 66 86 58"/>
+    <path d="M1200 0 L1090 0 M1200 0 L1200 100 M1200 0 L1115 65 M1200 0 L1135 85"/>
+    <path d="M1178 22 Q1152 34 1132 22 M1166 36 Q1142 52 1122 40"/>
   </g>
-  <!-- small pumpkins -->
-  <g transform="translate(40,78)">
-    <ellipse cx="18" cy="16" rx="16" ry="13" fill="#c45c28"/>
+  <g transform="translate(28,78)">
+    <ellipse cx="18" cy="16" rx="16" ry="13" fill="#c45c28" stroke="#2a1810" stroke-width="1.2"/>
     <ellipse cx="10" cy="16" rx="8" ry="12" fill="#d4724a"/>
-    <ellipse cx="26" cy="16" rx="8" ry="12" fill="#a84820"/>
     <rect x="16" y="2" width="4" height="8" rx="1" fill="#3a5a28"/>
   </g>
-  <g transform="translate(1120,80)">
-    <ellipse cx="16" cy="14" rx="14" ry="11" fill="#b85428"/>
-    <ellipse cx="9" cy="14" rx="7" ry="10" fill="#d4724a"/>
+  <g transform="translate(1135,78)">
+    <ellipse cx="16" cy="14" rx="14" ry="11" fill="#b85428" stroke="#2a1810" stroke-width="1.2"/>
     <rect x="14" y="1" width="3" height="7" rx="1" fill="#3a5a28"/>
   </g>
 </svg>
