@@ -94,6 +94,11 @@
         ? String(sourceKey).slice("legacy:".length)
         : null;
     var price = Number(row.price) || 0;
+    var painted =
+      row.painted_price == null || row.painted_price === ""
+        ? null
+        : Number(row.painted_price);
+    if (!isFinite(painted) || painted <= 0) painted = null;
     var sale =
       row.sale_price == null || row.sale_price === ""
         ? null
@@ -116,6 +121,7 @@
       name: row.title || "",
       desc: row.description || "",
       price: price,
+      paintedPrice: painted,
       salePrice: hasSale ? sale : null,
       effectivePrice: hasSale ? sale : price,
       itemNo: row.item_no || "",
@@ -153,7 +159,7 @@
     var result = await client
       .from("products")
       .select(
-        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, published_at, updated_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
+        "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, published_at, updated_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
       )
       .in("status", ["published", "sold_out"])
       .order("featured", { ascending: false })
@@ -167,6 +173,48 @@
     }
 
     return (result.data || []).map(mapRow);
+  }
+
+  /**
+   * All ACTIVE categories from the database (not derived from assigned products).
+   * Public RLS already limits this to active rows.
+   */
+  async function fetchStorefrontCategories() {
+    if (!global.SRSupabase || !SRSupabase.isConfigured()) {
+      throw new Error(
+        "Store catalog isn’t configured. Set SUPABASE_URL and SUPABASE_ANON_KEY, then rebuild."
+      );
+    }
+    var client = SRSupabase.createClient();
+    if (!client) {
+      throw new Error("Couldn’t start the catalog connection. Please try again.");
+    }
+
+    var result = await client
+      .from("categories")
+      .select("id, name, slug, sort_order")
+      .eq("active", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (result.error) {
+      throw new Error(
+        result.error.message || "Couldn’t load categories from the catalog."
+      );
+    }
+
+    return (result.data || [])
+      .filter(function (row) {
+        return row && row.id;
+      })
+      .map(function (row) {
+        return {
+          id: row.id,
+          name: row.name || row.slug || "Category",
+          slug: row.slug || "",
+          sort_order: Number(row.sort_order) || 0,
+        };
+      });
   }
 
   /**
@@ -200,6 +248,7 @@
     normalizeImageUrl: normalizeImageUrl,
     useLiveCatalog: useLiveCatalog,
     fetchStorefrontProducts: fetchStorefrontProducts,
+    fetchStorefrontCategories: fetchStorefrontCategories,
     resolveCartProductId: resolveCartProductId,
     mapRow: mapRow,
   };

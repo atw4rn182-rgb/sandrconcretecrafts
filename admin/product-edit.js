@@ -94,6 +94,7 @@
       slug: $("slug").value,
       description: $("description").value,
       price: $("price").value,
+      painted_price: $("painted_price").value,
       sale_price: $("sale_price").value,
       quantity: $("quantity").value,
       item_no: $("item_no").value,
@@ -143,20 +144,31 @@
     $("previewTitle").textContent = title;
     $("previewDesc").textContent = desc.length > 140 ? desc.slice(0, 137) + "…" : desc;
 
-    var priceParsed = SRCatalog.parseMoneyInput(data.price, { required: false, label: "Price" });
+    var priceParsed = SRCatalog.parseMoneyInput(data.price, { required: false, label: "Raw Concrete price" });
+    var paintedParsed = SRCatalog.parseMoneyInput(data.painted_price, {
+      required: false,
+      label: "Painted price",
+    });
     var saleParsed = SRCatalog.parseMoneyInput(data.sale_price, {
       required: false,
       label: "Sale price",
     });
     var price = priceParsed.ok ? priceParsed.value : null;
+    var painted = paintedParsed.ok ? paintedParsed.value : null;
     var sale = saleParsed.ok ? saleParsed.value : null;
     var hasSale = sale != null && price != null && sale < price;
-    $("previewPrice").textContent =
-      hasSale ? SRCatalog.money(sale) : price != null ? SRCatalog.money(price) : "$0.00";
-    if (hasSale) {
+    var rawEffective = hasSale ? sale : price;
+    if (painted != null && painted > 0 && rawEffective != null) {
+      $("previewPrice").textContent = "From " + SRCatalog.money(Math.min(rawEffective, painted));
+      $("previewWas").hidden = true;
+    } else {
+      $("previewPrice").textContent =
+        hasSale ? SRCatalog.money(sale) : price != null ? SRCatalog.money(price) : "$0.00";
+    }
+    if (hasSale && !(painted != null && painted > 0)) {
       $("previewWas").hidden = false;
       $("previewWas").textContent = SRCatalog.money(price);
-    } else {
+    } else if (!(painted != null && painted > 0 && rawEffective != null)) {
       $("previewWas").hidden = true;
     }
 
@@ -592,6 +604,7 @@
     $("slug").value = product.slug || "";
     $("description").value = product.description || "";
     $("price").value = SRCatalog.formatMoneyInput(product.price);
+    $("painted_price").value = SRCatalog.formatMoneyInput(product.painted_price);
     $("sale_price").value = SRCatalog.formatMoneyInput(product.sale_price);
     $("quantity").value = product.quantity != null ? product.quantity : 0;
     $("item_no").value = product.item_no || "";
@@ -797,12 +810,17 @@
   }
 
   function bindForm() {
-    ["price", "sale_price"].forEach(function (id) {
+    ["price", "painted_price", "sale_price"].forEach(function (id) {
       $(id).addEventListener("blur", function () {
         var required = id === "price";
         var parsed = SRCatalog.parseMoneyInput($(id).value, {
           required: false,
-          label: id === "price" ? "Price" : "Sale price",
+          label:
+            id === "price"
+              ? "Raw Concrete price"
+              : id === "painted_price"
+                ? "Painted price"
+                : "Sale price",
         });
         if (parsed.ok && parsed.value != null) {
           $(id).value = SRCatalog.formatMoneyInput(parsed.value);
@@ -813,7 +831,7 @@
         }
       });
     });
-    ["title", "description", "price", "sale_price", "quantity", "item_no", "product_type", "status"].forEach(
+    ["title", "description", "price", "painted_price", "sale_price", "quantity", "item_no", "product_type", "status"].forEach(
       function (id) {
         $(id).addEventListener("input", function () {
           markDirty();

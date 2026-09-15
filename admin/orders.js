@@ -154,7 +154,13 @@
     var items = order.items || order.order_items || [];
     if (!items.length) return "No line items";
     if (items.length === 1) {
-      return items[0].product_name + " × " + items[0].quantity;
+      var finish =
+        items[0].finish === "painted"
+          ? " — Painted"
+          : items[0].finish === "raw"
+            ? " — Raw Concrete"
+            : "";
+      return items[0].product_name + finish + " × " + items[0].quantity;
     }
     var qty = items.reduce(function (s, it) {
       return s + (Number(it.quantity) || 0);
@@ -318,12 +324,23 @@
           it.unit_amount != null
             ? moneyFromCents(it.unit_amount, order.currency) + " each"
             : null;
+        var finish =
+          it.finish === "painted"
+            ? "Painted"
+            : it.finish === "raw"
+              ? "Raw Concrete"
+              : "";
         return (
           '<div class="order-line">' +
           "<div>" +
           "<strong>" +
           SRCatalog.escapeHtml(it.product_name || "Item") +
           "</strong>" +
+          (finish
+            ? '<div class="order-line-finish">Finish: ' +
+              SRCatalog.escapeHtml(finish) +
+              "</div>"
+            : "") +
           '<div class="muted">Qty ' +
           SRCatalog.escapeHtml(String(it.quantity)) +
           (unit ? " · " + SRCatalog.escapeHtml(unit) : "") +

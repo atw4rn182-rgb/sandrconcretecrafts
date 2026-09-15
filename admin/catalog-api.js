@@ -146,7 +146,7 @@
     var result = await supabase
       .from("products")
       .select(
-        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
+        "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
       )
       .order("updated_at", { ascending: false });
 
@@ -181,7 +181,7 @@
     var result = await supabase
       .from("products")
       .select(
-        "id, title, slug, description, price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
+        "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
       )
       .eq("id", id)
       .maybeSingle();
@@ -239,11 +239,16 @@
     var title = String(input.title || "").trim();
     var description = String(input.description || "").trim();
     var priceParsed = parseMoneyInput(input.price, { required: true, label: "Price" });
+    var paintedParsed = parseMoneyInput(input.painted_price, {
+      required: false,
+      label: "Painted price",
+    });
     var saleParsed = parseMoneyInput(input.sale_price, {
       required: false,
       label: "Sale price",
     });
     var price = priceParsed.value;
+    var painted = paintedParsed.value;
     var sale = saleParsed.value;
     var quantity = Number(input.quantity);
     var status = input.status || "draft";
@@ -255,6 +260,10 @@
     if (!title) errors.push("Please add a product title.");
     if (!description) errors.push("Please add a short description.");
     if (!priceParsed.ok) errors.push(priceParsed.error);
+    if (!paintedParsed.ok) errors.push(paintedParsed.error);
+    if (paintedParsed.ok && painted != null && painted <= 0) {
+      errors.push("Painted price must be greater than zero.");
+    }
     if (!saleParsed.ok) errors.push(saleParsed.error);
     if (
       priceParsed.ok &&
@@ -297,6 +306,7 @@
         title: title,
         description: description,
         price: price,
+        painted_price: painted,
         sale_price: sale,
         quantity: quantity,
         status: status,
@@ -319,6 +329,7 @@
       slug: slug,
       description: fields.description,
       price: fields.price,
+      painted_price: fields.painted_price,
       sale_price: fields.sale_price,
       quantity: fields.quantity,
       status: fields.status || "draft",
@@ -349,6 +360,7 @@
       slug: slug,
       description: fields.description,
       price: fields.price,
+      painted_price: fields.painted_price,
       sale_price: fields.sale_price,
       quantity: fields.quantity,
       status: fields.status,
@@ -629,6 +641,7 @@
           title: product.title,
           description: product.description,
           price: product.price,
+          painted_price: product.painted_price,
           sale_price: product.sale_price,
           quantity: product.quantity,
           status: "published",
@@ -652,6 +665,7 @@
         slug: product.slug,
         description: product.description,
         price: product.price,
+        painted_price: product.painted_price,
         sale_price: product.sale_price,
         quantity: product.quantity,
         item_no: product.item_no,
@@ -931,7 +945,7 @@
     var q = supabase
       .from("orders")
       .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total)"
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total)"
       )
       .order("created_at", { ascending: false });
 
@@ -965,7 +979,7 @@
     var result = await supabase
       .from("orders")
       .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, quantity, unit_amount, amount_total, created_at)"
+        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total, created_at)"
       )
       .eq("id", id)
       .maybeSingle();

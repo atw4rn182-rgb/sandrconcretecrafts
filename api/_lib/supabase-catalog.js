@@ -43,6 +43,24 @@ function effectiveUnitCents(row) {
   return dollarsToCents(dollars);
 }
 
+function normalizeFinish(value) {
+  var finish = String(value == null ? "raw" : value)
+    .trim()
+    .toLowerCase();
+  return finish === "raw" || finish === "painted" ? finish : null;
+}
+
+function unitCentsForFinish(row, finish) {
+  var normalized = normalizeFinish(finish);
+  if (!normalized) return null;
+  if (normalized === "painted") {
+    if (row.painted_price == null || row.painted_price === "") return null;
+    var painted = dollarsToCents(row.painted_price);
+    return painted != null && painted > 0 ? painted : null;
+  }
+  return effectiveUnitCents(row);
+}
+
 /**
  * Fetch one storefront-visible product by id.
  * Returns null when missing or not publicly purchasable.
@@ -58,7 +76,7 @@ async function fetchPublicProduct(productId) {
     new URLSearchParams({
       id: "eq." + id,
       select:
-        "id,title,description,price,sale_price,quantity,status,track_inventory,product_images(image_url,is_primary,sort_order)",
+        "id,title,description,price,painted_price,sale_price,quantity,status,track_inventory,product_images(image_url,is_primary,sort_order)",
       limit: "1",
     }).toString();
 
@@ -107,12 +125,16 @@ function primaryImageUrl(row) {
 /**
  * Validate quantity against inventory rules.
  */
-function assertPurchasable(row, quantity) {
+function assertPurchasable(row, quantity, finish) {
   if (!row) {
     return { ok: false, error: "That product isn’t available." };
   }
   if (row.status !== "published") {
     return { ok: false, error: "That product isn’t available for purchase." };
+  }
+  var normalizedFinish = normalizeFinish(finish);
+  if (!normalizedFinish) {
+    return { ok: false, error: "Choose a valid finish." };
   }
   var qty = Number(quantity);
   if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
@@ -130,11 +152,22 @@ function assertPurchasable(row, quantity) {
       };
     }
   }
-  var unitCents = effectiveUnitCents(row);
+  var unitCents = unitCentsForFinish(row, normalizedFinish);
   if (unitCents == null || unitCents < 1) {
-    return { ok: false, error: "That product doesn’t have a valid price yet." };
+    return {
+      ok: false,
+      error:
+        normalizedFinish === "painted"
+          ? "Painted finish isn’t available for that product."
+          : "That product doesn’t have a valid price yet.",
+    };
   }
-  return { ok: true, quantity: qty, unitCents: unitCents };
+  return {
+    ok: true,
+    quantity: qty,
+    unitCents: unitCents,
+    finish: normalizedFinish,
+  };
 }
 
 module.exports = {
@@ -142,5 +175,7 @@ module.exports = {
   primaryImageUrl: primaryImageUrl,
   assertPurchasable: assertPurchasable,
   effectiveUnitCents: effectiveUnitCents,
+  unitCentsForFinish: unitCentsForFinish,
+  normalizeFinish: normalizeFinish,
   dollarsToCents: dollarsToCents,
 };

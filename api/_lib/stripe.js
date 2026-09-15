@@ -78,7 +78,7 @@ function appendForm(params, key, value) {
 /**
  * Create a Checkout Session (payment mode) via Stripe API.
  * @param {object} input
- * @param {Array<{name:string,description?:string,unitAmountCents:number,quantity:number,imageUrl?:string|null}>} input.lineItems
+ * @param {Array<{name:string,description?:string,unitAmountCents:number,quantity:number,imageUrl?:string|null,productId?:string,finish?:string}>} input.lineItems
  * @param {object} [input.metadata]
  */
 async function createCheckoutSession(input) {
@@ -133,6 +133,13 @@ async function createCheckoutSession(input) {
         params,
         prefix + "[price_data][product_data][metadata][product_id]",
         item.productId
+      );
+    }
+    if (item.finish) {
+      appendForm(
+        params,
+        prefix + "[price_data][product_data][metadata][finish]",
+        item.finish
       );
     }
     if (item.description) {

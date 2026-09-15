@@ -2270,6 +2270,12 @@ body.action-sheet-open { overflow: hidden; }
 .order-line:last-child {
   border-bottom: 0;
 }
+.order-line-finish {
+  margin-top: 0.12rem;
+  color: var(--turquoise-deep);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
 .order-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.78rem;

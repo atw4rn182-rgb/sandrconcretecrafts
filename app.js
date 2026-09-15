@@ -191,6 +191,7 @@
       name: p.name,
       desc: p.desc,
       price: p.price,
+      paintedPrice: null,
       salePrice: null,
       effectivePrice: p.price,
       itemNo: p.itemNo || "",
@@ -226,12 +227,14 @@
   }
 
   let products = liveMode ? [] : DEMO_PRODUCTS.slice();
+  let storefrontCategories = [];
   let catalogReady = !liveMode;
   let catalogError = null;
   let activeCategory = "all";
   let cart = [];
   let modalProduct = null;
   let modalQty = 1;
+  let modalFinish = "raw";
 
   const $ = (sel) => document.querySelector(sel);
   function money(n) {
@@ -267,7 +270,7 @@
     });
   }
 
-  function collectCategories() {
+  function categoriesFromProducts() {
     var map = {};
     products.forEach(function (p) {
       (p.categories || []).forEach(function (c) {
@@ -284,8 +287,41 @@
       });
   }
 
-  function unitPrice(p) {
+  function collectCategories() {
+    if (liveMode) return storefrontCategories.slice();
+    return categoriesFromProducts();
+  }
+
+  async function loadStorefrontCategories() {
+    if (!liveMode || !Cat || !Cat.fetchStorefrontCategories) {
+      storefrontCategories = categoriesFromProducts();
+      return;
+    }
+    storefrontCategories = await Cat.fetchStorefrontCategories();
+  }
+
+  function normalizeFinish(value) {
+    var finish = String(value == null ? "raw" : value).toLowerCase();
+    return finish === "painted" ? "painted" : "raw";
+  }
+
+  function finishLabel(finish) {
+    return normalizeFinish(finish) === "painted" ? "Painted" : "Raw Concrete";
+  }
+
+  function hasPaintedOption(p) {
+    return !!(p && p.paintedPrice != null && Number(p.paintedPrice) > 0);
+  }
+
+  function lineKey(id, finish) {
+    return String(id) + "::" + normalizeFinish(finish);
+  }
+
+  function unitPrice(p, finish) {
     if (!p) return 0;
+    if (normalizeFinish(finish) === "painted") {
+      return hasPaintedOption(p) ? Number(p.paintedPrice) : 0;
+    }
     return p.effectivePrice != null ? Number(p.effectivePrice) : Number(p.price) || 0;
   }
 
@@ -429,7 +465,11 @@
       if (!Array.isArray(parsed)) return [];
       return parsed
         .map(function (l) {
-          return { id: String(l.id), qty: Math.max(1, Number(l.qty) || 1) };
+          return {
+            id: String(l.id),
+            finish: normalizeFinish(l.finish),
+            qty: Math.max(1, Number(l.qty) || 1),
+          };
         })
         .filter(function (l) {
           return l.id;
@@ -469,17 +509,25 @@
         removed += 1;
         return;
       }
+      var finish = normalizeFinish(line.finish);
+      if (finish === "painted" && !hasPaintedOption(p)) {
+        removed += 1;
+        return;
+      }
       var max = maxQtyFor(p);
-      var qty = Math.min(line.qty, max);
+      var alreadyKept = next.reduce(function (sum, kept) {
+        return kept.id === resolved ? sum + kept.qty : sum;
+      }, 0);
+      var qty = Math.min(line.qty, Math.max(0, max - alreadyKept));
       if (qty < 1) {
         removed += 1;
         return;
       }
       var existing = next.find(function (l) {
-        return l.id === resolved;
+        return l.id === resolved && l.finish === finish;
       });
       if (existing) existing.qty = Math.min(max, existing.qty + qty);
-      else next.push({ id: resolved, qty: qty });
+      else next.push({ id: resolved, finish: finish, qty: qty });
     });
     cart = next;
     saveCart();
@@ -514,6 +562,13 @@
   }
 
   function priceHtml(p) {
+    if (hasPaintedOption(p)) {
+      return (
+        '<span class="price">From ' +
+        esc(money(Math.min(unitPrice(p, "raw"), unitPrice(p, "painted")))) +
+        "</span>"
+      );
+    }
     if (p.salePrice != null) {
       return (
         '<span class="price">' +
@@ -657,8 +712,9 @@
     }, 2400);
   }
 
-  function addToCart(id, qty) {
+  function addToCart(id, qty, finish) {
     qty = qty == null ? 1 : qty;
+    finish = normalizeFinish(finish);
     var p = findProduct(id);
     if (!p) {
       toast("That item is no longer available.");
@@ -668,48 +724,63 @@
       toast("That item is sold out.");
       return;
     }
+    if (finish === "painted" && !hasPaintedOption(p)) {
+      toast("Painted finish isn’t available for that item.");
+      return;
+    }
     var max = maxQtyFor(p);
     var line = cart.find(function (l) {
-      return l.id === id;
+      return l.id === id && l.finish === finish;
     });
+    var otherQty = cart.reduce(function (sum, l) {
+      return l.id === id && l !== line ? sum + l.qty : sum;
+    }, 0);
     var nextQty = (line ? line.qty : 0) + qty;
-    if (nextQty > max) {
+    var lineMax = Math.max(0, max - otherQty);
+    if (nextQty > lineMax) {
       toast(
         p.trackInventory
           ? "Only " + max + " available."
           : "Quantity limit reached."
       );
-      nextQty = max;
+      nextQty = lineMax;
     }
     if (nextQty < 1) return;
     if (line) line.qty = nextQty;
-    else cart.push({ id: id, qty: nextQty });
+    else cart.push({ id: id, finish: finish, qty: nextQty });
     updateCart(true);
-    toast(p.name + " added to cart");
+    toast(
+      p.name +
+        (hasPaintedOption(p) ? " — " + finishLabel(finish) : "") +
+        " added to cart"
+    );
   }
 
-  function setQty(id, qty) {
+  function setQty(key, qty) {
     var line = cart.find(function (l) {
-      return l.id === id;
+      return lineKey(l.id, l.finish) === key;
     });
     if (!line) return;
-    var p = findProduct(id);
+    var p = findProduct(line.id);
     if (!p || !canPurchase(p)) {
-      removeFromCart(id);
+      removeFromCart(key);
       toast("Removed an unavailable item from your cart.");
       return;
     }
     var max = maxQtyFor(p);
-    line.qty = Math.min(Math.max(0, qty), max);
+    var otherQty = cart.reduce(function (sum, item) {
+      return item.id === line.id && item !== line ? sum + item.qty : sum;
+    }, 0);
+    line.qty = Math.min(Math.max(0, qty), Math.max(0, max - otherQty));
     if (line.qty <= 0) cart = cart.filter(function (l) {
-      return l.id !== id;
+      return lineKey(l.id, l.finish) !== key;
     });
     updateCart();
   }
 
-  function removeFromCart(id) {
+  function removeFromCart(key) {
     cart = cart.filter(function (l) {
-      return l.id !== id;
+      return lineKey(l.id, l.finish) !== key;
     });
     updateCart();
   }
@@ -724,7 +795,7 @@
     return cart.reduce(function (s, l) {
       var p = findProduct(l.id);
       if (!p) return s;
-      return s + unitPrice(p) * l.qty;
+      return s + unitPrice(p, l.finish) * l.qty;
     }, 0);
   }
 
@@ -750,21 +821,27 @@
       .map(function (l) {
         var p = findProduct(l.id);
         if (!p) {
+          var missingKey = lineKey(l.id, l.finish);
           return (
-            '<div class="cart-line cart-line--missing" data-id="' +
-            escAttr(l.id) +
+            '<div class="cart-line cart-line--missing" data-key="' +
+            escAttr(missingKey) +
             '">' +
             "<p>Item no longer available</p>" +
             '<button class="cart-line-remove" data-remove="' +
-            escAttr(l.id) +
+            escAttr(missingKey) +
             '">Remove</button>' +
             "</div>"
           );
         }
-        var price = unitPrice(p);
+        var key = lineKey(p.id, l.finish);
+        var price = unitPrice(p, l.finish);
+        var finishHtml =
+          hasPaintedOption(p) || l.finish === "painted"
+            ? '<span class="line-finish">' + esc(finishLabel(l.finish)) + "</span>"
+            : "";
         return (
-          '<div class="cart-line" data-id="' +
-          escAttr(p.id) +
+          '<div class="cart-line" data-key="' +
+          escAttr(key) +
           '">' +
           '<img src="' +
           escAttr(safeImgSrc(p)) +
@@ -775,22 +852,23 @@
           "<h4>" +
           esc(p.name) +
           "</h4>" +
+          finishHtml +
           '<span class="line-price">' +
           esc(money(price)) +
           "</span>" +
           '<div class="cart-line-qty">' +
           '<button type="button" data-dec="' +
-          escAttr(p.id) +
+          escAttr(key) +
           '" aria-label="Decrease">−</button>' +
           "<span>" +
           esc(String(l.qty)) +
           "</span>" +
           '<button type="button" data-inc="' +
-          escAttr(p.id) +
+          escAttr(key) +
           '" aria-label="Increase">+</button>' +
           "</div>" +
           '<button type="button" class="cart-line-remove" data-remove="' +
-          escAttr(p.id) +
+          escAttr(key) +
           '">Remove</button>' +
           "</div>" +
           '<span class="line-total">' +
@@ -825,6 +903,7 @@
       return;
     }
     modalQty = 1;
+    modalFinish = "raw";
     const img = $("#modalImg");
     img.src = safeImgSrc(modalProduct);
     img.dataset.seed = modalProduct.seed;
@@ -834,14 +913,25 @@
     };
     img.alt = modalProduct.alt || modalProduct.name;
     $("#modalTitle").textContent = modalProduct.name;
-    if (modalProduct.salePrice != null) {
+    var finishChoice = $("#modalFinishChoice");
+    if (hasPaintedOption(modalProduct)) {
+      finishChoice.hidden = false;
+      $("#modalRawPrice").textContent = money(unitPrice(modalProduct, "raw"));
+      $("#modalPaintedPrice").textContent = money(unitPrice(modalProduct, "painted"));
+      document.querySelectorAll('input[name="modalFinish"]').forEach(function (input) {
+        input.checked = input.value === "raw";
+      });
+      $("#modalPrice").textContent = money(unitPrice(modalProduct, "raw"));
+    } else if (modalProduct.salePrice != null) {
+      finishChoice.hidden = true;
       $("#modalPrice").innerHTML =
         esc(money(modalProduct.salePrice)) +
         ' <span class="price-was">' +
         esc(money(modalProduct.price)) +
         "</span>";
     } else {
-      $("#modalPrice").textContent = money(unitPrice(modalProduct));
+      finishChoice.hidden = true;
+      $("#modalPrice").textContent = money(unitPrice(modalProduct, "raw"));
     }
     $("#modalDesc").textContent = modalProduct.desc;
     const tagEl = $("#modalTag");
@@ -858,10 +948,12 @@
       addBtn.textContent = "Add to Cart";
     }
     modalOverlay.classList.add("open");
+    modalOverlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
   }
   function closeModal() {
     modalOverlay.classList.remove("open");
+    modalOverlay.setAttribute("aria-hidden", "true");
     if (!isCartOpen() && !isCheckoutOpen()) document.body.classList.remove("no-scroll");
   }
   const isCartOpen = () => cartDrawer.classList.contains("open");
@@ -874,6 +966,7 @@
     try {
       var fresh = await Cat.fetchStorefrontProducts();
       products = fresh;
+      await loadStorefrontCategories();
       catalogReady = true;
       catalogError = null;
       reconcileCart(true);
@@ -933,7 +1026,7 @@
       .map(function (l) {
         var p = findProduct(l.id);
         if (!p || !canPurchase(p)) return null;
-        return { id: l.id, quantity: l.qty };
+        return { id: l.id, finish: l.finish, quantity: l.qty };
       })
       .filter(Boolean);
 
@@ -1067,6 +1160,10 @@
       .map(function (l) {
         var p = findProduct(l.id);
         if (!p) return "";
+        var finish =
+          hasPaintedOption(p) || l.finish === "painted"
+            ? '<div class="s-finish">' + esc(finishLabel(l.finish)) + "</div>"
+            : "";
         return (
           '<div class="summary-row">' +
           '<img src="' +
@@ -1076,11 +1173,13 @@
           '" />' +
           "<div><div class=\"s-name\">" +
           esc(p.name) +
-          '</div><div class="s-qty">Qty ' +
+          "</div>" +
+          finish +
+          '<div class="s-qty">Qty ' +
           esc(String(l.qty)) +
           "</div></div>" +
           '<div class="s-price">' +
-          esc(money(unitPrice(p) * l.qty)) +
+          esc(money(unitPrice(p, l.finish) * l.qty)) +
           "</div>" +
           "</div>"
         );
@@ -1145,7 +1244,9 @@
       if (addBtn) {
         e.stopPropagation();
         if (addBtn.disabled) return;
-        addToCart(addBtn.dataset.add);
+        var product = findProduct(addBtn.dataset.add);
+        if (hasPaintedOption(product)) openModal(addBtn.dataset.add);
+        else addToCart(addBtn.dataset.add, 1, "raw");
         return;
       }
       var card = e.target.closest(".card");
@@ -1176,9 +1277,16 @@
       modalQty += 1;
       $("#modalQty").textContent = modalQty;
     });
+    document.querySelectorAll('input[name="modalFinish"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!modalProduct || !input.checked) return;
+        modalFinish = normalizeFinish(input.value);
+        $("#modalPrice").textContent = money(unitPrice(modalProduct, modalFinish));
+      });
+    });
     $("#modalAdd").addEventListener("click", function () {
       if (!modalProduct || !canPurchase(modalProduct)) return;
-      addToCart(modalProduct.id, modalQty);
+      addToCart(modalProduct.id, modalQty, modalFinish);
       closeModal();
       openCart();
     });
@@ -1191,19 +1299,21 @@
       var dec = e.target.closest("[data-dec]");
       var rem = e.target.closest("[data-remove]");
       if (inc) {
+        var incLine = cart.find(function (l) {
+          return lineKey(l.id, l.finish) === inc.dataset.inc;
+        });
         setQty(
           inc.dataset.inc,
-          (cart.find(function (l) {
-            return l.id === inc.dataset.inc;
-          }) || { qty: 0 }).qty + 1
+          (incLine || { qty: 0 }).qty + 1
         );
       }
       if (dec) {
+        var decLine = cart.find(function (l) {
+          return lineKey(l.id, l.finish) === dec.dataset.dec;
+        });
         setQty(
           dec.dataset.dec,
-          (cart.find(function (l) {
-            return l.id === dec.dataset.dec;
-          }) || { qty: 0 }).qty - 1
+          (decLine || { qty: 0 }).qty - 1
         );
       }
       if (rem) removeFromCart(rem.dataset.remove);
@@ -1232,6 +1342,7 @@
     showCatalogStatus("loading", "Loading the collection…", false);
     try {
       products = await Cat.fetchStorefrontProducts();
+      await loadStorefrontCategories();
       catalogReady = true;
       catalogError = null;
       reconcileCart(true);
@@ -1239,6 +1350,7 @@
       updateCart();
     } catch (err) {
       products = [];
+      storefrontCategories = [];
       catalogReady = false;
       catalogError = (err && err.message) || "Catalog request failed.";
       // Never fall back to demo products when live mode is on.

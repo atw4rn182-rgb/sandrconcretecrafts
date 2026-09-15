@@ -48,6 +48,7 @@ function normalizeItems(body) {
       return {
         id: row && (row.id || row.productId || row.product_id),
         quantity: row && row.quantity,
+        finish: row && row.finish != null ? row.finish : "raw",
       };
     });
   }
@@ -56,6 +57,7 @@ function normalizeItems(body) {
       {
         id: body.productId || body.id || body.product_id,
         quantity: body.quantity == null ? 1 : body.quantity,
+        finish: body.finish == null ? "raw" : body.finish,
       },
     ];
   }
@@ -147,37 +149,74 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // Merge duplicate product ids
-    var qtyById = {};
+    // Merge duplicate product+finish lines. A product may appear once per finish.
+    var variants = [];
     requested.forEach(function (row) {
       var id = String(row.id).trim();
+      var finish = String(row.finish == null ? "raw" : row.finish)
+        .trim()
+        .toLowerCase();
       var q = Number(row.quantity);
       if (!Number.isInteger(q) || q < 1) q = 1;
-      qtyById[id] = (qtyById[id] || 0) + q;
+      var existing = variants.find(function (item) {
+        return item.id === id && item.finish === finish;
+      });
+      if (existing) existing.quantity += q;
+      else variants.push({ id: id, finish: finish, quantity: q });
     });
 
     var lineItems = [];
     var metaLines = [];
-    var ids = Object.keys(qtyById);
+    var productCache = Object.create(null);
+    var totalById = Object.create(null);
+    variants.forEach(function (item) {
+      totalById[item.id] = (totalById[item.id] || 0) + item.quantity;
+    });
 
+    var ids = Object.keys(totalById);
     for (var i = 0; i < ids.length; i++) {
-      var productId = ids[i];
-      var row = await catalog.fetchPublicProduct(productId);
-      var check = catalog.assertPurchasable(row, qtyById[productId]);
+      var inventoryProductId = ids[i];
+      var inventoryRow = await catalog.fetchPublicProduct(inventoryProductId);
+      productCache[inventoryProductId] = inventoryRow;
+      var inventoryCheck = catalog.assertPurchasable(
+        inventoryRow,
+        totalById[inventoryProductId],
+        "raw"
+      );
+      if (!inventoryCheck.ok) {
+        sendJson(res, 400, mergeAllowLive({ error: inventoryCheck.error }));
+        return;
+      }
+    }
+
+    for (var j = 0; j < variants.length; j++) {
+      var variant = variants[j];
+      var productId = variant.id;
+      var row = productCache[productId];
+      var check = catalog.assertPurchasable(
+        row,
+        variant.quantity,
+        variant.finish
+      );
       if (!check.ok) {
         sendJson(res, 400, mergeAllowLive({ error: check.error }));
         return;
       }
 
+      var finishLabel = check.finish === "painted" ? "Painted" : "Raw Concrete";
       lineItems.push({
         name: row.title || "Product",
-        description: row.description || undefined,
+        description:
+          "Finish: " +
+          finishLabel +
+          (row.description ? " · " + String(row.description).slice(0, 440) : ""),
         unitAmountCents: check.unitCents,
         quantity: check.quantity,
         imageUrl: catalog.primaryImageUrl(row),
         productId: productId,
+        finish: check.finish,
       });
-      metaLines.push(productId + ":" + check.quantity);
+      metaLines.push(productId + ":" + check.finish + ":" + check.quantity);
     }
 
     var session = await stripe.createCheckoutSession({

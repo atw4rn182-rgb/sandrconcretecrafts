@@ -359,7 +359,10 @@ img { max-width: 100%; display: block; }
   margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-muted);
 }
-.filter-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.55rem; }
+.filter-chips {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.55rem;
+  width: 100%; max-width: 100%;
+}
 .filter-chip {
   min-height: 42px; padding: 0.45rem 1rem; border-radius: 999px;
   border: 1.5px solid rgba(58, 42, 34, 0.16);
@@ -789,6 +792,37 @@ img { max-width: 100%; display: block; }
   font-family: var(--serif); font-size: 1.55rem; color: var(--clay-deep);
   font-weight: 600; margin: 0;
 }
+.finish-choice {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.35rem;
+  padding: 0;
+  border: 0;
+}
+.finish-choice legend {
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brown);
+}
+.finish-choice label {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1.5px solid rgba(58, 42, 34, 0.16);
+  border-radius: 12px;
+  background: var(--adobe-50);
+  cursor: pointer;
+}
+.finish-choice label:has(input:checked) {
+  border-color: var(--turquoise);
+  box-shadow: 0 0 0 2px rgba(47, 111, 109, 0.14);
+}
+.finish-choice input { width: 20px; height: 20px; accent-color: var(--turquoise); }
+.finish-choice strong { color: var(--clay-deep); }
 .modal-desc { color: var(--ink-muted); margin: 0.2rem 0 0.5rem; }
 .modal-qty {
   display: flex; align-items: center; gap: 1rem; font-weight: 600; color: var(--ink-muted);
@@ -848,6 +882,12 @@ img { max-width: 100%; display: block; }
   background: var(--adobe-50); border: 1px solid rgba(58, 42, 34, 0.08); padding: 0.25rem;
 }
 .cart-line-info h4 { font-family: var(--serif); font-size: 1.05rem; margin: 0; color: var(--brown); }
+.cart-line-info .line-finish {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
 .cart-line-info .line-price { color: var(--clay-deep); font-weight: 700; font-size: 0.9rem; }
 .cart-line-qty { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.35rem; }
 .cart-line-qty button {

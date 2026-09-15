@@ -7,6 +7,8 @@
     "verify:step4": "node scripts/verify-step4-local.js",
     "verify:dashboard": "node scripts/verify-dashboard-local.js",
     "verify:inline-category": "node scripts/verify-inline-category-local.js",
+    "verify:categories": "node scripts/verify-categories-local.js",
+    "verify:painted-pricing": "node scripts/verify-painted-pricing-local.js",
     "verify:polish": "node scripts/verify-polish-local.js",
     "verify:admin-mobile": "node scripts/verify-admin-mobile-local.js"
   },

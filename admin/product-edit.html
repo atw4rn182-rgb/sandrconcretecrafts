@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Edit Product — S&amp;R Concrete Crafts Admin</title>
+  <link rel="icon" href="/favicon.ico?v=20260915" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png?v=20260915" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png?v=20260915" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=20260915" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -104,7 +108,7 @@
               </div>
               <div class="form-grid-2">
                 <div class="field">
-                  <label for="price">Price ($) <span class="req">*</span></label>
+                  <label for="price">Raw Concrete Price ($) <span class="req">*</span></label>
                   <input
                     id="price"
                     name="price"
@@ -117,6 +121,21 @@
                   />
                 </div>
                 <div class="field">
+                  <label for="painted_price">Painted Price ($) <span class="optional">optional</span></label>
+                  <input
+                    id="painted_price"
+                    name="painted_price"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    enterkeyhint="next"
+                    placeholder="optional"
+                  />
+                  <p class="field-hint">Leave Painted Price blank if this item is only sold at one price.</p>
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="field">
                   <label for="sale_price">Sale price ($) <span class="optional">optional</span></label>
                   <input
                     id="sale_price"
@@ -127,6 +146,7 @@
                     enterkeyhint="next"
                     placeholder="optional"
                   />
+                  <p class="field-hint">Optional sale price for Raw Concrete.</p>
                 </div>
               </div>
               <div class="form-grid-2">

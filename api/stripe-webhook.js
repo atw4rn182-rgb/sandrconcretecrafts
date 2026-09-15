@@ -64,18 +64,20 @@ function pickAddress(session) {
 }
 
 function parseCartMetadata(cartMeta) {
-  var map = {};
+  var lines = [];
   String(cartMeta || "")
     .split(",")
     .forEach(function (part) {
       var bits = String(part || "").split(":");
       if (bits.length < 2) return;
       var id = bits[0].trim();
-      var qty = Number(bits[1]);
+      var finish = bits.length >= 3 ? bits[1].trim().toLowerCase() : null;
+      var qty = Number(bits.length >= 3 ? bits[2] : bits[1]);
       if (!id || !Number.isInteger(qty) || qty < 1) return;
-      map[id] = qty;
+      if (finish !== "raw" && finish !== "painted") finish = null;
+      lines.push({ id: id, finish: finish, quantity: qty });
     });
-  return map;
+  return lines;
 }
 
 function isUuid(value) {
@@ -84,19 +86,19 @@ function isUuid(value) {
   );
 }
 
-function lineItemsFromSession(session, cartMap) {
+function lineItemsFromSession(session, cartLines) {
   var data =
     (session &&
       session.line_items &&
       Array.isArray(session.line_items.data) &&
       session.line_items.data) ||
     [];
-  var cartIds = Object.keys(cartMap || {});
-  var used = {};
+  var fallbackLines = Array.isArray(cartLines) ? cartLines : [];
 
   if (data.length) {
     return data.map(function (li, index) {
       var product = li.price && li.price.product;
+      var fallback = fallbackLines[index] || {};
       var metaId =
         product &&
         typeof product === "object" &&
@@ -104,10 +106,15 @@ function lineItemsFromSession(session, cartMap) {
         product.metadata.product_id
           ? product.metadata.product_id
           : null;
-      if (!metaId && cartIds[index] && !used[cartIds[index]]) {
-        metaId = cartIds[index];
-      }
-      if (metaId) used[metaId] = true;
+      if (!metaId && fallback.id) metaId = fallback.id;
+      var finish =
+        product &&
+        typeof product === "object" &&
+        product.metadata &&
+        product.metadata.finish
+          ? String(product.metadata.finish).toLowerCase()
+          : fallback.finish || null;
+      if (finish !== "raw" && finish !== "painted") finish = null;
       var qty = Number(li.quantity) || 1;
       var amountTotal =
         li.amount_total != null
@@ -122,6 +129,7 @@ function lineItemsFromSession(session, cartMap) {
       return {
         product_id: isUuid(metaId) ? metaId : null,
         product_name: li.description || (product && product.name) || "Item",
+        finish: finish,
         quantity: qty,
         unit_amount: isFinite(unitAmount) ? unitAmount : null,
         amount_total: isFinite(amountTotal) ? amountTotal : 0,
@@ -130,11 +138,12 @@ function lineItemsFromSession(session, cartMap) {
   }
 
   // Fallback when line items were not expanded: metadata.cart only.
-  return cartIds.map(function (id) {
+  return fallbackLines.map(function (line) {
     return {
-      product_id: isUuid(id) ? id : null,
+      product_id: isUuid(line.id) ? line.id : null,
       product_name: "Item",
-      quantity: cartMap[id],
+      finish: line.finish || null,
+      quantity: line.quantity,
       unit_amount: null,
       amount_total: 0,
     };
@@ -192,8 +201,8 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
     },
   };
 
-  var cartMap = parseCartMetadata(session.metadata && session.metadata.cart);
-  var items = lineItemsFromSession(session, cartMap);
+  var cartLines = parseCartMetadata(session.metadata && session.metadata.cart);
+  var items = lineItemsFromSession(session, cartLines);
 
   var saved = await adminDb.upsertOrderWithItems(order, items);
 
