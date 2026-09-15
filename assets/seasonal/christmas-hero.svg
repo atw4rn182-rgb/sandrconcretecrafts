@@ -1,37 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <!-- left pine branch cluster -->
-  <g transform="translate(20,90)">
-    <path fill="#2f5d45" d="M10 120c20-40 40-70 30-100 30 25 50 55 35 95 25-10 55-5 70 20-30 5-55 25-75 50-15-20-40-35-60-65z"/>
-    <path fill="#3f7358" d="M40 110c14-28 28-50 20-72 22 18 36 40 24 68 18-6 40-2 50 16-22 2-40 18-54 36-10-14-28-26-40-48z"/>
-    <ellipse cx="55" cy="50" rx="8" ry="12" fill="#6b4420" transform="rotate(-25 55 50)"/>
-    <circle cx="90" cy="85" r="10" fill="#8f3f3f"/>
-    <circle cx="90" cy="85" r="4" fill="#c45a5a"/>
-    <path stroke="#c9a24a" stroke-width="1.5" d="M90 75v-14"/>
-    <circle cx="120" cy="105" r="8" fill="#c9a24a"/>
-    <path stroke="#c9a24a" stroke-width="1.2" d="M120 97v-10"/>
+  <g transform="translate(10,105)">
+    <path fill="#2f5d45" stroke="#1e3d2e" stroke-width="1.5" d="M8 100c18-36 36-62 26-90 28 22 46 50 32 86 22-8 50-4 64 18-28 4-50 22-68 46-14-18-36-32-54-60z"/>
+    <path fill="#3f7358" d="M36 92c12-24 24-44 16-64 20 16 32 36 20 60 16-5 36-2 46 14-20 2-36 16-48 32-8-12-24-24-34-42z"/>
+    <ellipse cx="48" cy="42" rx="8" ry="12" fill="#6b4420" transform="rotate(-25 48 42)"/>
+    <circle cx="82" cy="78" r="11" fill="#8f3f3f" stroke="#4a2020" stroke-width="1.5"/>
+    <circle cx="82" cy="78" r="4" fill="#ffd0d0"/>
+    <circle cx="110" cy="98" r="8" fill="#c9a24a" stroke="#6a5020" stroke-width="1.2"/>
   </g>
-  <!-- lantern -->
-  <g transform="translate(160,130)">
+  <g transform="translate(150,135)">
     <rect x="18" y="8" width="28" height="8" rx="2" fill="#5a4030"/>
-    <rect x="12" y="16" width="40" height="50" rx="4" fill="#6b4a2e"/>
-    <rect x="18" y="22" width="28" height="34" rx="2" fill="#c9a24a" opacity="0.85"/>
-    <rect x="22" y="26" width="20" height="26" rx="1" fill="#fff0c0" opacity="0.9"/>
-    <rect x="24" y="66" width="16" height="10" fill="#5a4030"/>
+    <rect x="12" y="16" width="40" height="48" rx="4" fill="#6b4a2e"/>
+    <rect x="18" y="22" width="28" height="32" rx="2" fill="#c9a24a" opacity="0.9"/>
+    <rect x="22" y="26" width="20" height="24" rx="1" fill="#fff0c0"/>
+    <rect x="24" y="64" width="16" height="10" fill="#5a4030"/>
   </g>
-  <!-- right pine + ornaments -->
   <g transform="translate(980,100)">
-    <path fill="#2f5d45" d="M180 110c-20-40-40-70-30-100-30 25-50 55-35 95-25-10-55-5-70 20 30 5 55 25 75 50 15-20 40-35 60-65z"/>
-    <path fill="#3f7358" d="M150 100c-14-28-28-50-20-72-22 18-36 40-24 68-18-6-40-2-50 16 22 2 40 18 54 36 10-14 28-26 40-48z"/>
-    <circle cx="100" cy="90" r="11" fill="#8f3f3f"/>
-    <circle cx="100" cy="90" r="4.5" fill="#ffd0d0"/>
-    <circle cx="70" cy="115" r="9" fill="#c9a24a"/>
-    <ellipse cx="130" cy="60" rx="9" ry="13" fill="#6b4420" transform="rotate(20 130 60)"/>
+    <path fill="#2f5d45" stroke="#1e3d2e" stroke-width="1.5" d="M190 100c-18-36-36-62-26-90-28 22-46 50-32 86-22-8-50-4-64 18 28 4 50 22 68 46 14-18 36-32 54-60z"/>
+    <path fill="#3f7358" d="M160 92c-12-24-24-44-16-64-20 16-32 36-20 60-16-5-36-2-46 14 20 2 36 16 48 32 8-12 24-24 34-42z"/>
+    <circle cx="110" cy="80" r="12" fill="#8f3f3f" stroke="#4a2020" stroke-width="1.5"/>
+    <circle cx="110" cy="80" r="4.5" fill="#ffd0d0"/>
+    <circle cx="78" cy="105" r="9" fill="#c9a24a"/>
+    <ellipse cx="140" cy="50" rx="9" ry="13" fill="#6b4420" transform="rotate(20 140 50)"/>
   </g>
-  <!-- snow accents -->
-  <circle cx="280" cy="160" r="3" fill="#fff8f0" opacity="0.8"/>
-  <circle cx="320" cy="180" r="2" fill="#fff8f0" opacity="0.7"/>
-  <circle cx="880" cy="170" r="2.5" fill="#fff8f0" opacity="0.75"/>
-  <circle cx="840" cy="150" r="2" fill="#fff8f0" opacity="0.7"/>
-  <path fill="#fff8f0" opacity="0.55" d="M40 200h200c-20-16-60-24-100-20s-70 12-100 20z"/>
-  <path fill="#fff8f0" opacity="0.55" d="M960 200h200c-20-16-60-24-100-20s-70 12-100 20z"/>
+  <circle cx="260" cy="175" r="3.5" fill="#fff8f0" opacity="0.9"/>
+  <circle cx="300" cy="190" r="2.5" fill="#fff8f0" opacity="0.8"/>
+  <circle cx="880" cy="180" r="3" fill="#fff8f0" opacity="0.85"/>
+  <path fill="#fff8f0" opacity="0.5" d="M20 205h160c-16-12-48-18-80-15s-56 9-80 15z"/>
+  <path fill="#fff8f0" opacity="0.5" d="M1020 205h160c-16-12-48-18-80-15s-56 9-80 15z"/>
 </svg>

@@ -1,37 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <!-- left bunting drape -->
-  <path stroke="#5a4030" stroke-width="2" fill="none" d="M20 20c40 30 80 10 120 28s80 8 120 20"/>
-  <path fill="#9b4545" d="M40 28l14 26 14-26z"/>
-  <path fill="#f5efe6" d="M80 36l14 26 14-26z"/>
-  <path fill="#4a5f7a" d="M120 30l14 26 14-26z"/>
-  <path fill="#9b4545" d="M160 40l14 26 14-26z"/>
-  <path fill="#f5efe6" d="M200 34l14 26 14-26z"/>
-  <!-- right bunting -->
-  <path stroke="#5a4030" stroke-width="2" fill="none" d="M1180 20c-40 30-80 10-120 28s-80 8-120 20"/>
-  <path fill="#4a5f7a" d="M1160 28l-14 26-14-26z"/>
-  <path fill="#f5efe6" d="M1120 36l-14 26-14-26z"/>
-  <path fill="#9b4545" d="M1080 30l-14 26-14-26z"/>
-  <path fill="#4a5f7a" d="M1040 40l-14 26-14-26z"/>
-  <!-- stars cluster -->
-  <path fill="#f5efe6" d="M60 120l4 10 11 1-8 7 2 11-9-6-9 6 2-11-8-7 11-1z"/>
-  <path fill="#4a5f7a" d="M110 145l3 8 9 1-7 5 2 9-7-4-7 4 2-9-7-5 9-1z"/>
-  <path fill="#9b4545" d="M1080 125l4 10 11 1-8 7 2 11-9-6-9 6 2-11-8-7 11-1z"/>
-  <path fill="#f5efe6" d="M1130 150l3 8 9 1-7 5 2 9-7-4-7 4 2-9-7-5 9-1z"/>
-  <!-- fireworks bottom accents -->
-  <g stroke="#9b4545" stroke-width="2" stroke-linecap="round" opacity="0.85">
-    <path d="M200 170l0-18M200 170l12-12M200 170l18 0M200 170l12 12M200 170l0 18M200 170l-12 12M200 170l-18 0M200 170l-12-12"/>
+  <path stroke="#5a4030" stroke-width="2" fill="none" d="M10 24c36 26 72 8 108 24s72 6 108 18"/>
+  <path fill="#9b4545" d="M28 30l14 26 14-26z"/>
+  <path fill="#f5efe6" d="M68 38l14 26 14-26z"/>
+  <path fill="#4a5f7a" d="M108 32l14 26 14-26z"/>
+  <path fill="#9b4545" d="M148 42l14 26 14-26z"/>
+  <path stroke="#5a4030" stroke-width="2" fill="none" d="M1190 24c-36 26-72 8-108 24s-72 6-108 18"/>
+  <path fill="#4a5f7a" d="M1172 30l-14 26-14-26z"/>
+  <path fill="#f5efe6" d="M1132 38l-14 26-14-26z"/>
+  <path fill="#9b4545" d="M1092 32l-14 26-14-26z"/>
+  <path fill="#f5efe6" d="M40 130l5 12 13 1.5-10 8 2.5 12-10.5-7-10.5 7 2.5-12-10-8 13-1.5z"/>
+  <path fill="#4a5f7a" d="M90 155l4 10 11 1-8 6 2 10-9-5.5-9 5.5 2-10-8-6 11-1z"/>
+  <path fill="#9b4545" d="M1100 135l5 12 13 1.5-10 8 2.5 12-10.5-7-10.5 7 2.5-12-10-8 13-1.5z"/>
+  <path fill="#f5efe6" d="M1150 158l4 10 11 1-8 6 2 10-9-5.5-9 5.5 2-10-8-6 11-1z"/>
+  <g stroke="#9b4545" stroke-width="2.2" stroke-linecap="round">
+    <path d="M180 175l0-20M180 175l14-14M180 175l20 0M180 175l14 14M180 175l0 20M180 175l-14 14M180 175l-20 0M180 175l-14-14"/>
   </g>
-  <g stroke="#4a5f7a" stroke-width="2" stroke-linecap="round" opacity="0.85">
-    <path d="M1000 175l0-18M1000 175l12-12M1000 175l18 0M1000 175l12 12M1000 175l0 18M1000 175l-12 12M1000 175l-18 0M1000 175l-12-12"/>
+  <g stroke="#4a5f7a" stroke-width="2.2" stroke-linecap="round">
+    <path d="M1020 178l0-20M1020 178l14-14M1020 178l20 0M1020 178l14 14M1020 178l0 20M1020 178l-14 14M1020 178l-20 0M1020 178l-14-14"/>
   </g>
-  <!-- mug-like accent (subtle patriotic cup) -->
-  <g transform="translate(250,150)">
+  <g transform="translate(230,155)">
     <rect x="0" y="10" width="36" height="40" rx="4" fill="#4a5f7a"/>
     <rect x="4" y="14" width="28" height="8" fill="#f5efe6"/>
     <path fill="none" stroke="#f5efe6" stroke-width="2" d="M36 20c10 0 10 20 0 20"/>
     <path fill="#f5efe6" d="M12 28l1.5 3.5 4 .5-3 2.5.8 4-3.3-2.2-3.3 2.2.8-4-3-2.5 4-.5z"/>
   </g>
-  <g transform="translate(900,155)">
+  <g transform="translate(920,158)">
     <rect x="0" y="8" width="40" height="44" rx="3" fill="#9b4545"/>
     <path fill="#f5efe6" d="M0 20h40v8H0z"/>
     <path fill="#4a5f7a" d="M0 8h18v20H0z"/>
