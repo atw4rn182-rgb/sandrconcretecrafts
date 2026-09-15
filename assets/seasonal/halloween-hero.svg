@@ -1,11 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <!-- Far-left tiny accent only (below typical CTA zone) -->
-  <g transform="translate(4,168)" opacity="0.95">
-    <ellipse cx="22" cy="28" rx="20" ry="16" fill="#c45c28" stroke="#2a1810" stroke-width="1.5"/>
-    <rect x="19" y="10" width="5" height="10" rx="1" fill="#3a5a28"/>
-    <path fill="#1a1410" d="M14 24l5 3-5 3zm16 0l-5 3 5 3z"/>
-  </g>
-  <!-- Primary jack-o'-lantern cluster — right side -->
+  <!-- Right-side only — leave left clear for hero CTA -->
   <g transform="translate(980,105)">
     <ellipse cx="54" cy="60" rx="50" ry="42" fill="#c45c28" stroke="#2a1810" stroke-width="2.2"/>
     <ellipse cx="28" cy="60" rx="24" ry="38" fill="#d4724a"/>

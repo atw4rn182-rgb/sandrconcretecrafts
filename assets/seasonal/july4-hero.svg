@@ -1,14 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <!-- top corner bunting ok -->
-  <path stroke="#5a4030" stroke-width="2" fill="none" d="M10 18c30 20 60 6 90 18s60 4 90 14"/>
-  <path fill="#9b4545" d="M24 22l12 22 12-22z"/>
-  <path fill="#f5efe6" d="M58 28l12 22 12-22z"/>
-  <path fill="#4a5f7a" d="M92 24l12 22 12-22z"/>
   <path stroke="#5a4030" stroke-width="2" fill="none" d="M1190 18c-30 20-60 6-90 18s-60 4-90 14"/>
   <path fill="#4a5f7a" d="M1176 22l-12 22-12-22z"/>
   <path fill="#f5efe6" d="M1142 28l-12 22-12-22z"/>
   <path fill="#9b4545" d="M1108 24l-12 22-12-22z"/>
-  <!-- right-side stars + fireworks + accents -->
+  <path stroke="#5a4030" stroke-width="2" fill="none" d="M10 18c30 20 60 6 90 18"/>
+  <path fill="#9b4545" d="M24 22l12 22 12-22z"/>
+  <path fill="#f5efe6" d="M58 28l12 22 12-22z"/>
   <path fill="#f5efe6" d="M1040 120l5 12 13 1.5-10 8 2.5 12-10.5-7-10.5 7 2.5-12-10-8 13-1.5z"/>
   <path fill="#9b4545" d="M1105 145l4 10 11 1-8 6 2 10-9-5.5-9 5.5 2-10-8-6 11-1z"/>
   <path fill="#4a5f7a" d="M1160 125l4 10 11 1-8 6 2 10-9-5.5-9 5.5 2-10-8-6 11-1z"/>
@@ -20,9 +17,5 @@
     <path fill="#f5efe6" d="M0 20h40v8H0z"/>
     <path fill="#4a5f7a" d="M0 8h18v20H0z"/>
     <path fill="#f5efe6" d="M4 12l1 2.5 2.5.3-1.8 1.6.5 2.5-2.2-1.4-2.2 1.4.5-2.5-1.8-1.6 2.5-.3z"/>
-  </g>
-  <!-- tiny left firework low -->
-  <g stroke="#9b4545" stroke-width="1.8" stroke-linecap="round" opacity="0.85">
-    <path d="M40 190l0-12M40 190l8-8M40 190l12 0M40 190l8 8M40 190l0 12M40 190l-8 8M40 190l-12 0M40 190l-8-8"/>
   </g>
 </svg>

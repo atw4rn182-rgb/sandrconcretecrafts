@@ -82,23 +82,19 @@ body[data-holiday-decor="on"][data-decor-intensity="extra_festive"],
   background-size: 100% auto;
   pointer-events: none;
   filter: drop-shadow(0 2px 3px rgba(20, 12, 8, 0.35));
-  /* Keep center + left copy/CTA clear; show art on outer edges */
+  /* Prefer right-side art; keep left copy/CTA clear */
   -webkit-mask-image: linear-gradient(
     90deg,
-    #000 0%,
-    #000 12%,
-    transparent 20%,
-    transparent 68%,
-    #000 76%,
+    transparent 0%,
+    transparent 58%,
+    #000 68%,
     #000 100%
   );
   mask-image: linear-gradient(
     90deg,
-    #000 0%,
-    #000 12%,
-    transparent 20%,
-    transparent 68%,
-    #000 76%,
+    transparent 0%,
+    transparent 58%,
+    #000 68%,
     #000 100%
   );
 }
@@ -166,26 +162,26 @@ body[data-holiday-decor="on"][data-decor-intensity="extra_festive"],
 html[data-season="halloween"][data-holiday-decor="on"] .season-decor--header,
 body[data-season="halloween"][data-holiday-decor="on"] .season-decor--header,
 .sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--header {
-  background-image: url("/assets/seasonal/halloween-header.svg");
+  background-image: url("/assets/seasonal/halloween-header.svg?v=xy2b");
 }
 html[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero,
 body[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero,
 .sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero {
-  background-image: url("/assets/seasonal/halloween-hero.svg");
+  background-image: url("/assets/seasonal/halloween-hero.svg?v=xy2b");
 }
 html[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider,
 body[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider,
 .sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--divider {
-  background-image: url("/assets/seasonal/halloween-divider.svg");
+  background-image: url("/assets/seasonal/halloween-divider.svg?v=xy2b");
 }
 html[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer,
 body[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer,
 .sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--footer {
-  background-image: url("/assets/seasonal/halloween-footer.svg");
+  background-image: url("/assets/seasonal/halloween-footer.svg?v=xy2b");
 }
 html[data-season="halloween"][data-holiday-decor="on"] .season-decor--header::after,
 .sf-preview[data-season="halloween"][data-holiday-decor="on"] .season-decor--header::after {
-  background-image: url("/assets/seasonal/halloween-header.svg");
+  background-image: url("/assets/seasonal/halloween-header.svg?v=xy2b");
   transform: scaleX(-1) translateY(4px);
   opacity: calc(var(--season-decor-extra-opacity, 0) * 0.4);
 }
@@ -198,22 +194,22 @@ html[data-season="halloween"][data-holiday-decor="on"] .season-decor--hero::afte
 html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header,
 body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header,
 .sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--header {
-  background-image: url("/assets/seasonal/thanksgiving-header.svg");
+  background-image: url("/assets/seasonal/thanksgiving-header.svg?v=xy2b");
 }
 html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero,
 body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero,
 .sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero {
-  background-image: url("/assets/seasonal/thanksgiving-hero.svg");
+  background-image: url("/assets/seasonal/thanksgiving-hero.svg?v=xy2b");
 }
 html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider,
 body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider,
 .sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--divider {
-  background-image: url("/assets/seasonal/thanksgiving-divider.svg");
+  background-image: url("/assets/seasonal/thanksgiving-divider.svg?v=xy2b");
 }
 html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer,
 body[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer,
 .sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--footer {
-  background-image: url("/assets/seasonal/thanksgiving-footer.svg");
+  background-image: url("/assets/seasonal/thanksgiving-footer.svg?v=xy2b");
 }
 html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero::after,
 .sf-preview[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero::after {
@@ -224,22 +220,22 @@ html[data-season="thanksgiving"][data-holiday-decor="on"] .season-decor--hero::a
 html[data-season="christmas"][data-holiday-decor="on"] .season-decor--header,
 body[data-season="christmas"][data-holiday-decor="on"] .season-decor--header,
 .sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--header {
-  background-image: url("/assets/seasonal/christmas-header.svg");
+  background-image: url("/assets/seasonal/christmas-header.svg?v=xy2b");
 }
 html[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero,
 body[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero,
 .sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero {
-  background-image: url("/assets/seasonal/christmas-hero.svg");
+  background-image: url("/assets/seasonal/christmas-hero.svg?v=xy2b");
 }
 html[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider,
 body[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider,
 .sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--divider {
-  background-image: url("/assets/seasonal/christmas-divider.svg");
+  background-image: url("/assets/seasonal/christmas-divider.svg?v=xy2b");
 }
 html[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer,
 body[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer,
 .sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--footer {
-  background-image: url("/assets/seasonal/christmas-footer.svg");
+  background-image: url("/assets/seasonal/christmas-footer.svg?v=xy2b");
 }
 html[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero::after,
 .sf-preview[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero::after {
@@ -250,22 +246,22 @@ html[data-season="christmas"][data-holiday-decor="on"] .season-decor--hero::afte
 html[data-season="easter"][data-holiday-decor="on"] .season-decor--header,
 body[data-season="easter"][data-holiday-decor="on"] .season-decor--header,
 .sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--header {
-  background-image: url("/assets/seasonal/easter-header.svg");
+  background-image: url("/assets/seasonal/easter-header.svg?v=xy2b");
 }
 html[data-season="easter"][data-holiday-decor="on"] .season-decor--hero,
 body[data-season="easter"][data-holiday-decor="on"] .season-decor--hero,
 .sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--hero {
-  background-image: url("/assets/seasonal/easter-hero.svg");
+  background-image: url("/assets/seasonal/easter-hero.svg?v=xy2b");
 }
 html[data-season="easter"][data-holiday-decor="on"] .season-decor--divider,
 body[data-season="easter"][data-holiday-decor="on"] .season-decor--divider,
 .sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--divider {
-  background-image: url("/assets/seasonal/easter-divider.svg");
+  background-image: url("/assets/seasonal/easter-divider.svg?v=xy2b");
 }
 html[data-season="easter"][data-holiday-decor="on"] .season-decor--footer,
 body[data-season="easter"][data-holiday-decor="on"] .season-decor--footer,
 .sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--footer {
-  background-image: url("/assets/seasonal/easter-footer.svg");
+  background-image: url("/assets/seasonal/easter-footer.svg?v=xy2b");
 }
 html[data-season="easter"][data-holiday-decor="on"] .season-decor--hero::after,
 .sf-preview[data-season="easter"][data-holiday-decor="on"] .season-decor--hero::after {
@@ -276,22 +272,22 @@ html[data-season="easter"][data-holiday-decor="on"] .season-decor--hero::after,
 html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header,
 body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header,
 .sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--header {
-  background-image: url("/assets/seasonal/july4-header.svg");
+  background-image: url("/assets/seasonal/july4-header.svg?v=xy2b");
 }
 html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero,
 body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero,
 .sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero {
-  background-image: url("/assets/seasonal/july4-hero.svg");
+  background-image: url("/assets/seasonal/july4-hero.svg?v=xy2b");
 }
 html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider,
 body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider,
 .sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--divider {
-  background-image: url("/assets/seasonal/july4-divider.svg");
+  background-image: url("/assets/seasonal/july4-divider.svg?v=xy2b");
 }
 html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer,
 body[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer,
 .sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--footer {
-  background-image: url("/assets/seasonal/july4-footer.svg");
+  background-image: url("/assets/seasonal/july4-footer.svg?v=xy2b");
 }
 html[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero::after,
 .sf-preview[data-season="fourth_of_july"][data-holiday-decor="on"] .season-decor--hero::after {
@@ -331,20 +327,16 @@ body[data-holiday-decor="on"][data-decor-intensity="extra_festive"] .season-deco
     background-size: 155% auto;
     -webkit-mask-image: linear-gradient(
       90deg,
-      #000 0%,
-      #000 30%,
-      transparent 42%,
-      transparent 58%,
-      #000 70%,
+      transparent 0%,
+      transparent 48%,
+      #000 60%,
       #000 100%
     );
     mask-image: linear-gradient(
       90deg,
-      #000 0%,
-      #000 30%,
-      transparent 42%,
-      transparent 58%,
-      #000 70%,
+      transparent 0%,
+      transparent 48%,
+      #000 60%,
       #000 100%
     );
   }

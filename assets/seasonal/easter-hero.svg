@@ -1,8 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <g transform="translate(6,170)">
-    <ellipse cx="18" cy="24" rx="14" ry="18" fill="#b8a4c8" stroke="#6b5a7a" stroke-width="1.2"/>
-    <path stroke="#fff8f0" stroke-width="2" d="M8 22h20"/>
-  </g>
   <g transform="translate(980,120)">
     <ellipse cx="40" cy="50" rx="24" ry="32" fill="#6f9e9a" stroke="#3f6a66" stroke-width="1.6"/>
     <path stroke="#f2e4d4" stroke-width="2.5" fill="none" d="M40 22c12 12 12 32 0 44c-12-12-12-32 0-44z"/>

@@ -1,8 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" fill="none" aria-hidden="true">
-  <g transform="translate(4,170)" opacity="0.9">
-    <ellipse cx="20" cy="26" rx="18" ry="14" fill="#c45c28" stroke="#3a2a1c" stroke-width="1.4"/>
-    <rect x="17" y="10" width="5" height="10" rx="1" fill="#5a4a28"/>
-  </g>
   <g transform="translate(900,100)">
     <ellipse cx="80" cy="60" rx="52" ry="42" fill="#c45c28" stroke="#3a2a1c" stroke-width="2.2"/>
     <ellipse cx="54" cy="60" rx="24" ry="36" fill="#d4783c"/>
