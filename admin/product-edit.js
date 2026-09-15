@@ -116,12 +116,12 @@
     if (text) {
       text.textContent = live
         ? "Published and sold-out products appear on the live storefront. Draft and hidden stay private. Visitors do not need to sign in."
-        : "Publishing saves to your catalog, but the public site still uses the demo product list until USE_LIVE_CATALOG is enabled after migrations 07–08.";
+        : "Publishing saves to your catalog, but the public shop is still on a temporary product list. Ask your site helper before expecting visitors to see this item.";
     }
     if (hint) {
       hint.textContent = live
         ? "Published = visible on the live shop (sold out still shows as unavailable). Draft and hidden never appear publicly."
-        : "Publish marks the product ready in your catalog. The live shop cutover flag is still off, so visitors see demo products.";
+        : "Publish marks the product ready in your catalog. The public shop cutover is still off, so visitors won’t see catalog updates yet.";
     }
   }
 
@@ -131,7 +131,7 @@
     var qh = $("quantityHint");
     if (qh) {
       qh.textContent = tracked
-        ? "Stock is enforced in the shop UI when tracking is on. Browser checks are not a warehouse reservation."
+        ? "Stock counts are checked in the shop when tracking is on. This does not reserve inventory by itself."
         : "Inventory not tracked — quantity is ignored for purchases. Turn tracking on only when you manage stock.";
     }
   }

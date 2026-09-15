@@ -139,6 +139,14 @@ if (fs.existsSync(indexPath)) {
       'src="/js/store-settings.js?v=' + buildStamp + '"'
     )
     .replace(
+      /src="\/js\/storefront-catalog\.js(?:\?v=[^"]*)?"/g,
+      'src="/js/storefront-catalog.js?v=' + buildStamp + '"'
+    )
+    .replace(
+      /src="\/js\/supabase-client\.js(?:\?v=[^"]*)?"/g,
+      'src="/js/supabase-client.js?v=' + buildStamp + '"'
+    )
+    .replace(
       /src="\/app\.js(?:\?v=[^"]*)?"/g,
       'src="/app.js?v=' + buildStamp + '"'
     );

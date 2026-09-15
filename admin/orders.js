@@ -388,13 +388,16 @@
       (lines || '<p class="muted">No line items saved.</p>') +
       "</div>" +
       '<div class="order-detail-section">' +
-      "<h3>Payment references</h3>" +
-      '<p class="order-mono muted">Checkout session<br />' +
+      "<details class=\"order-support-refs\">" +
+      "<summary>Payment support codes</summary>" +
+      '<p class="muted">Only needed if you contact Stripe support about this order.</p>' +
+      '<p class="order-mono muted">Checkout code<br />' +
       SRCatalog.escapeHtml(order.stripe_session_id || "—") +
       "</p>" +
-      '<p class="order-mono muted">Payment intent<br />' +
+      '<p class="order-mono muted">Payment code<br />' +
       SRCatalog.escapeHtml(order.stripe_payment_intent || "—") +
       "</p>" +
+      "</details>" +
       "</div>";
 
     bindFulfillmentButtons(order);

@@ -2190,6 +2190,24 @@ body.action-sheet-open { overflow: hidden; }
   font-size: 0.78rem;
   word-break: break-all;
 }
+.order-support-refs {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  background: color-mix(in srgb, var(--cream) 70%, white);
+}
+.order-support-refs summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  list-style-position: outside;
+}
+.order-support-refs[open] summary {
+  margin-bottom: 0.45rem;
+}
+.order-support-refs .muted {
+  margin-bottom: 0.45rem;
+}
 .muted {
   color: var(--warm-gray);
 }

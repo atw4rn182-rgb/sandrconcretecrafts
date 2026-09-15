@@ -392,7 +392,7 @@
     if (!text) return;
     text.textContent = live
       ? "Published and sold-out products show on the live storefront. Draft and hidden stay private."
-      : "Saving here updates your catalog only. The public site still shows demo products until USE_LIVE_CATALOG is turned on after migrations 07–08.";
+      : "Saving here updates your catalog only. The public shop is still on a temporary product list until the live catalog is turned on.";
   }
 
   SRAdminShell.boot({ activeNav: "products" }).then(function (check) {

@@ -234,7 +234,11 @@
   let modalQty = 1;
 
   const $ = (sel) => document.querySelector(sel);
-  const money = (n) => "$" + Number(n).toFixed(2);
+  function money(n) {
+    var v = Number(n);
+    if (!isFinite(v)) return "—";
+    return "$" + v.toFixed(2);
+  }
   const esc = (s) => (Cat && Cat.escapeHtml ? Cat.escapeHtml(s) : String(s == null ? "" : s));
   const escAttr = (s) => (Cat && Cat.escapeAttr ? Cat.escapeAttr(s) : esc(s));
 
@@ -870,12 +874,12 @@
       "data-sr-build-commit",
       env.BUILD_COMMIT ? String(env.BUILD_COMMIT) : ""
     );
-    // Visible in DevTools → Elements on #cartCheckout, and here in the console.
-    console.log("[sr-checkout]", {
-      USE_STRIPE_CHECKOUT: env.USE_STRIPE_CHECKOUT,
-      enabled: enabled,
-      BUILD_COMMIT: env.BUILD_COMMIT || null,
-    });
+    var note = $("#cartCheckoutNote");
+    if (note) {
+      note.textContent = enabled
+        ? "Secure checkout · You’ll finish payment on Stripe’s page"
+        : "Demo checkout only · No real payment is processed";
+    }
   }
 
   var stripeCheckoutBusy = false;
