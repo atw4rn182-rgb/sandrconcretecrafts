@@ -803,6 +803,33 @@
     return result.data;
   }
 
+  async function countCategoryProducts(categoryId) {
+    var supabase = await client();
+    if (!categoryId) return 0;
+    var result = await supabase
+      .from("product_categories")
+      .select("product_id", { count: "exact", head: true })
+      .eq("category_id", categoryId);
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t check category usage."));
+    }
+    return typeof result.count === "number" ? result.count : 0;
+  }
+
+  /**
+   * Permanently delete a category. Junction rows cascade via FK;
+   * products themselves are never deleted.
+   */
+  async function deleteCategory(categoryId) {
+    var supabase = await client();
+    if (!categoryId) throw new Error("Couldn’t delete this category. Please try again.");
+    var result = await supabase.from("categories").delete().eq("id", categoryId);
+    if (result.error) {
+      throw new Error(friendlyDbError(result.error, "Couldn’t delete this category. Please try again."));
+    }
+    return true;
+  }
+
   async function countProducts(filter) {
     var supabase = await client();
     var q = supabase.from("products").select("id", { count: "exact", head: true });
@@ -1445,6 +1472,8 @@
     deleteProduct: deleteProduct,
     createCategory: createCategory,
     updateCategory: updateCategory,
+    countCategoryProducts: countCategoryProducts,
+    deleteCategory: deleteCategory,
     storagePathFromPublicUrl: storagePathFromPublicUrl,
   };
 })(typeof window !== "undefined" ? window : globalThis);

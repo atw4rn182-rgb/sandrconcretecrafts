@@ -1,10 +1,13 @@
 /**
- * Admin categories management.
+ * Admin categories management — create, edit, activate/deactivate, delete.
+ * Deleting a category never deletes products (FK cascade removes associations only).
  */
 (function () {
   "use strict";
 
   var categories = [];
+  var pendingDelete = null;
+  var deleting = false;
 
   function showFlash(message, kind) {
     var el = document.getElementById("flash");
@@ -24,6 +27,100 @@
     document.getElementById("catSaveBtn").textContent = "Save category";
   }
 
+  function closeDeleteSheet() {
+    pendingDelete = null;
+    deleting = false;
+    var sheet = document.getElementById("catDeleteSheet");
+    var backdrop = document.getElementById("catDeleteBackdrop");
+    if (sheet) sheet.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+    document.body.classList.remove("action-sheet-open");
+    var confirmBtn = document.getElementById("catDeleteConfirm");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Delete Category";
+    }
+  }
+
+  function openDeleteSheet(category, productCount) {
+    pendingDelete = { id: category.id, name: category.name, count: productCount };
+    var title = document.getElementById("catDeleteTitle");
+    var body = document.getElementById("catDeleteBody");
+    var sheet = document.getElementById("catDeleteSheet");
+    var backdrop = document.getElementById("catDeleteBackdrop");
+    var name = category.name || "this category";
+
+    title.textContent = 'Delete “' + name + '”?';
+
+    if (productCount > 0) {
+      body.innerHTML =
+        "This category is currently assigned to <strong>" +
+        SRCatalog.escapeHtml(String(productCount)) +
+        "</strong> product" +
+        (productCount === 1 ? "" : "s") +
+        ".<br /><br />The products will <strong>NOT</strong> be deleted. The category will simply be removed from those products.";
+    } else {
+      body.textContent =
+        "This category is not currently assigned to any products. This permanently removes the category.";
+    }
+
+    sheet.hidden = false;
+    backdrop.hidden = false;
+    document.body.classList.add("action-sheet-open");
+    document.getElementById("catDeleteCancel").focus();
+  }
+
+  async function requestDelete(category) {
+    var btn = document.querySelector('[data-delete="' + category.id + '"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Checking…";
+    }
+    try {
+      var count = await SRCatalog.countCategoryProducts(category.id);
+      openDeleteSheet(category, count);
+    } catch (err) {
+      showFlash(
+        (err && err.message) || "Couldn’t check category usage. Please try again.",
+        "err"
+      );
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Delete";
+      }
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    deleting = true;
+    var confirmBtn = document.getElementById("catDeleteConfirm");
+    var name = pendingDelete.name;
+    var id = pendingDelete.id;
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Deleting…";
+    }
+    try {
+      await SRCatalog.deleteCategory(id);
+      closeDeleteSheet();
+      if (document.getElementById("catId").value === id) resetForm();
+      showFlash("“" + name + "” deleted.", "ok");
+      await load();
+    } catch (err) {
+      deleting = false;
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Delete Category";
+      }
+      showFlash(
+        (err && err.message) || "Couldn’t delete this category. Please try again.",
+        "err"
+      );
+    }
+  }
+
   function render() {
     var state = document.getElementById("catState");
     var list = document.getElementById("catList");
@@ -37,33 +134,42 @@
     state.hidden = true;
     list.hidden = false;
     list.innerHTML =
-      '<table class="product-table"><thead><tr><th>Name</th><th>Slug</th><th>Sort</th><th>Status</th><th></th></tr></thead><tbody>' +
+      '<div class="cat-card-list" role="list">' +
       categories
         .map(function (c) {
           return (
-            "<tr><td><strong>" +
+            '<article class="cat-card" role="listitem">' +
+            '<div class="cat-card-main">' +
+            "<h3>" +
             SRCatalog.escapeHtml(c.name) +
-            "</strong></td><td class='muted'>" +
+            "</h3>" +
+            '<p class="muted cat-card-meta">' +
             SRCatalog.escapeHtml(c.slug) +
-            "</td><td>" +
+            " · Sort " +
             SRCatalog.escapeHtml(String(c.sort_order)) +
-            "</td><td>" +
+            "</p>" +
             (c.active
               ? '<span class="status-pill status-published">Active</span>'
               : '<span class="status-pill status-hidden">Inactive</span>') +
-            '</td><td class="cell-actions">' +
+            "</div>" +
+            '<div class="cat-card-actions">' +
             '<button type="button" class="btn btn-ghost btn-small" data-edit="' +
             SRCatalog.escapeHtml(c.id) +
-            '">Edit</button> ' +
+            '">Edit</button>' +
             '<button type="button" class="btn btn-ghost btn-small" data-toggle="' +
             SRCatalog.escapeHtml(c.id) +
             '">' +
             (c.active ? "Deactivate" : "Activate") +
-            "</button></td></tr>"
+            "</button>" +
+            '<button type="button" class="btn btn-ghost btn-small btn-danger-text" data-delete="' +
+            SRCatalog.escapeHtml(c.id) +
+            '">Delete</button>' +
+            "</div>" +
+            "</article>"
           );
         })
         .join("") +
-      "</tbody></table>";
+      "</div>";
 
     list.querySelectorAll("[data-edit]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -106,6 +212,17 @@
         } catch (err) {
           showFlash(err.message || "Couldn’t update category.", "err");
         }
+      });
+    });
+
+    list.querySelectorAll("[data-delete]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-delete");
+        var c = categories.find(function (x) {
+          return x.id === id;
+        });
+        if (!c) return;
+        requestDelete(c);
       });
     });
   }
@@ -156,6 +273,13 @@
       } finally {
         btn.disabled = false;
       }
+    });
+
+    document.getElementById("catDeleteCancel").addEventListener("click", closeDeleteSheet);
+    document.getElementById("catDeleteBackdrop").addEventListener("click", closeDeleteSheet);
+    document.getElementById("catDeleteConfirm").addEventListener("click", confirmDelete);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && pendingDelete) closeDeleteSheet();
     });
 
     load();

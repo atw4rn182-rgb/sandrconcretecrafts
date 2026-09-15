@@ -75,8 +75,25 @@
       </section>
 
       <div id="catState" class="state-box">Loading categories…</div>
-      <div id="catList" class="product-table-wrap" hidden></div>
+      <div id="catList" class="cat-list-wrap" hidden></div>
     </main>
+  </div>
+
+  <div id="catDeleteSheet" class="action-sheet" hidden>
+    <div class="action-sheet-backdrop" id="catDeleteBackdrop" hidden></div>
+    <div
+      class="action-sheet-panel cat-delete-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="catDeleteTitle"
+    >
+      <h2 id="catDeleteTitle">Delete category?</h2>
+      <p class="action-sheet-sub" id="catDeleteBody"></p>
+      <div class="cat-delete-actions">
+        <button type="button" class="btn btn-ghost btn-block" id="catDeleteCancel">Cancel</button>
+        <button type="button" class="btn btn-danger btn-block" id="catDeleteConfirm">Delete Category</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
