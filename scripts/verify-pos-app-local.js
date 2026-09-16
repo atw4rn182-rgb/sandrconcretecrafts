@@ -34,7 +34,30 @@ var route = fs.readFileSync(
 );
 assert.match(route, /auth\.requireActiveAdmin\(req\)/);
 assert.match(route, /wantsDownload/);
+assert.match(route, /pos-app-file\?t=/);
 assert.doesNotMatch(route, /sk_live_|sk_test_|whsec_|SERVICE_ROLE/);
+
+var fileRoute = fs.readFileSync(
+  path.join(__dirname, "..", "api", "admin", "pos-app-file.js"),
+  "utf8"
+);
+assert.match(fileRoute, /verifyDownloadToken/);
+assert.match(fileRoute, /application\/vnd\.android\.package-archive/);
+assert.doesNotMatch(fileRoute, /auth\.requireActiveAdmin/);
+
+process.env.POS_APP_DOWNLOAD_SECRET = "local-pos-app-download-test-secret";
+var tickets = require("../api/_lib/pos-app-download");
+var minted = tickets.mintDownloadToken("test", 90);
+assert.match(minted, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+assert.strictEqual(tickets.verifyDownloadToken(minted).ch, "test");
+assert.throws(function () {
+  tickets.verifyDownloadToken("not-a-ticket");
+});
+assert.throws(function () {
+  tickets.verifyDownloadToken("");
+});
+delete require.cache[require.resolve("../api/_lib/pos-app-download")];
+delete process.env.POS_APP_DOWNLOAD_SECRET;
 
 var apk = path.join(
   __dirname,

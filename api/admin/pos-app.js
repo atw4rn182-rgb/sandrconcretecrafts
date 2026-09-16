@@ -1,15 +1,16 @@
 /**
  * GET /api/admin/pos-app
  * Authenticated staff metadata for the Tap-to-Pay companion.
- * GET /api/admin/pos-app?download=1 also returns a short-lived signed APK URL.
- * Never streams the APK through this function and never returns server secrets.
+ * GET /api/admin/pos-app?download=1 mints a short-lived same-origin APK URL.
+ * Never streams the APK through this function and never returns server secrets
+ * or the admin JWT in the download URL.
  */
 "use strict";
 
 var auth = require("../_lib/admin-auth");
-var db = require("../_lib/supabase-admin");
 var api = require("../_lib/api-response");
 var posApp = require("../_lib/pos-app");
+var tickets = require("../_lib/pos-app-download");
 
 function wantsDownload(req) {
   var query = req.query || {};
@@ -21,22 +22,6 @@ function wantsDownload(req) {
     return param === "1" || param === "true";
   } catch (_err) {
     return false;
-  }
-}
-
-async function resolveDownloadUrl(manifest) {
-  try {
-    return await db.createSignedStorageUrl(
-      manifest.bucket,
-      manifest.object,
-      120,
-      manifest.filename
-    );
-  } catch (err) {
-    if (!manifest.simulated) throw err;
-    var fallback = posApp.testFallbackUrl();
-    if (!fallback) throw err;
-    return fallback;
   }
 }
 
@@ -58,7 +43,17 @@ module.exports = async function handler(req, res) {
       version_name: manifest.versionName,
     };
     if (wantsDownload(req)) {
-      payload.download_url = await resolveDownloadUrl(manifest);
+      var token = tickets.mintDownloadToken(manifest.channel, 90);
+      payload.download_url =
+        tickets.requestOrigin(req) +
+        "/api/admin/pos-app-file?t=" +
+        encodeURIComponent(token);
+      res.setHeader(
+        "Set-Cookie",
+        "sr_pos_apk=" +
+          encodeURIComponent(token) +
+          "; Max-Age=90; Path=/api/admin/pos-app-file; HttpOnly; Secure; SameSite=Lax"
+      );
     }
     api.sendJson(res, 200, payload);
   } catch (err) {

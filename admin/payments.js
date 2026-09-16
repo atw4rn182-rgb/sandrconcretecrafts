@@ -649,9 +649,12 @@
     }
     posAppBusy = true;
     renderPosAppCard();
+    var steps = byId("posAppSteps");
+    if (steps) steps.hidden = false;
     try {
       var response = await fetch("/api/admin/pos-app?download=1", {
         headers: { Authorization: "Bearer " + token },
+        credentials: "same-origin",
       });
       var body = await response.json().catch(function () {
         return null;
@@ -659,23 +662,18 @@
       if (!response.ok) {
         throw new Error(apiErrorMessage(response, body));
       }
-      if (!body || !body.download_url) {
+      if (!body || !body.download_url || body.download_url.indexOf("/api/admin/pos-app-file") === -1) {
         throw new Error("The app download isn’t ready yet. Please try again.");
       }
       posAppMeta = body;
-      var steps = byId("posAppSteps");
-      if (steps) steps.hidden = false;
-      var link = document.createElement("a");
-      link.href = body.download_url;
-      link.rel = "noopener";
-      link.download = body.filename || "S-and-R-Tap-to-Pay-TEST.apk";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      announce(
-        "Downloading the test app. Allow Install unknown apps if Android asks, then open the file.",
-        "ok"
-      );
+      var help = byId("posAppDownloadHelp");
+      var link = byId("posAppDownloadLink");
+      if (link) {
+        link.href = body.download_url;
+        link.setAttribute("download", body.filename || "S-and-R-Tap-to-Pay-TEST.apk");
+      }
+      if (help) help.hidden = false;
+      window.location.assign(body.download_url);
     } catch (err) {
       setError("posAppError", err.message || "Couldn’t download the S&R Tap to Pay app.");
     } finally {
@@ -690,7 +688,7 @@
     var fallback =
       "https://www.sandrconcretecrafts.com/admin/payments.html?app=missing";
     var intentUrl =
-      "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.sandrconcretecrafts.pos;S.browser_fallback_url=" +
+      "intent://collect#Intent;scheme=sandrpos;package=com.sandrconcretecrafts.pos;S.browser_fallback_url=" +
       encodeURIComponent(fallback) +
       ";end";
     var timer = window.setTimeout(function () {

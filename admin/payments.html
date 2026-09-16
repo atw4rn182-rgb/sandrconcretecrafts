@@ -136,11 +136,13 @@
           </div>
           <p class="pos-app-copy" id="posAppCopy">Required once on this Android phone to accept contactless payments. Customers do not install an app.</p>
           <ol class="pos-app-steps" id="posAppSteps" hidden>
-            <li>Tap Install and wait for the download.</li>
-            <li>Android may ask for permission to <strong>Install unknown apps</strong>. Allow it for this browser.</li>
-            <li>Open the downloaded file, then return here.</li>
+            <li>Downloaded? Open the file and tap Install.</li>
+            <li>If Android asks, allow “Install unknown apps” for Chrome.</li>
           </ol>
           <p class="payment-form-error" id="posAppError" hidden role="alert"></p>
+          <p class="payment-help" id="posAppDownloadHelp" hidden>
+            <a id="posAppDownloadLink" href="#" download="S-and-R-Tap-to-Pay-TEST.apk">Tap here if the download did not start.</a>
+          </p>
           <div class="pos-app-actions">
             <button class="btn btn-primary btn-block" id="installPosAppBtn" type="button" hidden>Install S&amp;R Tap to Pay</button>
             <button class="btn btn-ghost btn-block" id="openPosAppBtn" type="button" hidden>Open S&amp;R Tap to Pay</button>
