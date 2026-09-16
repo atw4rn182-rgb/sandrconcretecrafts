@@ -11,7 +11,7 @@
  * Never reads or writes:
  *   SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
  *   STRIPE_TERMINAL_WEBHOOK_SECRET, STRIPE_TERMINAL_LOCATION_ID,
- *   STRIPE_TERMINAL_SECRET_KEY,
+ *   STRIPE_TERMINAL_SECRET_KEY, SR_POS_APP_CHANNEL,
  *   RESEND_API_KEY, RECEIPT_FROM_EMAIL, RECEIPT_BCC_EMAIL,
  *   or any sk_/rk_/whsec_ values.
  * js/env.js stays gitignored; it is produced during `npm run build`.

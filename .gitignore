@@ -31,3 +31,4 @@ android/.gradle/
 android/**/build/
 *.jks
 *.keystore
+*.apk

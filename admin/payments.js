@@ -559,6 +559,157 @@
     return /Android/i.test(navigator.userAgent || "");
   }
 
+  var POS_APP_SEEN_KEY = "sr_ttp_app_seen";
+  var posAppMeta = null;
+  var posAppBusy = false;
+
+  function posAppSeen() {
+    try {
+      return window.localStorage.getItem(POS_APP_SEEN_KEY) === "1";
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function markPosAppSeen() {
+    try {
+      window.localStorage.setItem(POS_APP_SEEN_KEY, "1");
+    } catch (_err) {
+      /* ignore quota / private mode */
+    }
+  }
+
+  function renderPosAppCard() {
+    var android = isAndroidPos();
+    var installBtn = byId("installPosAppBtn");
+    var openBtn = byId("openPosAppBtn");
+    var copy = byId("posAppCopy");
+    var help = byId("posAppHelp");
+    var badge = byId("posAppBadge");
+    var seen = posAppSeen();
+    if (posAppMeta && badge) {
+      badge.textContent = posAppMeta.label;
+      badge.className =
+        "pos-app-badge " +
+        (posAppMeta.simulated ? "pos-app-badge--test" : "pos-app-badge--live");
+    }
+    if (copy) {
+      copy.textContent = android
+        ? "Required once on this Android phone to accept contactless payments. Customers do not install an app."
+        : "Open this page on your S&R Android phone to install the staff Tap to Pay app. Customers do not install an app.";
+    }
+    if (help) {
+      help.textContent = android
+        ? "Authorized S&R staff devices only."
+        : "This installer is only for authorized S&R staff phones.";
+    }
+    if (installBtn) {
+      installBtn.hidden = !android;
+      installBtn.className = seen
+        ? "btn btn-ghost btn-block"
+        : "btn btn-primary btn-block";
+      installBtn.textContent = seen
+        ? "Reinstall S&R Tap to Pay"
+        : "Install S&R Tap to Pay";
+      installBtn.disabled = posAppBusy;
+    }
+    if (openBtn) {
+      openBtn.hidden = !android;
+      openBtn.className = seen
+        ? "btn btn-primary btn-block"
+        : "btn btn-ghost btn-block";
+    }
+  }
+
+  async function loadPosAppMeta() {
+    var token = adminSession && adminSession.access_token;
+    if (!token) return;
+    try {
+      var response = await fetch("/api/admin/pos-app", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      var body = await response.json().catch(function () {
+        return null;
+      });
+      if (!response.ok || !body) return;
+      posAppMeta = body;
+      renderPosAppCard();
+    } catch (_err) {
+      /* Keep the HTML test-version label if metadata cannot load. */
+    }
+  }
+
+  async function installPosApp() {
+    if (posAppBusy || !isAndroidPos()) return;
+    setError("posAppError", "");
+    var token = adminSession && adminSession.access_token;
+    if (!token) {
+      setError("posAppError", "Your admin session is missing. Please sign in again.");
+      return;
+    }
+    posAppBusy = true;
+    renderPosAppCard();
+    try {
+      var response = await fetch("/api/admin/pos-app?download=1", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      var body = await response.json().catch(function () {
+        return null;
+      });
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(response, body));
+      }
+      if (!body || !body.download_url) {
+        throw new Error("The app download isn’t ready yet. Please try again.");
+      }
+      posAppMeta = body;
+      var steps = byId("posAppSteps");
+      if (steps) steps.hidden = false;
+      var link = document.createElement("a");
+      link.href = body.download_url;
+      link.rel = "noopener";
+      link.download = body.filename || "S-and-R-Tap-to-Pay-TEST.apk";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      announce(
+        "Downloading the test app. Allow Install unknown apps if Android asks, then open the file.",
+        "ok"
+      );
+    } catch (err) {
+      setError("posAppError", err.message || "Couldn’t download the S&R Tap to Pay app.");
+    } finally {
+      posAppBusy = false;
+      renderPosAppCard();
+    }
+  }
+
+  function openPosApp() {
+    if (!isAndroidPos()) return;
+    setError("posAppError", "");
+    var fallback =
+      "https://www.sandrconcretecrafts.com/admin/payments.html?app=missing";
+    var intentUrl =
+      "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.sandrconcretecrafts.pos;S.browser_fallback_url=" +
+      encodeURIComponent(fallback) +
+      ";end";
+    var timer = window.setTimeout(function () {
+      setError(
+        "posAppError",
+        "Install S&R Tap to Pay on this phone first, then tap Open."
+      );
+    }, 1800);
+    document.addEventListener("visibilitychange", function onHide() {
+      if (document.hidden) {
+        window.clearTimeout(timer);
+        document.removeEventListener("visibilitychange", onHide);
+        markPosAppSeen();
+        renderPosAppCard();
+      }
+    });
+    window.location.href = intentUrl;
+  }
+
   function tapSalePayload() {
     if (!tapIdempotencyKey) tapIdempotencyKey = newKey("tap");
     return {
@@ -605,7 +756,7 @@
     if (help) {
       help.textContent = android
         ? "Take Payment opens the S&R Tap to Pay app on this phone. The S&R server still sets the charge amount."
-        : "This browser does not tap cards. On the Motorola, Take Payment opens the S&R Tap to Pay app.";
+        : "This browser does not tap cards. On the Pixel, Take Payment opens the S&R Tap to Pay app.";
     }
   }
 
@@ -624,7 +775,7 @@
       updateTakePaymentButton();
       setError(
         "tapError",
-        "Install the S&R Tap to Pay app on this Motorola, then try again. This page does not tap cards."
+        "Install the S&R Tap to Pay app on this Pixel, then try again. This page does not tap cards."
       );
     }, 1800);
     document.addEventListener("visibilitychange", function onHide() {
@@ -652,9 +803,16 @@
     var params = new URLSearchParams(window.location.search);
     var paid = String(params.get("paid") || "").trim();
     var tap = String(params.get("tap") || "").trim();
-    if (!paid && !tap) return;
+    var app = String(params.get("app") || "").trim();
+    if (!paid && !tap && !app) return;
     if (window.history && window.history.replaceState) {
       window.history.replaceState({}, "", "/admin/payments.html");
+    }
+    if (app === "missing") {
+      setError(
+        "posAppError",
+        "Install S&R Tap to Pay on this phone first, then tap Open."
+      );
     }
     if (paid) {
       tapIdempotencyKey = newKey("tap");
@@ -800,6 +958,8 @@
       renderTapCart();
     });
     byId("takePaymentBtn").addEventListener("click", takePayment);
+    byId("installPosAppBtn").addEventListener("click", installPosApp);
+    byId("openPosAppBtn").addEventListener("click", openPosApp);
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden && tapSubmitting) {
         window.setTimeout(function () {
@@ -817,8 +977,10 @@
     resetSingle();
     resetBatch();
     renderTapCart();
+    renderPosAppCard();
     bindEvents();
     handleTapReturn();
     loadCatalog();
+    loadPosAppMeta();
   });
 })();

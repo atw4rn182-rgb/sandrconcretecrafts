@@ -126,9 +126,30 @@
           <div><p class="payment-eyebrow">Card</p><h2 id="tapTitle">Tap to Pay cart</h2></div>
           <span class="terminal-status terminal-status--blocked" id="terminalStatus">Native app required</span>
         </div>
+        <section class="pos-app-card" id="posAppCard" aria-labelledby="posAppTitle">
+          <div class="pos-app-card-head">
+            <div>
+              <p class="payment-eyebrow">Staff phone</p>
+              <h3 id="posAppTitle">S&amp;R Tap to Pay App</h3>
+            </div>
+            <span class="pos-app-badge pos-app-badge--test" id="posAppBadge">TEST VERSION — Simulated payments only</span>
+          </div>
+          <p class="pos-app-copy" id="posAppCopy">Required once on this Android phone to accept contactless payments. Customers do not install an app.</p>
+          <ol class="pos-app-steps" id="posAppSteps" hidden>
+            <li>Tap Install and wait for the download.</li>
+            <li>Android may ask for permission to <strong>Install unknown apps</strong>. Allow it for this browser.</li>
+            <li>Open the downloaded file, then return here.</li>
+          </ol>
+          <p class="payment-form-error" id="posAppError" hidden role="alert"></p>
+          <div class="pos-app-actions">
+            <button class="btn btn-primary btn-block" id="installPosAppBtn" type="button" hidden>Install S&amp;R Tap to Pay</button>
+            <button class="btn btn-ghost btn-block" id="openPosAppBtn" type="button" hidden>Open S&amp;R Tap to Pay</button>
+          </div>
+          <p class="payment-help" id="posAppHelp">Authorized S&amp;R staff devices only.</p>
+        </section>
         <div class="terminal-blocked" id="terminalBlocked" role="status">
           <strong>Tap to Pay isn’t available in this web browser.</strong>
-          <p>Build the cart here for review. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Motorola.</p>
+          <p>Build the cart here for review. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Pixel.</p>
         </div>
 
         <label class="payment-field catalog-search-field">
@@ -155,7 +176,7 @@
         </section>
         <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
         <button class="btn btn-primary btn-block payment-submit" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
-        <p class="payment-help" id="terminalHelp">This browser does not tap cards. On the Motorola, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
+        <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
       </section>
     </main>
   </div>

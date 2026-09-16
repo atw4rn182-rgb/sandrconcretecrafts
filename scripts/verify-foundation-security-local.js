@@ -15,7 +15,10 @@ var cashRoute = read("api/admin/cash-sales.js");
 var terminalRoute = read("api/admin/terminal/payment-intent.js");
 var tokenRoute = read("api/admin/terminal/connection-token.js");
 var receiptRoute = read("api/admin/send-receipt.js");
+var posAppRoute = read("api/admin/pos-app.js");
 var db = read("api/_lib/supabase-admin.js");
+var posMigration = read("supabase/migrations/20260917000001_staff_pos_apk_storage.sql");
+var posManifest = read("api/_lib/pos-app.js");
 
 assert.match(migration, /alter column stripe_session_id drop not null/i);
 assert.match(migration, /payment_source in \('online', 'cash', 'tap_to_pay'\)/);
@@ -30,9 +33,17 @@ assert.match(migration, /revoke all on function public\.record_in_person_sale[\s
 assert.match(migration, /grant execute on function public\.record_cash_sales_batch[\s\S]*to service_role/i);
 assert.doesNotMatch(migration, /create policy[\s\S]{0,160}for insert/i);
 
-[cashRoute, terminalRoute, tokenRoute, receiptRoute].forEach(function (route) {
+[cashRoute, terminalRoute, tokenRoute, receiptRoute, posAppRoute].forEach(function (route) {
   assert.match(route, /auth\.requireActiveAdmin\(req\)/);
 });
+assert.match(posAppRoute, /download_url/);
+assert.doesNotMatch(posAppRoute, /sk_live_|sk_test_|whsec_|SERVICE_ROLE/);
+assert.match(posMigration, /sr-staff-pos-app/);
+assert.match(posMigration, /public = false/);
+assert.doesNotMatch(posMigration, /create policy/i);
+assert.match(posManifest, /TEST VERSION — Simulated payments only/);
+assert.match(posManifest, /Production — Real Tap to Pay/);
+assert.match(db, /createSignedStorageUrl/);
 assert.match(tokenRoute, /location_id:\s*cfg\.locationId/);
 assert.doesNotMatch(tokenRoute, /tml_/);
 assert.match(read("api/_lib/stripe.js"), /STRIPE_TERMINAL_SECRET_KEY/);

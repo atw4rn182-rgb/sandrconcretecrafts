@@ -216,6 +216,49 @@ async function updateOrderPaymentStatusByPaymentIntent(paymentIntentId, paymentS
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+async function createSignedStorageUrl(bucket, objectPath, expiresIn, downloadName) {
+  var cfg = serviceConfig();
+  var pathPart = String(objectPath || "")
+    .split("/")
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join("/");
+  var body = { expiresIn: Number(expiresIn) > 0 ? Number(expiresIn) : 120 };
+  if (downloadName) body.download = String(downloadName);
+  var res = await fetch(
+    cfg.url + "/storage/v1/object/sign/" + encodeURIComponent(bucket) + "/" + pathPart,
+    {
+      method: "POST",
+      headers: {
+        apikey: cfg.serviceKey,
+        Authorization: "Bearer " + cfg.serviceKey,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  var text = await res.text();
+  var data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (_err) {
+      data = null;
+    }
+  }
+  var signed = data && (data.signedURL || data.signedUrl);
+  if (!res.ok || !signed) {
+    var missing = new Error("The staff Tap to Pay app isn’t available to download yet.");
+    missing.code = "POS_APP_NOT_UPLOADED";
+    missing.status = 503;
+    throw missing;
+  }
+  var token = String(signed);
+  if (/^https?:\/\//i.test(token)) return token;
+  return cfg.url + "/storage/v1" + (token.charAt(0) === "/" ? token : "/" + token);
+}
+
 module.exports = {
   upsertOrderWithItems: upsertOrderWithItems,
   updateOrderPaymentStatusByPaymentIntent: updateOrderPaymentStatusByPaymentIntent,
@@ -225,6 +268,7 @@ module.exports = {
   confirmTapToPayPayment: confirmTapToPayPayment,
   getPaidOrderForReceipt: getPaidOrderForReceipt,
   markReceiptSent: markReceiptSent,
+  createSignedStorageUrl: createSignedStorageUrl,
   rpc: rpc,
   serviceConfig: serviceConfig,
 };
