@@ -222,7 +222,7 @@ module.exports = async function handler(req, res) {
     var session = await stripe.createCheckoutSession({
       lineItems: lineItems,
       metadata: {
-        source: "sandrconcretecrafts",
+        source: "storefront",
         item_count: String(lineItems.length),
         // Compact product:qty list for webhook visibility (keep short)
         cart: metaLines.join(",").slice(0, 450),

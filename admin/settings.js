@@ -53,6 +53,9 @@
         pinterest: $("socialPinterest").value,
         tiktok: $("socialTiktok").value,
       },
+      reviews: {
+        google_review_url: $("googleReviewUrl").value,
+      },
       announcement: {
         enabled: $("announceEnabled").checked,
         text: $("announceText").value,
@@ -89,6 +92,7 @@
     $("socialInstagram").value = s.social.instagram;
     $("socialPinterest").value = s.social.pinterest;
     $("socialTiktok").value = s.social.tiktok;
+    $("googleReviewUrl").value = s.reviews.google_review_url;
     $("announceEnabled").checked = s.announcement.enabled;
     $("announceText").value = s.announcement.text;
     announceStyle = s.announcement.style;
@@ -137,6 +141,9 @@
       "<div><dt>Social</dt><dd>" +
       (socialCount ? socialCount + " link(s)" : "None shown") +
       "</dd></div>" +
+      "<div><dt>Reviews</dt><dd>" +
+      (s.reviews.google_review_url ? "Google link configured" : "Not configured") +
+      "</dd></div>" +
       "</dl>";
     $("settingsSummary").innerHTML = html;
 
@@ -164,6 +171,7 @@
       "socialInstagram",
       "socialPinterest",
       "socialTiktok",
+      "googleReviewUrl",
       "announceEnabled",
       "announceText",
       "pickupEnabled",
@@ -194,8 +202,15 @@
 
     $("saveSettingsBtn").addEventListener("click", async function () {
       var btn = $("saveSettingsBtn");
+      var enteredReviewUrl = $("googleReviewUrl").value.trim();
       readFormIntoDraft();
       var errors = SRStoreSettings.validateDraft(draft);
+      if (
+        enteredReviewUrl &&
+        !SRStoreSettings.cleanGoogleReviewUrl(enteredReviewUrl)
+      ) {
+        errors.unshift("Enter an exact Google Write-a-Review URL.");
+      }
       if (errors.length) {
         showFlash(errors[0], false);
         return;

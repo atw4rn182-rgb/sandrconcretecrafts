@@ -1,0 +1,16 @@
+# Copy this file to local.properties on the machine that builds the APK.
+# Never put Stripe secret keys, Supabase service-role keys, webhook secrets,
+# or any other server secret here.
+
+sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+
+# Public website origin used for Terminal API calls.
+SR_API_BASE_URL=https://www.sandrconcretecrafts.com
+
+# Same public browser values as js/env.js. Never the service-role key.
+SR_SUPABASE_URL=
+SR_SUPABASE_ANON_KEY=
+
+# Keep true until Stripe Terminal test mode is proven. A real tap requires false
+# on a release build after Terminal is enabled server-side.
+SR_SIMULATED_READER=true

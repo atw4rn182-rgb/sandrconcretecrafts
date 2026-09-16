@@ -32,13 +32,15 @@ assert(css.includes("[hidden]"), "hidden CSS fix retained");
 
 const shell = read("admin/admin-shell.js");
 assert(shell.includes("adminBottomNav"), "shell injects bottom nav");
+assert(shell.includes('data-nav="payments"'), "payments is a primary mobile tab");
 assert(shell.includes("adminMoreSheet"), "shell injects More sheet");
 assert(shell.includes("Sign Out"), "More sheet includes sign out");
 
 const dash = read("admin/index.html");
-assert(dash.includes("Welcome back!"), "dashboard welcome copy");
+assert(dash.includes("Welcome back"), "dashboard welcome copy");
 assert(dash.includes("dash-nav-card"), "dashboard nav cards");
 assert(dash.includes("View Store"), "View Store link");
+assert(dash.includes("salesTrendChart"), "dashboard includes responsive sales trend");
 
 const products = read("admin/products.html");
 assert(products.includes("product-card-list") || products.includes("productList"), "products list container");
@@ -52,8 +54,17 @@ assert(edit.includes("addCategoryBtn"), "inline category preserved");
 assert(edit.includes("livePreview"), "live preview retained");
 
 const orders = read("admin/orders.html");
-assert(orders.includes("Coming soon"), "orders placeholder page");
-assert(!orders.includes("Stripe"), "orders page does not invent Stripe");
+assert(orders.includes("order-card-list"), "orders list container");
+assert(orders.includes("orderSourceChips"), "orders source filters");
+assert(orders.includes("Online Store"), "orders label online sales");
+assert(orders.includes("Cash"), "orders label cash sales");
+assert(orders.includes("Tap to Pay"), "orders label tap sales");
+
+const payments = read("admin/payments.html");
+assert(payments.includes("payments-main"), "payments mobile layout present");
+assert(payments.includes("singleCashForm"), "single cash form present");
+assert(payments.includes("batchCashForm"), "batch cash form present");
+assert(payments.includes("Native App Required"), "web Terminal action stays disabled");
 
 const storefront = read("index.html");
 assert(storefront.includes("S&amp;R Concrete Crafts"), "storefront name untouched by admin redesign check");

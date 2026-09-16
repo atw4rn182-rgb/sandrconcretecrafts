@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cream">#FFF8F0</color>
+    <color name="brown">#3A2A22</color>
+    <color name="terracotta">#C45C32</color>
+    <color name="turquoise">#2F6F6D</color>
+    <color name="purple">#7651A8</color>
+    <color name="success">#3F6B4A</color>
+    <color name="error">#9B3A2A</color>
+</resources>

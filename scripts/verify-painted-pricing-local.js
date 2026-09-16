@@ -121,6 +121,10 @@ assert(
   verifyApi.includes('session.metadata.source === "storefront"'),
   "checkout success verification requires a storefront session"
 );
+assert(
+  checkout.includes('source: "storefront"'),
+  "checkout creation labels sessions with the source verification accepts"
+);
 
 (async function verifyCheckoutHandler() {
   const catalogPath = require.resolve(
@@ -239,6 +243,11 @@ assert(
     ],
     "server ignores browser prices and chooses trusted finish prices"
   );
+  assert.strictEqual(
+    stripeInput.metadata.source,
+    "storefront",
+    "created Checkout Session uses the verified storefront source"
+  );
 
   res = responseCapture();
   await handler(
@@ -290,6 +299,21 @@ assert(
   );
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.verified, true);
+
+  require.cache[stripePath].exports.retrieveCheckoutSession = async () => ({
+    payment_status: "paid",
+    metadata: { source: "sandrconcretecrafts" },
+  });
+  res = responseCapture();
+  await verifyHandler(
+    {
+      method: "GET",
+      url: "/api/verify-checkout-session?session_id=cs_test_wrongsource",
+    },
+    res
+  );
+  assert.strictEqual(res.statusCode, 409);
+  assert.strictEqual(res.body.verified, false);
 
   require.cache[stripePath].exports.retrieveCheckoutSession = async () => ({
     payment_status: "unpaid",

@@ -10,7 +10,17 @@
     "verify:categories": "node scripts/verify-categories-local.js",
     "verify:painted-pricing": "node scripts/verify-painted-pricing-local.js",
     "verify:polish": "node scripts/verify-polish-local.js",
-    "verify:admin-mobile": "node scripts/verify-admin-mobile-local.js"
+    "verify:admin-mobile": "node scripts/verify-admin-mobile-local.js",
+    "verify:settings": "node scripts/verify-settings-local.js",
+    "verify:payments": "node scripts/verify-payments-structure-local.js",
+    "verify:foundation-security": "node scripts/verify-foundation-security-local.js && node api/_lib/in-person-validation.test.js",
+    "verify:analytics": "node scripts/verify-analytics-local.js && node --test admin/sales-lib.test.js",
+    "verify:receipts": "node scripts/verify-receipts-local.js && node --test api/_lib/receipt.test.js",
+    "verify:engagement": "node scripts/verify-settings-local.js && node scripts/verify-storefront-engagement-local.js",
+    "verify:checkout": "node scripts/verify-online-checkout-local.js && node scripts/verify-painted-pricing-local.js",
+    "verify:android": "node scripts/verify-android-structure-local.js",
+    "verify:foundation": "npm run verify:step4 && npm run verify:dashboard && npm run verify:inline-category && npm run verify:categories && npm run verify:painted-pricing && npm run verify:polish && npm run verify:admin-mobile && npm run verify:settings && npm run verify:payments && npm run verify:foundation-security && npm run verify:analytics && npm run verify:receipts && npm run verify:engagement && npm run verify:checkout && npm run verify:android",
+    "verify": "npm run verify:foundation"
   },
   "engines": {
     "node": ">=18"

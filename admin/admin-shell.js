@@ -14,6 +14,8 @@
       '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     orders:
       '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M3 4h2.2l2 11.2a1.4 1.4 0 0 0 1.4 1.1h8.6a1.4 1.4 0 0 0 1.4-1.1L21 7H7"/></svg>',
+    payments:
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>',
     more:
       '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="12" r="1.4" fill="currentColor"/></svg>',
     chevron:
@@ -39,6 +41,7 @@
       link("/admin/", "dashboard", "Home", "◆") +
       link("/admin/products.html", "products", "Products", "▣") +
       link("/admin/product-edit.html", "add", "Add Product", "+") +
+      link("/admin/payments.html", "payments", "Payments", "$") +
       link("/admin/categories.html", "categories", "Categories", "▤") +
       link("/admin/orders.html", "orders", "Orders", "☰") +
       link("/admin/customers.html", "customers", "Customers", "☺") +
@@ -67,9 +70,9 @@
         '<span class="bottom-nav-add-btn">' +
         ICONS.add +
         "</span><span>Add</span></a>" +
-        '<a class="bottom-nav-item" data-nav="orders" href="/admin/orders.html">' +
-        ICONS.orders +
-        "<span>Orders</span></a>" +
+        '<a class="bottom-nav-item" data-nav="payments" href="/admin/payments.html">' +
+        ICONS.payments +
+        "<span>Pay</span></a>" +
         '<button type="button" class="bottom-nav-item" data-nav="more" id="moreNavBtn" aria-expanded="false" aria-controls="adminMoreSheet">' +
         ICONS.more +
         "<span>More</span></button>";
@@ -87,6 +90,9 @@
         '<div class="admin-more-handle" aria-hidden="true"></div>' +
         '<h2 id="moreSheetTitle">More</h2>' +
         '<div class="admin-more-list">' +
+        '<a class="admin-more-link" href="/admin/orders.html"><span>Orders</span><span class="chev" aria-hidden="true">' +
+        ICONS.chevron +
+        "</span></a>" +
         '<a class="admin-more-link" href="/admin/categories.html"><span>Categories</span><span class="chev" aria-hidden="true">' +
         ICONS.chevron +
         "</span></a>" +
@@ -111,6 +117,7 @@
       key === "categories" ||
       key === "customers" ||
       key === "appearance" ||
+      key === "orders" ||
       key === "settings"
     ) {
       key = "more";

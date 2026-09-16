@@ -294,6 +294,93 @@ async function retrieveCheckoutSessionLineItems(sessionId) {
   return all;
 }
 
+function terminalSecretKey() {
+  return env("STRIPE_TERMINAL_SECRET_KEY") || stripeSecretKey();
+}
+
+function terminalConfig() {
+  if (!envFlagTrue("STRIPE_TERMINAL_ENABLED")) {
+    var disabled = new Error("Stripe Terminal is not enabled.");
+    disabled.code = "STRIPE_TERMINAL_DISABLED";
+    disabled.status = 503;
+    throw disabled;
+  }
+  var secret = terminalSecretKey();
+  var locationId = env("STRIPE_TERMINAL_LOCATION_ID");
+  if (!secret || !/^tml_[A-Za-z0-9_]+$/.test(locationId)) {
+    var missing = new Error("Stripe Terminal is not fully configured.");
+    missing.code = "STRIPE_TERMINAL_NOT_CONFIGURED";
+    missing.status = 503;
+    throw missing;
+  }
+  if (/^(sk_live_|rk_live_)/.test(secret) && !stripeLiveAllowed()) {
+    var live = new Error("Live payments aren’t enabled on the server yet.");
+    live.code = "STRIPE_LIVE_BLOCKED";
+    live.status = 503;
+    throw live;
+  }
+  return { secret: secret, locationId: locationId };
+}
+
+async function stripeFormRequest(path, params, idempotencyKey, secretOverride) {
+  var secret = secretOverride || stripeSecretKey();
+  var headers = {
+    Authorization: "Bearer " + secret,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  var res = await fetch("https://api.stripe.com/v1/" + path, {
+    method: "POST",
+    headers: headers,
+    body: params.toString(),
+  });
+  var body = await res.json().catch(function () {
+    return null;
+  });
+  if (!res.ok) {
+    var err = new Error(
+      (body && body.error && body.error.message) || "Stripe request failed."
+    );
+    err.code = "STRIPE_API_ERROR";
+    err.status = res.status;
+    throw err;
+  }
+  return body;
+}
+
+async function createTerminalConnectionToken() {
+  var cfg = terminalConfig();
+  var params = new URLSearchParams();
+  appendForm(params, "location", cfg.locationId);
+  return stripeFormRequest("terminal/connection_tokens", params, null, cfg.secret);
+}
+
+async function createTerminalPaymentIntent(input) {
+  var cfg = terminalConfig();
+  var amount = Number(input && input.amount);
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000000) {
+    var invalid = new Error("Invalid PaymentIntent amount.");
+    invalid.code = "INVALID_PAYMENT_INTENT";
+    invalid.status = 400;
+    throw invalid;
+  }
+  var params = new URLSearchParams();
+  appendForm(params, "amount", amount);
+  appendForm(params, "currency", "usd");
+  appendForm(params, "payment_method_types[]", "card_present");
+  appendForm(params, "capture_method", "automatic");
+  appendForm(params, "description", String(input.description || "In-person sale").slice(0, 500));
+  appendForm(params, "metadata[order_id]", input.orderId);
+  appendForm(params, "metadata[source]", "tap_to_pay");
+  appendForm(params, "metadata[location_id]", cfg.locationId);
+  return stripeFormRequest(
+    "payment_intents",
+    params,
+    "terminal-" + String(input.idempotencyKey),
+    cfg.secret
+  );
+}
+
 /**
  * Verify Stripe-Signature and return the parsed event object.
  * @param {Buffer|string} rawBody
@@ -381,6 +468,9 @@ module.exports = {
   createCheckoutSession: createCheckoutSession,
   retrieveCheckoutSession: retrieveCheckoutSession,
   retrieveCheckoutSessionLineItems: retrieveCheckoutSessionLineItems,
+  createTerminalConnectionToken: createTerminalConnectionToken,
+  createTerminalPaymentIntent: createTerminalPaymentIntent,
+  terminalConfig: terminalConfig,
   constructEvent: constructEvent,
   readRawBody: readRawBody,
   stripeLiveAllowed: stripeLiveAllowed,

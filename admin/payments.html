@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Payments — S&amp;R Concrete Crafts Admin</title>
+  <link rel="icon" href="/favicon.ico?v=20260915" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png?v=20260915" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png?v=20260915" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=20260915" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="admin-gate" id="adminGate">Checking your access…</div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin menu">
+      <div class="sidebar-brand">
+        <img src="/assets/sandrlogo.jpg" alt="" width="44" height="44" />
+        <div><strong>S&amp;R Concrete Crafts</strong><span>Shop manager</span></div>
+      </div>
+      <nav class="sidebar-nav" id="adminNav" aria-label="Sections"></nav>
+      <div class="sidebar-foot">
+        <div class="account-chip"><span class="label">Signed in as</span><span class="email" id="ownerEmail">—</span></div>
+        <button type="button" class="btn btn-ghost btn-block" id="signOutBtn">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main payments-main">
+      <header class="admin-topbar">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-row">
+          <div><h1>Payments</h1><p>Record cash sales or prepare an in-person card sale.</p></div>
+        </div>
+      </header>
+
+      <div class="flash" id="paymentStatus" hidden role="status" aria-live="polite"></div>
+      <section class="payment-panel receipt-success" id="receiptSuccess" hidden aria-labelledby="receiptSuccessTitle">
+        <div class="payment-panel-head">
+          <div><p class="payment-eyebrow">Sale complete</p><h2 id="receiptSuccessTitle">Send a receipt</h2></div>
+        </div>
+        <p class="payment-intro">The sale is safely recorded. Emailing a receipt is optional and will not change the sale.</p>
+        <div id="receiptOrderList" class="receipt-order-list"></div>
+      </section>
+
+      <section class="payment-choice-grid" aria-labelledby="paymentChoiceTitle">
+        <h2 class="sr-only" id="paymentChoiceTitle">Choose a payment type</h2>
+        <a class="payment-choice-card payment-choice-card--cash" href="#cashPayment">
+          <span class="payment-choice-icon" aria-hidden="true">$</span>
+          <span><strong>Cash Payment</strong><small>Record one sale or a whole event batch</small></span>
+          <span class="payment-choice-arrow" aria-hidden="true">›</span>
+        </a>
+        <a class="payment-choice-card payment-choice-card--tap" href="#tapPayment">
+          <span class="payment-choice-icon" aria-hidden="true">▰</span>
+          <span><strong>Tap to Pay</strong><small>Build a product cart for the native app</small></span>
+          <span class="payment-choice-arrow" aria-hidden="true">›</span>
+        </a>
+      </section>
+
+      <section class="payment-panel" id="cashPayment" aria-labelledby="cashTitle">
+        <div class="payment-panel-head">
+          <div><p class="payment-eyebrow">Cash</p><h2 id="cashTitle">Record cash sales</h2></div>
+          <div class="payment-mode-tabs" role="group" aria-label="Cash entry mode">
+            <button type="button" class="payment-tab is-active" id="singleModeBtn" aria-pressed="true">Single</button>
+            <button type="button" class="payment-tab" id="batchModeBtn" aria-pressed="false">Batch</button>
+          </div>
+        </div>
+
+        <form id="singleCashForm" novalidate>
+          <div class="payment-form-grid">
+            <label class="payment-field">
+              <span>Amount <b aria-hidden="true">*</b></span>
+              <span class="money-input"><span>$</span><input id="singleAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" required /></span>
+            </label>
+            <label class="payment-field">
+              <span>Sale date and time <b aria-hidden="true">*</b></span>
+              <input id="singleSoldAt" type="datetime-local" required />
+            </label>
+          </div>
+          <label class="payment-field">
+            <span>Description or product info <small>Optional</small></span>
+            <input id="singleDescription" type="text" maxlength="120" placeholder="Example: Large planter, raw" />
+          </label>
+          <label class="payment-field">
+            <span>Sale note <small>Optional</small></span>
+            <textarea id="singleNote" maxlength="500" rows="2" placeholder="Event, discount, or other details"></textarea>
+          </label>
+          <details class="payment-details">
+            <summary>Customer details (optional)</summary>
+            <div class="payment-form-grid payment-details-body">
+              <label class="payment-field"><span>Customer name</span><input id="singleCustomerName" type="text" maxlength="160" autocomplete="name" /></label>
+              <label class="payment-field"><span>Customer email</span><input id="singleCustomerEmail" type="email" maxlength="254" autocomplete="email" /></label>
+              <label class="payment-field"><span>Customer phone</span><input id="singleCustomerPhone" type="tel" maxlength="40" autocomplete="tel" /></label>
+            </div>
+          </details>
+          <p class="payment-form-error" id="singleError" hidden role="alert" tabindex="-1"></p>
+          <button class="btn btn-primary btn-block payment-submit" id="singleSubmit" type="submit">Record Cash Sale</button>
+        </form>
+
+        <form id="batchCashForm" hidden novalidate>
+          <p class="payment-intro">Quick-add up to 25 cash sales. Each row becomes its own order.</p>
+          <div id="batchRows" class="batch-rows"></div>
+          <button type="button" class="btn btn-ghost btn-block" id="addBatchRow">+ Add another sale</button>
+          <div class="batch-summary" aria-live="polite">
+            <span><strong id="batchCount">1</strong> sale<span id="batchPlural"></span></span>
+            <strong id="batchTotal">$0.00</strong>
+          </div>
+          <label class="payment-confirm">
+            <input id="batchConfirm" type="checkbox" />
+            <span>I checked these amounts and want to record all sales.</span>
+          </label>
+          <p class="payment-form-error" id="batchError" hidden role="alert" tabindex="-1"></p>
+          <button class="btn btn-primary btn-block payment-submit" id="batchSubmit" type="submit">Record Cash Batch</button>
+        </form>
+      </section>
+
+      <section class="payment-panel" id="tapPayment" aria-labelledby="tapTitle">
+        <div class="payment-panel-head">
+          <div><p class="payment-eyebrow">Card</p><h2 id="tapTitle">Tap to Pay cart</h2></div>
+          <span class="terminal-status terminal-status--blocked" id="terminalStatus">Native app required</span>
+        </div>
+        <div class="terminal-blocked" id="terminalBlocked" role="status">
+          <strong>Tap to Pay isn’t available in this web browser.</strong>
+          <p>Build the cart here for review. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Motorola.</p>
+        </div>
+
+        <label class="payment-field catalog-search-field">
+          <span>Search catalog products</span>
+          <input id="catalogSearch" type="search" autocomplete="off" placeholder="Search by product name or item number" />
+        </label>
+        <div id="catalogState" class="payment-inline-state" role="status">Loading catalog…</div>
+        <div id="catalogResults" class="payment-catalog-results" hidden></div>
+
+        <div class="custom-line-form" aria-labelledby="customLineTitle">
+          <h3 id="customLineTitle">Add a custom amount</h3>
+          <div class="payment-form-grid">
+            <label class="payment-field"><span>Description</span><input id="customName" type="text" maxlength="120" placeholder="Custom item" /></label>
+            <label class="payment-field"><span>Amount</span><span class="money-input"><span>$</span><input id="customAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" /></span></label>
+          </div>
+          <button type="button" class="btn btn-ghost btn-block" id="addCustomLine">Add custom line</button>
+        </div>
+
+        <section class="tap-cart" aria-labelledby="tapCartTitle">
+          <div class="tap-cart-head"><h3 id="tapCartTitle">Current cart</h3><strong id="tapCartTotal">$0.00</strong></div>
+          <p id="tapCartEmpty" class="payment-inline-state">No items added yet.</p>
+          <div id="tapCartLines" class="tap-cart-lines" hidden></div>
+          <button type="button" class="btn btn-ghost btn-block" id="clearTapCart" hidden>Clear cart</button>
+        </section>
+        <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
+        <button class="btn btn-primary btn-block payment-submit" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
+        <p class="payment-help" id="terminalHelp">This browser does not tap cards. On the Motorola, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
+  <script src="/js/env.js" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/admin/admin-auth.js"></script>
+  <script src="/admin/admin-shell.js"></script>
+  <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/payments.js"></script>
+</body>
+</html>

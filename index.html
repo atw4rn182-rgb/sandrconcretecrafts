@@ -124,7 +124,15 @@
         <p class="hero-lead">Beautifully imperfect pieces, made with care in Milan, New Mexico.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#products">Shop the Collection</a>
+          <button class="store-share" id="storeShare" type="button" aria-describedby="shareStatus">
+            Share our shop
+          </button>
         </div>
+        <div class="share-manual" id="shareManual" hidden>
+          <label for="shareUrl">Select and copy this shop link</label>
+          <input id="shareUrl" type="text" readonly />
+        </div>
+        <span class="sr-only" id="shareStatus" role="status" aria-live="polite"></span>
       </div>
     </div>
 
@@ -279,6 +287,9 @@
           <a id="footerPhone" hidden></a>
         </div>
         <div class="footer-social" id="footerSocial" hidden aria-label="Social links"></div>
+        <p class="footer-review" id="footerReview" hidden>
+          <a id="footerReviewLink" target="_blank" rel="noopener noreferrer">Leave a Google review</a>
+        </p>
       </div>
     </div>
   </footer>
@@ -315,6 +326,7 @@
           </div>
         </div>
         <button type="button" class="btn btn-primary modal-add" id="modalAdd">Add to Cart</button>
+        <button type="button" class="btn btn-ghost modal-share" id="modalShare">Share this piece</button>
       </div>
     </div>
   </div>
@@ -393,6 +405,14 @@
 
   <!-- Toast -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <aside class="review-banner" id="reviewBanner" hidden aria-label="Leave a Google review">
+    <button class="review-banner-close" id="reviewBannerClose" type="button" aria-label="Dismiss review invitation">&times;</button>
+    <a class="review-banner-link" id="reviewBannerLink" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/review-banner-approved.jpg" alt="Leave a review. Click here. Your support means everything." width="1024" height="426" />
+    </a>
+    <a class="review-feedback" id="reviewFeedback" hidden>Share private feedback</a>
+  </aside>
 
   <script src="/js/env.js?v=local" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>

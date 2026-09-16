@@ -28,6 +28,9 @@
       pinterest: "",
       tiktok: "",
     },
+    reviews: {
+      google_review_url: "",
+    },
     announcement: {
       enabled: false,
       text: "",
@@ -100,6 +103,24 @@
     return s.toLowerCase();
   }
 
+  function cleanGoogleReviewUrl(value) {
+    var url = cleanUrl(value);
+    if (!url) return "";
+    try {
+      var host = new URL(url).hostname.toLowerCase();
+      var isGoogle =
+        host === "google.com" ||
+        host.endsWith(".google.com") ||
+        host === "goo.gl" ||
+        host.endsWith(".goo.gl") ||
+        host === "g.page" ||
+        host.endsWith(".g.page");
+      return isGoogle ? url : "";
+    } catch (err) {
+      return "";
+    }
+  }
+
   function cleanPhone(value) {
     var s = cleanText(value, MAX_PHONE);
     if (!s) return "";
@@ -149,6 +170,7 @@
         instagram: legacySocial.instagram || "",
         pinterest: legacySocial.pinterest || "",
       }, src.social || {}),
+      reviews: Object.assign({}, DEFAULTS.reviews, src.reviews || {}),
       announcement: Object.assign({}, DEFAULTS.announcement, src.announcement || {}),
       fulfillment: Object.assign({}, DEFAULTS.fulfillment, src.fulfillment || {}),
       storefront: Object.assign({}, DEFAULTS.storefront, src.storefront || {}),
@@ -160,6 +182,7 @@
     var b = merged.business || {};
     var c = merged.contact || {};
     var s = merged.social || {};
+    var r = merged.reviews || {};
     var a = merged.announcement || {};
     var f = merged.fulfillment || {};
     var st = merged.storefront || {};
@@ -184,6 +207,9 @@
         phone_enabled: asBool(c.phone_enabled, false) && !!cleanPhone(c.phone),
       },
       social: social,
+      reviews: {
+        google_review_url: cleanGoogleReviewUrl(r.google_review_url),
+      },
       announcement: {
         enabled: asBool(a.enabled, false) && !!cleanText(a.text, MAX_ANNOUNCE),
         text: cleanText(a.text, MAX_ANNOUNCE),
@@ -233,6 +259,10 @@
         errors.push("Check the " + key + " link — use a full https:// URL.");
       }
     });
+    var reviewUrl = d.reviews && d.reviews.google_review_url;
+    if (reviewUrl && !cleanGoogleReviewUrl(reviewUrl)) {
+      errors.push("Enter an exact Google Write-a-Review URL.");
+    }
     if (
       d.announcement &&
       d.announcement.enabled &&
@@ -355,6 +385,40 @@
       }
     }
     if (contactWrap) setHidden(contactWrap, !(showEmail || showPhone));
+
+    // Reviews — only use the exact owner-provided Google destination.
+    var reviewBanner = document.getElementById("reviewBanner");
+    var reviewLink = document.getElementById("reviewBannerLink");
+    var feedbackLink = document.getElementById("reviewFeedback");
+    var footerReview = document.getElementById("footerReview");
+    var footerReviewLink = document.getElementById("footerReviewLink");
+    var reviewUrl = s.reviews.google_review_url;
+    if (reviewLink) {
+      if (reviewUrl) reviewLink.href = reviewUrl;
+      else reviewLink.removeAttribute("href");
+    }
+    if (footerReviewLink) {
+      if (reviewUrl) footerReviewLink.href = reviewUrl;
+      else footerReviewLink.removeAttribute("href");
+    }
+    if (footerReview) setHidden(footerReview, !reviewUrl);
+    if (reviewBanner) {
+      reviewBanner.hidden = true;
+      reviewBanner.setAttribute("data-review-configured", reviewUrl ? "true" : "false");
+    }
+    if (feedbackLink) {
+      if (showEmail) {
+        feedbackLink.hidden = false;
+        feedbackLink.href =
+          "mailto:" +
+          s.contact.email +
+          "?subject=" +
+          encodeURIComponent("Private feedback for " + s.business.name);
+      } else {
+        feedbackLink.hidden = true;
+        feedbackLink.removeAttribute("href");
+      }
+    }
 
     // Social
     var socialWrap = document.getElementById("footerSocial");
@@ -484,6 +548,7 @@
     applyToDocument: applyToDocument,
     fetchStoreSettings: fetchStoreSettings,
     cleanUrl: cleanUrl,
+    cleanGoogleReviewUrl: cleanGoogleReviewUrl,
     cleanEmail: cleanEmail,
     cleanPhone: cleanPhone,
   };

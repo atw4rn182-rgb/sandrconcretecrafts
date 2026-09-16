@@ -100,7 +100,8 @@ assert(shell.includes("Orders"), "Orders nav still present as-is");
 assert(shell.includes("Customers"), "Customers nav still present as-is");
 assert(shell.includes("Appearance"), "Appearance nav still present as-is");
 assert(shell.includes("Settings"), "Settings nav still present as-is");
-assert(shell.includes("is-disabled"), "coming-soon nav items remain disabled");
+assert(shell.includes("Payments"), "Payments nav is present");
+assert(!shell.includes("is-disabled"), "implemented admin sections are enabled");
 
 if (failed) {
   console.error("\n" + failed + " local inline-category check(s) failed");

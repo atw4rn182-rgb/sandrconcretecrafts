@@ -58,7 +58,7 @@
           <div class="dash-welcome-row">
             <div>
               <h1 id="dashGreeting">Welcome back</h1>
-              <p>Your sales command center — goals, shipping, and paid orders.</p>
+              <p>Your sales command center — every paid online and in-person sale.</p>
             </div>
             <button type="button" class="btn btn-ghost btn-small" id="skipAnimBtn" hidden>Skip Animation</button>
           </div>
@@ -151,8 +151,21 @@
             </div>
           </div>
           <div class="sales-chart" id="salesChartWrap">
-            <canvas id="salesChart" width="640" height="220" aria-label="Sales chart"></canvas>
+            <canvas id="salesChart" width="640" height="220" aria-label="Paid revenue bar chart"></canvas>
             <p class="sales-chart-empty" id="salesChartEmpty" hidden>No paid sales in this range yet.</p>
+          </div>
+          <div class="sales-trend-head">
+            <div><h3>Revenue trend</h3><p class="panel-sub">Compare payment sources</p></div>
+            <div class="filter-chips source-toggle-tabs" role="group" aria-label="Trend payment source">
+              <button type="button" class="filter-chip is-active" data-chart-source="all">All</button>
+              <button type="button" class="filter-chip" data-chart-source="online">Online</button>
+              <button type="button" class="filter-chip" data-chart-source="cash">Cash</button>
+              <button type="button" class="filter-chip" data-chart-source="tap_to_pay">Tap</button>
+            </div>
+          </div>
+          <div class="sales-chart sales-line-chart">
+            <canvas id="salesTrendChart" width="640" height="180" aria-label="Revenue trend line chart"></canvas>
+            <p class="sales-chart-empty" id="salesTrendEmpty" hidden>No paid sales for this source in this range.</p>
           </div>
         </section>
 

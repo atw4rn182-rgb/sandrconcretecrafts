@@ -8,6 +8,7 @@
 
   var orders = [];
   var activeFilter = "all";
+  var activeSource = "all";
   var openOrderId = null;
 
   function $(id) {
@@ -69,6 +70,21 @@
     return m || "—";
   }
 
+  function sourceValue(order) {
+    return SRSales.paymentSource(order);
+  }
+
+  function sourceBadge(order) {
+    var source = sourceValue(order);
+    return (
+      '<span class="source-badge source-badge--' +
+      SRCatalog.escapeHtml(source) +
+      '">' +
+      SRCatalog.escapeHtml(SRSales.sourceLabel(source)) +
+      "</span>"
+    );
+  }
+
   function showFlash(msg, kind) {
     var el = $("flash");
     if (!el) return;
@@ -110,6 +126,17 @@
     }
   }
 
+  function readSourceFromUrl() {
+    try {
+      var value = String(new URLSearchParams(window.location.search).get("source") || "all");
+      return ["all", "online", "cash", "tap_to_pay"].indexOf(value) !== -1
+        ? value
+        : "all";
+    } catch (_err) {
+      return "all";
+    }
+  }
+
   function setFilter(filter, pushUrl) {
     activeFilter = filter || "all";
     document.querySelectorAll("#orderFilterChips [data-filter]").forEach(function (btn) {
@@ -130,6 +157,7 @@
   }
 
   function matchesFilter(o) {
+    if (activeSource !== "all" && sourceValue(o) !== activeSource) return false;
     if (activeFilter === "all") return true;
     if (activeFilter === "paid") {
       return String(o.payment_status || "").toLowerCase() === "paid";
@@ -169,6 +197,7 @@
   }
 
   function emptyMessage() {
+    if (activeSource !== "all") return "No orders match these filters.";
     if (activeFilter === "needs-shipping") {
       return "Nothing needs shipping right now.";
     }
@@ -178,7 +207,7 @@
     if (activeFilter === "paid") {
       return "No paid orders yet.";
     }
-    return "No orders yet. When a Stripe Checkout payment completes, it will show up here.";
+    return "No orders yet. Paid online and in-person sales will show up here.";
   }
 
   function renderList() {
@@ -205,6 +234,7 @@
           SRCatalog.escapeHtml(name) +
           "</span>" +
           '<span class="order-card-badges">' +
+          sourceBadge(o) +
           '<span class="order-status order-status--' +
           SRCatalog.escapeHtml(paymentClass(o.payment_status)) +
           '">' +
@@ -218,7 +248,7 @@
           "</span>" +
           "</div>" +
           '<div class="order-card-meta">' +
-          SRCatalog.escapeHtml(formatWhen(o.created_at)) +
+          SRCatalog.escapeHtml(formatWhen(SRSales.saleDate(o))) +
           (method === "pickup"
             ? ' · <span class="method-pill">Pickup</span>'
             : "") +
@@ -362,6 +392,7 @@
       '<div class="order-detail-section">' +
       "<h3>Status</h3>" +
       '<p class="order-card-badges">' +
+      sourceBadge(order) +
       '<span class="order-status order-status--' +
       SRCatalog.escapeHtml(paymentClass(order.payment_status)) +
       '">' +
@@ -379,7 +410,7 @@
       "<p><strong>" +
       SRCatalog.escapeHtml(moneyFromCents(order.amount_total, order.currency)) +
       "</strong> · " +
-      SRCatalog.escapeHtml(formatWhen(order.created_at)) +
+      SRCatalog.escapeHtml(formatWhen(SRSales.saleDate(order))) +
       "</p>" +
       "</div>" +
       '<div class="order-detail-section">' +
@@ -404,7 +435,8 @@
       "<h3>Items</h3>" +
       (lines || '<p class="muted">No line items saved.</p>') +
       "</div>" +
-      '<div class="order-detail-section">' +
+      (sourceValue(order) === "online" || order.stripe_payment_intent
+        ? '<div class="order-detail-section">' +
       "<details class=\"order-support-refs\">" +
       "<summary>Payment support codes</summary>" +
       '<p class="muted">Only needed if you contact Stripe support about this order.</p>' +
@@ -415,7 +447,8 @@
       SRCatalog.escapeHtml(order.stripe_payment_intent || "—") +
       "</p>" +
       "</details>" +
-      "</div>";
+      "</div>"
+        : "");
 
     bindFulfillmentButtons(order);
   }
@@ -534,6 +567,23 @@
       if (!btn) return;
       setFilter(btn.getAttribute("data-filter"), true);
     });
+    $("orderSourceChips").addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-source]");
+      if (!btn) return;
+      activeSource = btn.getAttribute("data-source") || "all";
+      document.querySelectorAll("#orderSourceChips [data-source]").forEach(function (item) {
+        item.classList.toggle("is-active", item === btn);
+      });
+      try {
+        var url = new URL(window.location.href);
+        if (activeSource === "all") url.searchParams.delete("source");
+        else url.searchParams.set("source", activeSource);
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch (_err) {
+        /* ignore */
+      }
+      renderList();
+    });
   }
 
   async function loadOrders() {
@@ -547,8 +597,12 @@
   SRAdminShell.boot({ activeNav: "orders" }).then(async function (check) {
     if (!check) return;
     activeFilter = readFilterFromUrl();
+    activeSource = readSourceFromUrl();
     bind();
     setFilter(activeFilter, false);
+    document.querySelectorAll("#orderSourceChips [data-source]").forEach(function (btn) {
+      btn.classList.toggle("is-active", btn.getAttribute("data-source") === activeSource);
+    });
     try {
       await loadOrders();
       var deep = readOrderFromUrl();

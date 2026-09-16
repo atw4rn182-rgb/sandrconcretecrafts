@@ -24,3 +24,10 @@ js/env.js
 # Supabase CLI local leftovers
 supabase/.branches
 supabase/.temp
+
+# Android companion local build files
+android/local.properties
+android/.gradle/
+android/**/build/
+*.jks
+*.keystore

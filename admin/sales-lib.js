@@ -71,6 +71,25 @@
     return String(order && order.payment_status || "").toLowerCase() === "paid";
   }
 
+  function saleDate(order) {
+    return (order && (order.sold_at || order.created_at)) || null;
+  }
+
+  function paymentSource(order) {
+    var source = String(order && order.payment_source || "online").toLowerCase();
+    return ["online", "cash", "tap_to_pay"].indexOf(source) === -1
+      ? "online"
+      : source;
+  }
+
+  function sourceLabel(source) {
+    return {
+      online: "Online Store",
+      cash: "Cash",
+      tap_to_pay: "Tap to Pay",
+    }[String(source || "").toLowerCase()] || "Online Store";
+  }
+
   function needsShipping(order) {
     if (!isPaid(order)) return false;
     if (String(order.fulfillment_method || "").toLowerCase() === "pickup") {
@@ -83,7 +102,7 @@
     var total = 0;
     (orders || []).forEach(function (o) {
       if (!isPaid(o)) return;
-      var t = new Date(o.created_at).getTime();
+      var t = new Date(saleDate(o)).getTime();
       if (!isFinite(t)) return;
       if (from && t < from.getTime()) return;
       if (to && t >= to.getTime()) return;
@@ -96,7 +115,7 @@
     var n = 0;
     (orders || []).forEach(function (o) {
       if (!isPaid(o)) return;
-      var t = new Date(o.created_at).getTime();
+      var t = new Date(saleDate(o)).getTime();
       if (!isFinite(t)) return;
       if (from && t < from.getTime()) return;
       if (to && t >= to.getTime()) return;
@@ -115,7 +134,9 @@
     var monthStart = startOfMonth(now);
     var yearStart = startOfYear(now);
 
-    var paid = (orders || []).filter(isPaid);
+    var paid = (orders || []).filter(isPaid).sort(function (a, b) {
+      return new Date(saleDate(b)) - new Date(saleDate(a));
+    });
     var needs = paid.filter(needsShipping);
 
     return {
@@ -163,7 +184,14 @@
     };
   }
 
-  function seriesDaily(orders, days, now) {
+  function sourceOrders(orders, source) {
+    if (!source || source === "all") return orders || [];
+    return (orders || []).filter(function (order) {
+      return paymentSource(order) === source;
+    });
+  }
+
+  function seriesDaily(orders, days, now, source) {
     now = now || new Date();
     var end = startOfLocalDay(now);
     end.setDate(end.getDate() + 1);
@@ -178,13 +206,13 @@
       buckets.push({
         date: day,
         label: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        cents: sumPaidCents(orders, day, next),
+        cents: sumPaidCents(sourceOrders(orders, source), day, next),
       });
     }
     return buckets;
   }
 
-  function seriesMonthly(orders, now) {
+  function seriesMonthly(orders, now, source) {
     now = now || new Date();
     var year = now.getFullYear();
     var months = [];
@@ -194,7 +222,7 @@
       months.push({
         date: from,
         label: from.toLocaleDateString(undefined, { month: "short" }),
-        cents: sumPaidCents(orders, from, to),
+        cents: sumPaidCents(sourceOrders(orders, source), from, to),
       });
     }
     return months;
@@ -204,7 +232,11 @@
     var map = {};
     (orders || []).filter(isPaid).forEach(function (o) {
       var email = String(o.customer_email || "").trim().toLowerCase();
-      var key = email || "id:" + o.id;
+      var phone = String(o.customer_phone || "").trim();
+      var name = String(o.customer_name || "").trim();
+      if (!email && !phone && !name) return;
+      var key = email || (phone ? "phone:" + phone : "name:" + name.toLowerCase());
+      var when = saleDate(o);
       if (!map[key]) {
         map[key] = {
           key: key,
@@ -213,8 +245,8 @@
           phone: o.customer_phone || null,
           order_count: 0,
           total_spent_cents: 0,
-          first_order_at: o.created_at,
-          last_order_at: o.created_at,
+          first_order_at: when,
+          last_order_at: when,
           orders: [],
         };
       }
@@ -223,11 +255,11 @@
       c.total_spent_cents += Number(o.amount_total) || 0;
       if (o.customer_name && !c.name) c.name = o.customer_name;
       if (o.customer_phone && !c.phone) c.phone = o.customer_phone;
-      if (new Date(o.created_at) < new Date(c.first_order_at)) {
-        c.first_order_at = o.created_at;
+      if (new Date(when) < new Date(c.first_order_at)) {
+        c.first_order_at = when;
       }
-      if (new Date(o.created_at) > new Date(c.last_order_at)) {
-        c.last_order_at = o.created_at;
+      if (new Date(when) > new Date(c.last_order_at)) {
+        c.last_order_at = when;
       }
       c.orders.push(o);
     });
@@ -366,6 +398,9 @@
     endOfWeekSunday: endOfWeekSunday,
     weekKey: weekKey,
     isPaid: isPaid,
+    saleDate: saleDate,
+    paymentSource: paymentSource,
+    sourceLabel: sourceLabel,
     needsShipping: needsShipping,
     buildSalesSnapshot: buildSalesSnapshot,
     pct: pct,

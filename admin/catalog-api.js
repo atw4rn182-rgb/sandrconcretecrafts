@@ -939,38 +939,73 @@
     return value;
   }
 
+  function ordersSelect(detail) {
+    var extra = detail
+      ? ", shipping_address, metadata, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total, created_at)"
+      : ", order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total)";
+    return (
+      "id, stripe_session_id, stripe_payment_intent, payment_status, payment_source, sold_at, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at" +
+      extra
+    );
+  }
+
+  function ordersSelectLegacy(detail) {
+    var extra = detail
+      ? ", shipping_address, metadata, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total, created_at)"
+      : ", order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total)";
+    return (
+      "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at" +
+      extra
+    );
+  }
+
+  function isMissingInPersonColumnError(error) {
+    var msg = String(
+      (error && (error.message || error.details || error.hint || error.code)) || ""
+    ).toLowerCase();
+    return (
+      msg.indexOf("payment_source") !== -1 ||
+      msg.indexOf("sold_at") !== -1
+    );
+  }
+
   async function listOrders(opts) {
     opts = opts || {};
     var supabase = await client();
-    var q = supabase
-      .from("orders")
-      .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total)"
-      )
-      .order("created_at", { ascending: false });
+    function query(select) {
+      var q = supabase
+        .from("orders")
+        .select(select)
+        .order("created_at", { ascending: false });
+      if (opts.needsShipping) {
+        q = q
+          .eq("payment_status", "paid")
+          .eq("fulfillment_status", "unfulfilled")
+          .eq("fulfillment_method", "ship");
+      } else if (opts.paymentStatus) {
+        q = q.eq("payment_status", opts.paymentStatus);
+      }
+      if (opts.fulfillmentStatus) {
+        q = q.eq("fulfillment_status", opts.fulfillmentStatus);
+      }
+      if (opts.limit) {
+        q = q.limit(Number(opts.limit));
+      }
+      return q;
+    }
 
-    if (opts.needsShipping) {
-      q = q
-        .eq("payment_status", "paid")
-        .eq("fulfillment_status", "unfulfilled")
-        .eq("fulfillment_method", "ship");
-    } else if (opts.paymentStatus) {
-      q = q.eq("payment_status", opts.paymentStatus);
+    var result = await query(ordersSelect(false));
+    if (result.error && isMissingInPersonColumnError(result.error)) {
+      result = await query(ordersSelectLegacy(false));
     }
-    if (opts.fulfillmentStatus) {
-      q = q.eq("fulfillment_status", opts.fulfillmentStatus);
-    }
-    if (opts.limit) {
-      q = q.limit(Number(opts.limit));
-    }
-
-    var result = await q;
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t load orders."));
     }
     return (result.data || []).map(function (row) {
       var items = Array.isArray(row.order_items) ? row.order_items.slice() : [];
       return Object.assign({}, row, { items: items, order_items: items });
+    }).sort(function (a, b) {
+      return new Date(b.sold_at || b.created_at) - new Date(a.sold_at || a.created_at);
     });
   }
 
@@ -979,10 +1014,17 @@
     var result = await supabase
       .from("orders")
       .select(
-        "id, stripe_session_id, stripe_payment_intent, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total, created_at)"
+        "id, stripe_session_id, stripe_payment_intent, payment_status, payment_source, sold_at, amount_total, currency, customer_name, customer_email, customer_phone, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, shipping_address, metadata, fulfillment_status, fulfillment_method, tracking_number, carrier, shipped_at, completed_at, created_at, updated_at, order_items(id, product_id, product_name, finish, quantity, unit_amount, amount_total, created_at)"
       )
       .eq("id", id)
       .maybeSingle();
+    if (result.error && isMissingInPersonColumnError(result.error)) {
+      result = await supabase
+        .from("orders")
+        .select(ordersSelectLegacy(true))
+        .eq("id", id)
+        .maybeSingle();
+    }
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t load that order."));
     }
@@ -1019,14 +1061,25 @@
     var result = await supabase
       .from("orders")
       .select(
-        "id, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, fulfillment_status, fulfillment_method, created_at, shipping_city, shipping_state"
+        "id, payment_status, payment_source, sold_at, amount_total, currency, customer_name, customer_email, customer_phone, fulfillment_status, fulfillment_method, created_at, shipping_city, shipping_state"
       )
       .eq("payment_status", "paid")
       .order("created_at", { ascending: false });
+    if (result.error && isMissingInPersonColumnError(result.error)) {
+      result = await supabase
+        .from("orders")
+        .select(
+          "id, payment_status, amount_total, currency, customer_name, customer_email, customer_phone, fulfillment_status, fulfillment_method, created_at, shipping_city, shipping_state"
+        )
+        .eq("payment_status", "paid")
+        .order("created_at", { ascending: false });
+    }
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t load sales data."));
     }
-    return result.data || [];
+    return (result.data || []).sort(function (a, b) {
+      return new Date(b.sold_at || b.created_at) - new Date(a.sold_at || a.created_at);
+    });
   }
 
   async function updateOrderFulfillment(id, patch) {
@@ -1284,6 +1337,7 @@
       business: settings.business,
       contact: settings.contact,
       social: Object.assign({}, (current.config && current.config.social) || {}, settings.social),
+      reviews: Object.assign({}, (current.config && current.config.reviews) || {}, settings.reviews),
       announcement: settings.announcement,
       fulfillment: settings.fulfillment,
       storefront: settings.storefront,

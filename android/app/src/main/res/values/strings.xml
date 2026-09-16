@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">S&amp;R Tap to Pay</string>
+    <string name="sign_in_title">S&amp;R Tap to Pay</string>
+    <string name="sign_in_copy">Sign in with the same admin email used on the S&amp;R website.</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="tap_title">Ask the customer to tap</string>
+    <string name="tap_copy">Hold the card or phone near the Razr NFC area until it finishes.</string>
+    <string name="cancel">Cancel</string>
+    <string name="back_to_pos">Back to S&amp;R Payments</string>
+    <string name="config_missing">Add the public Supabase URL and anon key to android/local.properties. Never add secret keys.</string>
+</resources>

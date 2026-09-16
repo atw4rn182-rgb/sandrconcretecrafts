@@ -66,23 +66,27 @@ assert(norm("Published ") === "published", "status normalized case/trim");
 const dashHtml = read("admin/index.html");
 assert(dashHtml.includes("dashboard.js"), "dashboard page loads dashboard.js");
 assert(dashHtml.includes("dashboardRefresh"), "refresh control present");
-assert(dashHtml.includes("Add Product"), "Add Product shortcut");
-assert(dashHtml.includes("Manage Categories"), "Manage Categories shortcut");
-assert(dashHtml.includes("not connected yet"), "orders/payments secondary note");
-assert(!/Orders[\s\S]*Coming soon/i.test(dashHtml), "no Orders coming-soon metric card");
-assert(!/Revenue/i.test(dashHtml), "no Revenue metric card");
+assert(dashHtml.includes("sales-goals"), "dashboard shows sales goals");
+assert(dashHtml.includes("salesChart"), "paid-revenue bar chart retained");
+assert(dashHtml.includes("salesTrendChart"), "source trend chart present");
+assert(dashHtml.includes('data-chart-source="online"'), "online trend source present");
+assert(dashHtml.includes('data-chart-source="cash"'), "cash trend source present");
+assert(dashHtml.includes('data-chart-source="tap_to_pay"'), "tap trend source present");
+assert(dashHtml.includes("Recent paid orders"), "recent paid orders section present");
+assert(!/Orders[\s\S]*Coming soon/i.test(dashHtml), "orders are no longer marked coming soon");
 assert(dashHtml.includes("sandrlogo.jpg"), "logo preserved on dashboard");
 
 const dashJs = read("admin/dashboard.js");
 assert(dashJs.includes("getDashboardCounts"), "dashboard loads exact counts");
 assert(dashJs.includes("listRecentProducts"), "dashboard loads recent products");
+assert(dashJs.includes("listPaidOrdersLite"), "dashboard loads authoritative paid sales");
+assert(dashJs.includes("SRSales.buildSalesSnapshot"), "dashboard aggregates sales centrally");
+assert(dashJs.includes("drawTrend"), "dashboard renders payment-source trend");
 assert(dashJs.includes("visibilitychange"), "refreshes when page becomes visible");
 assert(dashJs.includes("pageshow"), "refreshes after bfcache restore");
 assert(dashJs.includes("!loadedOnce"), "error path avoids fake zeros on first load");
 assert(dashJs.includes("status=published"), "published card links with filter");
-assert(dashJs.includes("status=draft"), "draft card links with filter");
-assert(dashJs.includes("status=sold_out"), "sold_out card links with filter");
-assert(dashJs.includes("status=hidden"), "hidden card links with filter");
+assert(dashJs.includes("filter=paid"), "sales cards link to paid orders");
 
 const productsJs = read("admin/products.js");
 assert(productsJs.includes("applyFiltersFromUrl"), "products page reads URL filters");
@@ -100,8 +104,9 @@ const schemaSql = fs
   .filter((f) => f.endsWith(".sql"))
   .map((f) => read("supabase/migrations/" + f))
   .join("\n");
-assert(!/\bcreate table\s+orders\b/i.test(schemaSql), "no orders table in migrations");
-assert(!/\bcreate table\s+payments\b/i.test(schemaSql), "no payments table in migrations");
+assert(/\bcreate table\s+(?:public\.)?orders\b/i.test(schemaSql), "orders schema exists");
+assert(/\bcreate table\s+(?:public\.)?order_items\b/i.test(schemaSql), "order items schema exists");
+assert(!/\bcreate table\s+(?:public\.)?payments\b/i.test(schemaSql), "no duplicate payments table");
 
 if (failed) {
   console.error("\n" + failed + " local dashboard check(s) failed");

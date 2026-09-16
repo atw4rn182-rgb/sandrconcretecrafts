@@ -23,6 +23,7 @@ function read(rel) {
 }
 
 const css = read("styles.css");
+const seasonalCss = read("css/seasonal-decor.css");
 assert(css.includes("--motion:"), "storefront motion token present");
 assert(css.includes("--elevate-2"), "elevation tokens present");
 assert(css.includes("--shadow-press"), "press shadow token present");
@@ -30,16 +31,17 @@ assert(css.includes("(hover: hover) and (pointer: fine)"), "hover motion gated t
 assert(css.includes("prefers-reduced-motion"), "reduced motion preserved");
 assert(css.includes(".filter-chip.is-active::before"), "selected chips have non-color marker");
 assert(css.includes("scale(1.02)"), "card image zoom kept subtle");
-assert(/accent-zia[\s\S]*accent-roadrunner/.test(css) || (css.includes("accent-zia") && css.includes("accent-roadrunner")), "zia and roadrunner accents retained");
-assert((css.match(/\.accent-zia/g) || []).length >= 1, "single zia accent class kept");
-assert((css.match(/\.accent-roadrunner/g) || []).length >= 1, "single roadrunner accent class kept");
+assert(seasonalCss.includes(".season-decor"), "seasonal decorative accents retained");
+assert(css.includes(".store-share"), "store share action is styled");
+assert(css.includes(".review-banner"), "review invitation is styled");
 assert(css.includes(".btn-primary:active"), "primary button press state");
 assert(css.includes(".add:disabled"), "disabled add controls styled");
 
 const index = read("index.html");
 assert(index.includes("sandrlogo"), "logo asset referenced");
-assert((index.match(/accent-zia/g) || []).length === 1, "one zia in markup");
-assert((index.match(/accent-roadrunner/g) || []).length === 1, "one roadrunner in markup");
+assert((index.match(/season-decor/g) || []).length >= 4, "seasonal accents remain in markup");
+assert(index.includes('id="storeShare"'), "share action remains in markup");
+assert(index.includes('id="reviewBanner"'), "review invitation remains in markup");
 
 const editHtml = read("admin/product-edit.html");
 assert(/Product Title[\s\S]*Description[\s\S]*price[\s\S]*photoInput[\s\S]*categoryChecks/i.test(editHtml), "editor includes title, description, price, photos, categories");

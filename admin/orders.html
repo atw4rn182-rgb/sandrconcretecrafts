@@ -45,7 +45,7 @@
         <div class="topbar-row">
           <div>
             <h1>Orders</h1>
-            <p class="desktop-only">Newest Stripe Checkout orders first.</p>
+            <p class="desktop-only">Online and in-person sales, newest first.</p>
           </div>
         </div>
       </header>
@@ -55,6 +55,12 @@
         <button type="button" class="filter-chip" data-filter="needs-shipping">Needs Shipping</button>
         <button type="button" class="filter-chip" data-filter="shipped">Shipped</button>
         <button type="button" class="filter-chip" data-filter="paid">Paid</button>
+      </div>
+      <div class="filter-chips filter-chip-row orders-filter-chips source-filter-chips" id="orderSourceChips" role="group" aria-label="Payment source filters">
+        <button type="button" class="filter-chip is-active" data-source="all">All sources</button>
+        <button type="button" class="filter-chip" data-source="online">Online Store</button>
+        <button type="button" class="filter-chip" data-source="cash">Cash</button>
+        <button type="button" class="filter-chip" data-source="tap_to_pay">Tap to Pay</button>
       </div>
 
       <div class="flash" id="flash" hidden role="status"></div>

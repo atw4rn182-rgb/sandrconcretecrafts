@@ -43,7 +43,7 @@
     if (!customers.length) {
       wrap.hidden = true;
       setState(
-        "No customers yet. Paid Checkout orders will appear here by email.",
+        "No identified customers yet. Paid sales appear when a name, email, or phone is saved.",
         false
       );
       return;
@@ -67,7 +67,7 @@
             : "") +
           "</div>" +
           '<div class="customer-card-meta">' +
-          SRCatalog.escapeHtml(c.email || "No email") +
+          SRCatalog.escapeHtml(c.email || c.phone || "Name only") +
           "</div>" +
           '<div class="customer-card-foot">' +
           "<span>" +
@@ -96,7 +96,7 @@
     var history = (c.orders || [])
       .slice()
       .sort(function (a, b) {
-        return new Date(b.created_at) - new Date(a.created_at);
+        return new Date(SRSales.saleDate(b)) - new Date(SRSales.saleDate(a));
       })
       .map(function (o) {
         var fulfill = String(o.fulfillment_status || "unfulfilled").toLowerCase();
@@ -109,9 +109,14 @@
           SRCatalog.escapeHtml(SRSales.moneyFromCents(o.amount_total, o.currency)) +
           "</strong>" +
           '<div class="muted">' +
-          SRCatalog.escapeHtml(formatWhen(o.created_at)) +
+          SRCatalog.escapeHtml(formatWhen(SRSales.saleDate(o))) +
           "</div>" +
           "</div>" +
+          '<span class="source-badge source-badge--' +
+          SRCatalog.escapeHtml(SRSales.paymentSource(o)) +
+          '">' +
+          SRCatalog.escapeHtml(SRSales.sourceLabel(SRSales.paymentSource(o))) +
+          "</span>" +
           '<span class="fulfill-badge fulfill-badge--' +
           SRCatalog.escapeHtml(fulfill) +
           '">' +

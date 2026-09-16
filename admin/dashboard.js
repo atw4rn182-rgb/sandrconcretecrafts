@@ -9,6 +9,7 @@
   var loading = false;
   var skipAnim = false;
   var chartRange = "7d";
+  var chartSource = "all";
   var lastSnap = null;
   var lastGoals = null;
   var celebrateTimer = null;
@@ -200,6 +201,93 @@
     return SRSales.seriesDaily(orders, 7);
   }
 
+  function trendSeriesForRange(orders, source) {
+    var key = source == null ? chartSource : source;
+    if (chartRange === "30d") return SRSales.seriesDaily(orders, 30, null, key);
+    if (chartRange === "year") return SRSales.seriesMonthly(orders, null, key);
+    return SRSales.seriesDaily(orders, 7, null, key);
+  }
+
+  function drawLine(ctx, series, color, pad, width, height, max) {
+    if (!series.length) return;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    series.forEach(function (point, index) {
+      var x = pad.left + (series.length === 1 ? width / 2 : index * width / (series.length - 1));
+      var y = pad.top + height - (max ? point.cents / max * height : 0);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    series.forEach(function (point, index) {
+      if (!point.cents) return;
+      var x = pad.left + (series.length === 1 ? width / 2 : index * width / (series.length - 1));
+      var y = pad.top + height - point.cents / max * height;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function drawTrend(orders) {
+    var canvas = $("salesTrendChart");
+    var empty = $("salesTrendEmpty");
+    if (!canvas || !canvas.getContext) return;
+    var sources = chartSource === "all"
+      ? ["online", "cash", "tap_to_pay"]
+      : [chartSource];
+    var seriesBySource = sources.map(function (source) {
+      return { source: source, points: trendSeriesForRange(orders || [], source) };
+    });
+    var labels = (seriesBySource[0] && seriesBySource[0].points) || [];
+    var max = seriesBySource.reduce(function (value, series) {
+      return Math.max(value, series.points.reduce(function (inner, point) {
+        return Math.max(inner, point.cents);
+      }, 0));
+    }, 0);
+    if (empty) empty.hidden = max > 0;
+    var colors = {
+      all: "#2f6f6d",
+      online: "#2563a6",
+      cash: "#3f6b4a",
+      tap_to_pay: "#7651a8",
+    };
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var cssW = canvas.clientWidth || 640;
+    var cssH = 180;
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    var pad = { left: 10, right: 10, top: 18, bottom: 28 };
+    var width = cssW - pad.left - pad.right;
+    var height = cssH - pad.top - pad.bottom;
+    ctx.strokeStyle = "rgba(47, 44, 40, 0.1)";
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top + height);
+    ctx.lineTo(pad.left + width, pad.top + height);
+    ctx.stroke();
+    if (max > 0) {
+      seriesBySource.forEach(function (series) {
+        drawLine(ctx, series.points, colors[series.source] || colors.all, pad, width, height, max);
+      });
+    }
+    ctx.fillStyle = "#8a847a";
+    ctx.font = "11px Inter, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    var every = chartRange === "30d" ? 5 : 1;
+    labels.forEach(function (point, index) {
+      if (index % every && index !== labels.length - 1) return;
+      var x = pad.left + (labels.length === 1 ? width / 2 : index * width / (labels.length - 1));
+      ctx.fillText(point.label, x, cssH - 8);
+    });
+  }
+
   function drawChart(orders) {
     var canvas = $("salesChart");
     var empty = $("salesChartEmpty");
@@ -279,7 +367,7 @@
     if (!rows.length) {
       el.innerHTML =
         '<div class="state-box state-box--inset"><p class="state-title">No paid orders yet</p>' +
-        "<p>When a Stripe Checkout payment completes, it will show up here.</p>" +
+        "<p>Paid online and in-person sales will show up here.</p>" +
         '<p><a class="btn btn-ghost" href="/admin/orders.html">Open Orders</a></p></div>';
       return;
     }
@@ -297,7 +385,12 @@
             "</strong>" +
             '<div class="dash-list-meta">' +
             "<span>" +
-            SRCatalog.escapeHtml(formatWhen(o.created_at)) +
+            SRCatalog.escapeHtml(formatWhen(SRSales.saleDate(o))) +
+            "</span>" +
+            '<span class="source-badge source-badge--' +
+            SRCatalog.escapeHtml(SRSales.paymentSource(o)) +
+            '">' +
+            SRCatalog.escapeHtml(SRSales.sourceLabel(SRSales.paymentSource(o))) +
             "</span>" +
             '<span class="fulfill-badge fulfill-badge--' +
             SRCatalog.escapeHtml(fulfill) +
@@ -497,6 +590,7 @@
       renderNeedsShipping(snap);
       renderMetrics(snap, animate);
       drawChart(paidLite);
+      drawTrend(paidLite);
       renderRecentOrders(snap.paidOrders);
       renderCounts(counts, snap);
       renderRecent(recent);
@@ -592,10 +686,23 @@
           b.setAttribute("aria-selected", on ? "true" : "false");
         });
         if (lastSnap) drawChart(lastSnap.paidOrders);
+        if (lastSnap) drawTrend(lastSnap.paidOrders);
+      });
+    });
+    document.querySelectorAll("[data-chart-source]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        chartSource = btn.getAttribute("data-chart-source") || "all";
+        document.querySelectorAll("[data-chart-source]").forEach(function (item) {
+          item.classList.toggle("is-active", item === btn);
+        });
+        if (lastSnap) drawTrend(lastSnap.paidOrders);
       });
     });
     window.addEventListener("resize", function () {
-      if (lastSnap) drawChart(lastSnap.paidOrders);
+      if (lastSnap) {
+        drawChart(lastSnap.paidOrders);
+        drawTrend(lastSnap.paidOrders);
+      }
     });
   }
 

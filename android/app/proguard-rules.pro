@@ -1,0 +1,3 @@
+-keep class com.stripe.stripeterminal.** { *; }
+-keep class com.stripe.stripeterminal.taptopay.** { *; }
+-dontwarn com.stripe.stripeterminal.**

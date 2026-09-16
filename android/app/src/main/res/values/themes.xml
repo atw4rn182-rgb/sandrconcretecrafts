@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SRPos" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/terracotta</item>
+        <item name="colorPrimaryVariant">@color/brown</item>
+        <item name="colorAccent">@color/turquoise</item>
+        <item name="android:statusBarColor">@color/brown</item>
+        <item name="android:navigationBarColor">@color/cream</item>
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+</resources>

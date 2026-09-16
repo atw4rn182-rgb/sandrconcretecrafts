@@ -69,6 +69,98 @@ async function rest(path, options) {
   return data;
 }
 
+/** Call a service-role-only PostgREST RPC. */
+async function rpc(functionName, args) {
+  return rest("rpc/" + encodeURIComponent(functionName), {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: args || {},
+  });
+}
+
+async function recordCashSalesBatch(adminUserId, sales) {
+  return rpc("record_cash_sales_batch", {
+    p_recorded_by: adminUserId,
+    p_sales: sales,
+  });
+}
+
+async function recordInPersonSale(adminUserId, paymentSource, sale) {
+  return rpc("record_in_person_sale", {
+    p_payment_source: paymentSource,
+    p_sold_at: sale.sold_at,
+    p_recorded_by: adminUserId,
+    p_sale_note: sale.sale_note,
+    p_idempotency_key: sale.idempotency_key,
+    p_customer_name: sale.customer_name,
+    p_customer_email: sale.customer_email,
+    p_customer_phone: sale.customer_phone,
+    p_receipt_email: sale.receipt_email,
+    p_stripe_payment_intent: sale.stripe_payment_intent || null,
+    p_items: sale.items,
+  });
+}
+
+async function attachTerminalPaymentIntent(orderId, adminUserId, paymentIntentId) {
+  return rpc("attach_terminal_payment_intent", {
+    p_order_id: orderId,
+    p_recorded_by: adminUserId,
+    p_payment_intent: paymentIntentId,
+  });
+}
+
+async function confirmTapToPayPayment(paymentIntentId, amount, currency) {
+  return rpc("confirm_tap_to_pay_payment", {
+    p_payment_intent: paymentIntentId,
+    p_amount: amount,
+    p_currency: currency,
+  });
+}
+
+async function getPaidOrderForReceipt(orderId) {
+  var select = [
+    "id",
+    "payment_status",
+    "payment_source",
+    "amount_total",
+    "currency",
+    "customer_name",
+    "customer_email",
+    "sold_at",
+    "created_at",
+    "receipt_email",
+    "receipt_sent_at",
+    "receipt_provider_id",
+    "order_items(product_name,finish,quantity,unit_amount,amount_total)",
+  ].join(",");
+  var rows = await rest(
+    "orders?id=eq." +
+      encodeURIComponent(orderId) +
+      "&payment_status=eq.paid&select=" +
+      encodeURIComponent(select) +
+      "&limit=1"
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function markReceiptSent(orderId, email, providerId) {
+  var rows = await rest(
+    "orders?id=eq." +
+      encodeURIComponent(orderId) +
+      "&payment_status=eq.paid&receipt_sent_at=is.null",
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: {
+        receipt_email: email,
+        receipt_sent_at: new Date().toISOString(),
+        receipt_provider_id: providerId,
+      },
+    }
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
 /**
  * Upsert order by stripe_session_id, replace line items.
  * @param {object} order
@@ -127,5 +219,12 @@ async function updateOrderPaymentStatusByPaymentIntent(paymentIntentId, paymentS
 module.exports = {
   upsertOrderWithItems: upsertOrderWithItems,
   updateOrderPaymentStatusByPaymentIntent: updateOrderPaymentStatusByPaymentIntent,
+  recordCashSalesBatch: recordCashSalesBatch,
+  recordInPersonSale: recordInPersonSale,
+  attachTerminalPaymentIntent: attachTerminalPaymentIntent,
+  confirmTapToPayPayment: confirmTapToPayPayment,
+  getPaidOrderForReceipt: getPaidOrderForReceipt,
+  markReceiptSent: markReceiptSent,
+  rpc: rpc,
   serviceConfig: serviceConfig,
 };

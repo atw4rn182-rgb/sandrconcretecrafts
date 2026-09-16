@@ -235,6 +235,7 @@
   let modalProduct = null;
   let modalQty = 1;
   let modalFinish = "raw";
+  let verifiedCheckoutReturn = false;
 
   const $ = (sel) => document.querySelector(sel);
   function money(n) {
@@ -712,6 +713,176 @@
     }, 2400);
   }
 
+  function storefrontShareUrl() {
+    var canonical = document.querySelector('link[rel="canonical"]');
+    try {
+      return new URL(canonical && canonical.href ? canonical.href : window.location.href).href;
+    } catch (err) {
+      return window.location.href;
+    }
+  }
+
+  function productShareUrl(product) {
+    var base = storefrontShareUrl();
+    if (!product || !product.id) return base;
+    try {
+      var url = new URL(base);
+      url.searchParams.set("product", product.id);
+      url.hash = "";
+      return url.toString();
+    } catch (err) {
+      return base;
+    }
+  }
+
+  async function shareLink(opts) {
+    opts = opts || {};
+    var url = opts.url || storefrontShareUrl();
+    var title = opts.title || document.title;
+    var text = opts.text || "Take a look at S&R Concrete Crafts.";
+    var copiedLabel = opts.copiedLabel || "Shop link copied";
+    var status = $("#shareStatus");
+    var manual = $("#shareManual");
+    var input = $("#shareUrl");
+    if (manual) manual.hidden = true;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: title, text: text, url: url });
+        if (status) status.textContent = "Share options opened.";
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") {
+          if (status) status.textContent = "Share canceled.";
+          return;
+        }
+      }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast(copiedLabel);
+        if (status) status.textContent = copiedLabel + ".";
+        return;
+      } catch (err) {
+        /* expose a selectable link below */
+      }
+    }
+
+    if (manual && input) {
+      input.value = url;
+      manual.hidden = false;
+      input.focus();
+      input.select();
+      if (status) status.textContent = "Copy the selected shop link.";
+    }
+  }
+
+  function shareStorefront() {
+    return shareLink({
+      url: storefrontShareUrl(),
+      text: "Take a look at S&R Concrete Crafts.",
+      copiedLabel: "Shop link copied",
+    });
+  }
+
+  function shareProduct(product) {
+    if (!product) return Promise.resolve();
+    return shareLink({
+      url: productShareUrl(product),
+      title: product.name || document.title,
+      text: "Take a look at " + (product.name || "this piece") + " from S&R Concrete Crafts.",
+      copiedLabel: "Piece link copied",
+    });
+  }
+
+  function requestedProductId() {
+    try {
+      return new URL(window.location.href).searchParams.get("product");
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function openSharedProduct() {
+    var id = requestedProductId();
+    if (id && findProduct(id)) openModal(id);
+  }
+
+  function initReviewBanner() {
+    var banner = $("#reviewBanner");
+    var link = $("#reviewBannerLink");
+    var close = $("#reviewBannerClose");
+    if (!banner || !link || !link.getAttribute("href")) return;
+    var artwork = link.querySelector("img");
+    var artworkReady = false;
+    if (artwork) {
+      var hideMissingArtwork = function () {
+        artwork.hidden = true;
+        banner.hidden = true;
+      };
+      artwork.addEventListener("error", hideMissingArtwork);
+      if (artwork.complete && !artwork.naturalWidth) hideMissingArtwork();
+      else artworkReady = !artwork.hidden;
+    }
+    if (!artworkReady) return;
+
+    try {
+      if (sessionStorage.getItem("sr_review_banner_dismissed") === "1") return;
+    } catch (err) {
+      /* session storage can be unavailable */
+    }
+
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var scrollHideTimer = null;
+    var importantUiOpen = function () {
+      return (
+        document.body.classList.contains("nav-open") ||
+        document.body.classList.contains("no-scroll")
+      );
+    };
+    var updateVisibility = function (scrolling) {
+      if (banner.getAttribute("data-dismissed") === "1") return;
+      var hide = !!scrolling || importantUiOpen();
+      banner.classList.toggle("is-scroll-hidden", hide);
+    };
+    var reveal = function () {
+      if (banner.getAttribute("data-dismissed") === "1") return;
+      banner.hidden = false;
+      if (reducedMotion) {
+        banner.classList.add("is-ready");
+      } else {
+        window.requestAnimationFrame(function () {
+          banner.classList.add("is-ready");
+        });
+      }
+      updateVisibility(false);
+    };
+    window.setTimeout(reveal, verifiedCheckoutReturn || reducedMotion ? 0 : 1800);
+
+    if (close) {
+      close.addEventListener("click", function () {
+        banner.hidden = true;
+        banner.setAttribute("data-dismissed", "1");
+        try {
+          sessionStorage.setItem("sr_review_banner_dismissed", "1");
+        } catch (err) {
+          /* dismissal still lasts for this page */
+        }
+      });
+    }
+
+    window.addEventListener("scroll", function () {
+      updateVisibility(true);
+      window.clearTimeout(scrollHideTimer);
+      scrollHideTimer = window.setTimeout(function () {
+        updateVisibility(false);
+      }, reducedMotion ? 0 : 420);
+    }, { passive: true });
+    updateVisibility(false);
+  }
+
   function addToCart(id, qty, finish) {
     qty = qty == null ? 1 : qty;
     finish = normalizeFinish(finish);
@@ -958,6 +1129,8 @@
       addBtn.disabled = false;
       addBtn.textContent = "Add to Cart";
     }
+    var shareBtn = $("#modalShare");
+    if (shareBtn) shareBtn.hidden = false;
     modalOverlay.classList.add("open");
     modalOverlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
@@ -1171,6 +1344,7 @@
           verified = response.ok && result && result.verified === true;
         }
         if (verified) {
+          verifiedCheckoutReturn = true;
           cart = [];
           updateCart();
           toast("Payment received — thank you!");
@@ -1263,6 +1437,15 @@
   }
 
   function bind() {
+    var shareButton = $("#storeShare");
+    if (shareButton) shareButton.addEventListener("click", shareStorefront);
+    var productShare = $("#modalShare");
+    if (productShare) {
+      productShare.addEventListener("click", function () {
+        shareProduct(modalProduct);
+      });
+    }
+
     if (navToggle) {
       navToggle.addEventListener("click", toggleNav);
     }
@@ -1422,6 +1605,7 @@
       reconcileCart(true);
       renderProducts();
       updateCart();
+      openSharedProduct();
     } catch (err) {
       products = [];
       storefrontCategories = [];
@@ -1493,12 +1677,14 @@
     // Theme + settings first so paint settles quickly; catalog can follow.
     await loadAppearance();
     await loadStoreSettings();
+    initReviewBanner();
     if (liveMode) {
       await loadLiveCatalog(false);
     } else {
       reconcileCart(false);
       renderProducts();
       updateCart();
+      openSharedProduct();
     }
   }
 
