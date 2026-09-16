@@ -67,6 +67,8 @@ assert(payments.includes("batchCashForm"), "batch cash form present");
 assert(payments.includes("Native App Required"), "web Terminal action stays disabled");
 assert(payments.includes("Enter Amount"), "tap to pay starts with enter amount");
 assert(payments.includes("Select Products from Website"), "website products remain available");
+assert(payments.includes("tapChargeSource"), "charge source makes the active total obvious");
+assert(payments.includes('inputmode="decimal"'), "amount field requests a decimal keypad");
 assert(
   !/id="tapCatalogDetails"[^>]*\sopen\b/.test(payments),
   "website products stay collapsed by default"

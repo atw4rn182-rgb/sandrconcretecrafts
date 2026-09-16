@@ -4179,6 +4179,21 @@ body.action-sheet-open { overflow: hidden; }
   margin: 0 0 1rem;
 }
 
+.tap-quick.is-idle {
+  opacity: 0.55;
+}
+
+.tap-quick.is-charging .tap-amount-input {
+  border-color: rgba(189, 111, 67, 0.55);
+}
+
+.tap-charge-source {
+  margin: 0 0 0.75rem;
+  color: var(--charcoal);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
 .tap-quick h3 {
   margin: 0 0 0.7rem;
   font-size: 1.2rem;
@@ -4237,6 +4252,11 @@ body.action-sheet-open { overflow: hidden; }
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 252, 248, 0.72);
+}
+
+.tap-catalog-details.is-charging {
+  border-color: rgba(189, 111, 67, 0.72);
+  box-shadow: 0 0 0 4px rgba(189, 111, 67, 0.12);
 }
 
 .tap-catalog-details > summary {

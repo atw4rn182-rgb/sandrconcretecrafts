@@ -137,7 +137,7 @@
             <span class="sr-only">Amount in dollars</span>
             <span class="tap-amount-input">
               <span aria-hidden="true">$</span>
-              <input id="quickAmount" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0.00" />
+              <input id="quickAmount" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="transaction-amount" placeholder="0.00" />
             </span>
           </label>
           <label class="payment-field tap-quick-note">
@@ -145,6 +145,7 @@
             <input id="quickSaleNote" type="text" maxlength="120" placeholder="2 painted pumpkins" autocomplete="off" />
           </label>
           <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
+          <p class="tap-charge-source" id="tapChargeSource" aria-live="polite">Enter an amount or select website products. Only one total is charged.</p>
           <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
           <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
         </section>
@@ -163,6 +164,7 @@
             <p id="tapCartEmpty" class="payment-inline-state">No items added yet.</p>
             <div id="tapCartLines" class="tap-cart-lines" hidden></div>
             <p class="tap-catalog-total">Cart Total: <strong id="tapCatalogTotal">$0.00</strong></p>
+            <button class="btn btn-primary btn-block tap-take-payment" id="takeCatalogPaymentBtn" type="button" hidden disabled>Take Payment — $0.00</button>
             <button type="button" class="btn btn-ghost btn-block" id="clearTapCart" hidden>Clear cart</button>
           </section>
         </details>

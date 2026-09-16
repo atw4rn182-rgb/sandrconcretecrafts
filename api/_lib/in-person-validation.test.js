@@ -95,6 +95,14 @@ var twelveFifty = validation.normalizeSale(
 );
 assert.strictEqual(twelveFifty.items[0].unit_amount_cents, 1250);
 
+var twentyFive = validation.normalizeSale(
+  sale({
+    items: [{ type: "custom", name: "Quick sale", unit_amount_cents: 2500, quantity: 1 }],
+  }),
+  { nowMs: now }
+);
+assert.strictEqual(twentyFive.items[0].unit_amount_cents, 2500);
+
 assert.throws(function () {
   validation.normalizeSale(sale({ receipt_email: "not-an-email" }), {
     nowMs: now,

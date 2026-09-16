@@ -544,6 +544,8 @@
     var cents = quickAmountCents();
     if (cents != null) {
       tapMode = "quick";
+      var details = byId("tapCatalogDetails");
+      if (details) details.open = false;
       if (tapLines.length) {
         tapLines = [];
         renderTapCart();
@@ -755,15 +757,58 @@
     }, 0);
   }
 
+  function activeTapTotal() {
+    return tapMode === "catalog" ? tapCartTotal() : quickAmountCents() || 0;
+  }
+
+  function syncTapModeUi(total) {
+    var quick = byId("tapQuickAmount");
+    var catalog = byId("tapCatalogDetails");
+    var source = byId("tapChargeSource");
+    var catalogBtn = byId("takeCatalogPaymentBtn");
+    var catalogCharging = tapMode === "catalog" && tapCartTotal() > 0;
+    var quickCharging = tapMode === "quick" && (quickAmountCents() || 0) > 0;
+    if (quick) {
+      quick.classList.toggle("is-charging", !catalogCharging);
+      quick.classList.toggle("is-idle", catalogCharging);
+    }
+    if (catalog) {
+      catalog.classList.toggle("is-charging", catalogCharging);
+    }
+    if (source) {
+      if (catalogCharging) {
+        source.textContent =
+          "Charging website products — " +
+          money(total) +
+          ". Typed amount is not used.";
+      } else if (quickCharging) {
+        source.textContent =
+          "Charging typed amount — " +
+          money(total) +
+          ". Website products are not used.";
+      } else {
+        source.textContent =
+          "Enter an amount or select website products. Only one total is charged.";
+      }
+    }
+    if (catalogBtn) {
+      catalogBtn.hidden = !catalogCharging;
+      catalogBtn.disabled = !catalogCharging || !isAndroidPos() || tapSubmitting;
+      catalogBtn.textContent = tapSubmitting
+        ? "Opening Tap to Pay…"
+        : "Take Payment — " + money(tapCartTotal());
+    }
+  }
+
   function updateTakePaymentButton() {
     var button = byId("takePaymentBtn");
     var help = byId("terminalHelp");
     var status = byId("terminalStatus");
     var blocked = byId("terminalBlocked");
     var android = isAndroidPos();
-    var total =
-      tapMode === "catalog" ? tapCartTotal() : quickAmountCents() || 0;
+    var total = activeTapTotal();
     var ready = android && total > 0 && !tapSubmitting;
+    syncTapModeUi(total);
     if (button) {
       button.disabled = !ready;
       button.textContent = android
@@ -996,6 +1041,9 @@
       renderTapCart();
     });
     byId("takePaymentBtn").addEventListener("click", takePayment);
+    if (byId("takeCatalogPaymentBtn")) {
+      byId("takeCatalogPaymentBtn").addEventListener("click", takePayment);
+    }
     byId("installPosAppBtn").addEventListener("click", installPosApp);
     byId("openPosAppBtn").addEventListener("click", openPosApp);
     document.addEventListener("visibilitychange", function () {
