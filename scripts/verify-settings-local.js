@@ -69,7 +69,7 @@ assert(idx.indexOf("storeAnnouncement") >= 0, "announce banner");
 assert(idx.indexOf("footerSocial") >= 0, "footer social");
 assert(idx.indexOf("storeShare") >= 0, "store share action");
 assert(idx.indexOf("reviewBannerLink") >= 0, "review banner");
-assert(idx.indexOf("review-banner-approved.jpg") >= 0, "approved review artwork");
+assert(idx.indexOf("review-banner-approved.png") >= 0, "approved review artwork");
 
 var api = fs.readFileSync("admin/catalog-api.js", "utf8");
 assert(api.indexOf("saveStoreSettings") >= 0, "save api");

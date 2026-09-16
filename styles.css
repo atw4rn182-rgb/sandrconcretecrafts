@@ -1066,9 +1066,10 @@ img { max-width: 100%; display: block; }
   width: min(13.25rem, calc(100vw - 5.5rem));
   padding: 0;
   border: 0;
-  border-radius: 14px;
+  border-radius: 0;
   background: transparent;
-  box-shadow: var(--shadow);
+  box-shadow: none;
+  overflow: visible;
   opacity: 0;
   transform: translateY(-14px);
   transition: opacity 420ms var(--ease), transform 420ms var(--ease);
@@ -1081,8 +1082,8 @@ img { max-width: 100%; display: block; }
 }
 .review-banner-link {
   display: block;
-  overflow: hidden;
-  border-radius: 14px;
+  overflow: visible;
+  border-radius: 0;
   background: transparent;
   animation: reviewBannerIdle 12s 4s infinite ease-in-out;
 }
@@ -1090,6 +1091,7 @@ img { max-width: 100%; display: block; }
   display: block;
   width: 100%;
   height: auto;
+  filter: drop-shadow(0 10px 18px rgba(58, 42, 34, 0.28));
 }
 .review-banner-close {
   position: absolute; top: -0.65rem; right: -0.55rem; z-index: 2;

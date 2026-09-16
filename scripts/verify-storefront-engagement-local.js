@@ -21,6 +21,13 @@ assert.match(html, /id="modalShare"/);
 assert.match(html, /id="footerReview"[^>]*hidden/);
 assert.match(html, /id="reviewBanner"[^>]*hidden/);
 assert.match(html, /id="reviewBannerLink"(?![^>]*href=)/);
+assert.match(html, /src="\/assets\/review-banner-approved\.png"/);
+assert.ok(fs.existsSync(path.join(root, "assets/review-banner-approved.png")), "approved review PNG exists");
+assert.strictEqual(
+  fs.readFileSync(path.join(root, "assets/review-banner-approved.png"))[0],
+  0x89,
+  "approved review asset is a PNG"
+);
 assert.match(app, /navigator\.share/);
 assert.match(app, /navigator\.clipboard\.writeText/);
 assert.match(app, /input\.select\(\)/);
@@ -39,5 +46,7 @@ assert.match(settings, /host === "google\.com"/);
 assert.match(settings, /facebook:\s*""/);
 assert.match(settings, /reviewLink\.removeAttribute\("href"\)/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.review-banner/);
+assert.match(css, /\.review-banner-link img[\s\S]*drop-shadow/);
+assert.match(css, /\.review-banner-link \{[\s\S]*overflow:\s*visible/);
 
 console.log("sharing fallbacks, review config, motion, scroll, and dismissal: ok");
