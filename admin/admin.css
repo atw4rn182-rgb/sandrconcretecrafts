@@ -4109,7 +4109,7 @@ body.action-sheet-open { overflow: hidden; }
 }
 
 .pos-app-card {
-  margin: 0 0 1rem;
+  margin: 1.1rem 0 0;
   padding: 0.95rem;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -4173,6 +4173,112 @@ body.action-sheet-open { overflow: hidden; }
   display: grid;
   gap: 0.55rem;
   margin-top: 0.85rem;
+}
+
+.tap-quick {
+  margin: 0 0 1rem;
+}
+
+.tap-quick h3 {
+  margin: 0 0 0.7rem;
+  font-size: 1.2rem;
+}
+
+.tap-amount-field {
+  display: block;
+  margin: 0 0 0.75rem;
+}
+
+.tap-amount-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 76px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tap-amount-input:focus-within {
+  border-color: rgba(189, 111, 67, 0.72);
+  box-shadow: 0 0 0 4px rgba(189, 111, 67, 0.15);
+}
+
+.tap-amount-input > span {
+  padding-left: 1rem;
+  color: var(--charcoal);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tap-amount-input input {
+  min-width: 0;
+  min-height: 72px;
+  border: 0;
+  box-shadow: none !important;
+  padding: 0.35rem 0.9rem 0.35rem 0.25rem;
+  font-size: 2.15rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.tap-quick-note {
+  margin-bottom: 0.85rem;
+}
+
+.tap-take-payment {
+  min-height: 64px;
+  font-size: 1.12rem;
+}
+
+.tap-catalog-details {
+  margin: 0 0 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 252, 248, 0.72);
+}
+
+.tap-catalog-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 52px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.tap-catalog-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tap-catalog-details > summary::after {
+  content: "▾";
+  color: var(--warm-gray);
+  font-weight: 700;
+}
+
+.tap-catalog-details[open] > summary::after {
+  content: "▴";
+}
+
+.tap-catalog-details > :not(summary) {
+  margin-left: 0.95rem;
+  margin-right: 0.95rem;
+}
+
+.tap-catalog-details .tap-cart {
+  margin-bottom: 0.95rem;
+}
+
+.tap-catalog-total {
+  margin: 0.7rem 0 0.55rem;
+  color: var(--charcoal);
+  font-size: 1.05rem;
 }
 
 .catalog-search-field {

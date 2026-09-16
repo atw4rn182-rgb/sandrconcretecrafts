@@ -65,6 +65,12 @@ assert(payments.includes("payments-main"), "payments mobile layout present");
 assert(payments.includes("singleCashForm"), "single cash form present");
 assert(payments.includes("batchCashForm"), "batch cash form present");
 assert(payments.includes("Native App Required"), "web Terminal action stays disabled");
+assert(payments.includes("Enter Amount"), "tap to pay starts with enter amount");
+assert(payments.includes("Select Products from Website"), "website products remain available");
+assert(
+  !/id="tapCatalogDetails"[^>]*\sopen\b/.test(payments),
+  "website products stay collapsed by default"
+);
 
 const storefront = read("index.html");
 assert(storefront.includes("S&amp;R Concrete Crafts"), "storefront name untouched by admin redesign check");

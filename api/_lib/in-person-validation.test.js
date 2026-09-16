@@ -60,6 +60,42 @@ assert.throws(function () {
 }, /integer cents/);
 
 assert.throws(function () {
+  validation.normalizeSale(
+    sale({
+      items: [{ type: "custom", name: "Quick sale", unit_amount_cents: 0, quantity: 1 }],
+    }),
+    { nowMs: now }
+  );
+}, /outside the allowed range/);
+
+assert.throws(function () {
+  validation.normalizeSale(
+    sale({
+      items: [{ type: "custom", name: "Quick sale", unit_amount_cents: -100, quantity: 1 }],
+    }),
+    { nowMs: now }
+  );
+}, /outside the allowed range/);
+
+var quickDollar = validation.normalizeSale(
+  sale({
+    sale_note: "2 painted pumpkins",
+    items: [{ type: "custom", name: "2 painted pumpkins", unit_amount_cents: 100, quantity: 1 }],
+  }),
+  { nowMs: now }
+);
+assert.strictEqual(quickDollar.items[0].unit_amount_cents, 100);
+assert.strictEqual(quickDollar.sale_note, "2 painted pumpkins");
+
+var twelveFifty = validation.normalizeSale(
+  sale({
+    items: [{ type: "custom", name: "Quick sale", unit_amount_cents: 1250, quantity: 1 }],
+  }),
+  { nowMs: now }
+);
+assert.strictEqual(twelveFifty.items[0].unit_amount_cents, 1250);
+
+assert.throws(function () {
   validation.normalizeSale(sale({ receipt_email: "not-an-email" }), {
     nowMs: now,
   });

@@ -9,6 +9,7 @@
   var products = [];
   var batchRows = [];
   var tapLines = [];
+  var tapMode = "quick";
   var tapIdempotencyKey = null;
   var tapSubmitting = false;
   var singleSubmitting = false;
@@ -519,34 +520,45 @@
         quantity: 1,
       });
     }
+    tapMode = "catalog";
+    var amount = byId("quickAmount");
+    if (amount) amount.value = "";
+    var details = byId("tapCatalogDetails");
+    if (details) details.open = true;
     setError("tapError", "");
     renderTapCart();
   }
 
-  function addCustomLine() {
-    var name = String(byId("customName").value || "").trim();
-    var cents = parseCents(byId("customAmount").value);
-    if (!name) {
-      setError("tapError", "Enter a description for the custom line.");
-      byId("customName").focus();
-      return;
+  function quickAmountCents() {
+    var input = byId("quickAmount");
+    return parseCents(input && input.value);
+  }
+
+  function quickSaleNote() {
+    var input = byId("quickSaleNote");
+    var note = String((input && input.value) || "").trim();
+    return note || null;
+  }
+
+  function onQuickAmountInput() {
+    var cents = quickAmountCents();
+    if (cents != null) {
+      tapMode = "quick";
+      if (tapLines.length) {
+        tapLines = [];
+        renderTapCart();
+        return;
+      }
     }
-    if (cents == null) {
-      setError("tapError", "Enter a custom amount from $0.01 to $10,000.00.");
-      byId("customAmount").focus();
-      return;
-    }
-    tapLines.push({
-      key: newKey("tap-custom"),
-      type: "custom",
-      name: name,
-      unitAmountCents: cents,
-      quantity: 1,
-    });
-    byId("customName").value = "";
-    byId("customAmount").value = "";
-    setError("tapError", "");
-    renderTapCart();
+    updateTakePaymentButton();
+  }
+
+  function resetQuickAmount() {
+    tapMode = "quick";
+    var amount = byId("quickAmount");
+    var note = byId("quickSaleNote");
+    if (amount) amount.value = "";
+    if (note) note.value = "";
   }
 
   function lineUnitCents(line) {
@@ -710,15 +722,30 @@
 
   function tapSalePayload() {
     if (!tapIdempotencyKey) tapIdempotencyKey = newKey("tap");
+    var note = quickSaleNote();
+    var items;
+    if (tapMode === "catalog") {
+      items = trustedTapPayload();
+    } else {
+      var cents = quickAmountCents();
+      items = [
+        {
+          type: "custom",
+          name: (note || "Quick sale").slice(0, 120),
+          unit_amount_cents: cents,
+          quantity: 1,
+        },
+      ];
+    }
     return {
       sold_at: new Date().toISOString(),
       idempotency_key: tapIdempotencyKey,
-      sale_note: null,
+      sale_note: note,
       customer_name: null,
       customer_email: null,
       customer_phone: null,
       receipt_email: null,
-      items: trustedTapPayload(),
+      items: items,
     };
   }
 
@@ -734,14 +761,15 @@
     var status = byId("terminalStatus");
     var blocked = byId("terminalBlocked");
     var android = isAndroidPos();
-    var total = tapCartTotal();
-    var ready = android && tapLines.length > 0 && total > 0 && !tapSubmitting;
+    var total =
+      tapMode === "catalog" ? tapCartTotal() : quickAmountCents() || 0;
+    var ready = android && total > 0 && !tapSubmitting;
     if (button) {
       button.disabled = !ready;
       button.textContent = android
         ? tapSubmitting
           ? "Opening Tap to Pay…"
-          : "Take Payment"
+          : "Take Payment — " + money(total)
         : "Take Payment — Native App Required";
     }
     if (status) {
@@ -788,8 +816,14 @@
   function takePayment() {
     if (tapSubmitting || !isAndroidPos()) return;
     setError("tapError", "");
-    if (!tapLines.length) {
-      setError("tapError", "Add a product or custom amount first.");
+    if (tapMode === "catalog") {
+      if (!tapLines.length || tapCartTotal() <= 0) {
+        setError("tapError", "Add a website product first.");
+        return;
+      }
+    } else if (quickAmountCents() == null) {
+      setError("tapError", "Enter an amount greater than $0.00.");
+      if (byId("quickAmount")) byId("quickAmount").focus();
       return;
     }
     tapSubmitting = true;
@@ -815,6 +849,7 @@
     if (paid) {
       tapIdempotencyKey = newKey("tap");
       tapLines = [];
+      resetQuickAmount();
       renderTapCart();
       showReceiptOptions(
         [{ id: paid, amount_total: Number(params.get("amount")) || 0 }],
@@ -836,22 +871,18 @@
   }
 
   function trustedTapPayload() {
-    return tapLines.map(function (line) {
-      if (line.type === "product") {
+    return tapLines
+      .filter(function (line) {
+        return line.type === "product";
+      })
+      .map(function (line) {
         return {
           type: "product",
           product_id: line.product.id,
           finish: line.finish,
           quantity: line.quantity,
         };
-      }
-      return {
-        type: "custom",
-        name: line.name,
-        unit_amount_cents: line.unitAmountCents,
-        quantity: line.quantity,
-      };
-    });
+      });
   }
 
   function renderTapCart() {
@@ -861,6 +892,8 @@
       return sum + lineUnitCents(line) * line.quantity;
     }, 0);
     byId("tapCartTotal").textContent = money(total);
+    if (byId("tapCatalogTotal")) byId("tapCatalogTotal").textContent = money(total);
+    if (!tapLines.length) tapMode = "quick";
     empty.hidden = tapLines.length > 0;
     wrap.hidden = tapLines.length === 0;
     byId("clearTapCart").hidden = tapLines.length === 0;
@@ -949,9 +982,16 @@
       renderBatchRows(true);
     });
     byId("catalogSearch").addEventListener("input", renderCatalog);
-    byId("addCustomLine").addEventListener("click", addCustomLine);
+    byId("quickAmount").addEventListener("input", onQuickAmountInput);
+    byId("quickAmount").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        takePayment();
+      }
+    });
     byId("clearTapCart").addEventListener("click", function () {
       tapLines = [];
+      tapMode = "quick";
       setError("tapError", "");
       renderTapCart();
     });

@@ -59,7 +59,7 @@
         </a>
         <a class="payment-choice-card payment-choice-card--tap" href="#tapPayment">
           <span class="payment-choice-icon" aria-hidden="true">▰</span>
-          <span><strong>Tap to Pay</strong><small>Build a product cart for the native app</small></span>
+          <span><strong>Tap to Pay</strong><small>Type an amount or select website products</small></span>
           <span class="payment-choice-arrow" aria-hidden="true">›</span>
         </a>
       </section>
@@ -123,9 +123,50 @@
 
       <section class="payment-panel" id="tapPayment" aria-labelledby="tapTitle">
         <div class="payment-panel-head">
-          <div><p class="payment-eyebrow">Card</p><h2 id="tapTitle">Tap to Pay cart</h2></div>
+          <div><p class="payment-eyebrow">Card</p><h2 id="tapTitle">Tap to Pay</h2></div>
           <span class="terminal-status terminal-status--blocked" id="terminalStatus">Native app required</span>
         </div>
+        <div class="terminal-blocked" id="terminalBlocked" role="status">
+          <strong>Tap to Pay isn’t available in this web browser.</strong>
+          <p>Enter an amount here. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Pixel.</p>
+        </div>
+
+        <section class="tap-quick" id="tapQuickAmount" aria-labelledby="quickAmountTitle">
+          <h3 id="quickAmountTitle">Enter Amount</h3>
+          <label class="tap-amount-field">
+            <span class="sr-only">Amount in dollars</span>
+            <span class="tap-amount-input">
+              <span aria-hidden="true">$</span>
+              <input id="quickAmount" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0.00" />
+            </span>
+          </label>
+          <label class="payment-field tap-quick-note">
+            <span>Sale note (optional)</span>
+            <input id="quickSaleNote" type="text" maxlength="120" placeholder="2 painted pumpkins" autocomplete="off" />
+          </label>
+          <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
+          <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
+          <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
+        </section>
+
+        <details class="tap-catalog-details" id="tapCatalogDetails">
+          <summary>Select Products from Website</summary>
+          <p class="payment-help">Catalog prices set the total. This does not add to a typed amount.</p>
+          <label class="payment-field catalog-search-field">
+            <span>Search catalog products</span>
+            <input id="catalogSearch" type="search" autocomplete="off" placeholder="Search by product name or item number" />
+          </label>
+          <div id="catalogState" class="payment-inline-state" role="status">Loading catalog…</div>
+          <div id="catalogResults" class="payment-catalog-results" hidden></div>
+          <section class="tap-cart" aria-labelledby="tapCartTitle">
+            <div class="tap-cart-head"><h3 id="tapCartTitle">Current cart</h3><strong id="tapCartTotal">$0.00</strong></div>
+            <p id="tapCartEmpty" class="payment-inline-state">No items added yet.</p>
+            <div id="tapCartLines" class="tap-cart-lines" hidden></div>
+            <p class="tap-catalog-total">Cart Total: <strong id="tapCatalogTotal">$0.00</strong></p>
+            <button type="button" class="btn btn-ghost btn-block" id="clearTapCart" hidden>Clear cart</button>
+          </section>
+        </details>
+
         <section class="pos-app-card" id="posAppCard" aria-labelledby="posAppTitle">
           <div class="pos-app-card-head">
             <div>
@@ -149,36 +190,6 @@
           </div>
           <p class="payment-help" id="posAppHelp">Authorized S&amp;R staff devices only.</p>
         </section>
-        <div class="terminal-blocked" id="terminalBlocked" role="status">
-          <strong>Tap to Pay isn’t available in this web browser.</strong>
-          <p>Build the cart here for review. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Pixel.</p>
-        </div>
-
-        <label class="payment-field catalog-search-field">
-          <span>Search catalog products</span>
-          <input id="catalogSearch" type="search" autocomplete="off" placeholder="Search by product name or item number" />
-        </label>
-        <div id="catalogState" class="payment-inline-state" role="status">Loading catalog…</div>
-        <div id="catalogResults" class="payment-catalog-results" hidden></div>
-
-        <div class="custom-line-form" aria-labelledby="customLineTitle">
-          <h3 id="customLineTitle">Add a custom amount</h3>
-          <div class="payment-form-grid">
-            <label class="payment-field"><span>Description</span><input id="customName" type="text" maxlength="120" placeholder="Custom item" /></label>
-            <label class="payment-field"><span>Amount</span><span class="money-input"><span>$</span><input id="customAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" /></span></label>
-          </div>
-          <button type="button" class="btn btn-ghost btn-block" id="addCustomLine">Add custom line</button>
-        </div>
-
-        <section class="tap-cart" aria-labelledby="tapCartTitle">
-          <div class="tap-cart-head"><h3 id="tapCartTitle">Current cart</h3><strong id="tapCartTotal">$0.00</strong></div>
-          <p id="tapCartEmpty" class="payment-inline-state">No items added yet.</p>
-          <div id="tapCartLines" class="tap-cart-lines" hidden></div>
-          <button type="button" class="btn btn-ghost btn-block" id="clearTapCart" hidden>Clear cart</button>
-        </section>
-        <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
-        <button class="btn btn-primary btn-block payment-submit" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
-        <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
       </section>
     </main>
   </div>
