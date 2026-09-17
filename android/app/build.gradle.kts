@@ -23,8 +23,8 @@ android {
         applicationId = "com.sandrconcretecrafts.pos"
         minSdk = 33
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1-test"
+        versionCode = 3
+        versionName = "0.1.2-test"
         buildConfigField(
             "String",
             "API_BASE_URL",

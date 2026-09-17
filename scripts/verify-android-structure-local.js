@@ -37,14 +37,16 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 2/);
+assert.match(gradleApp, /versionCode = 3/);
 assert.match(gradleApp, /SIMULATED_READER/);
 
 var tokenProvider = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/SrConnectionTokenProvider.kt"
 );
 assert.match(tokenProvider, /\/api\/admin\/terminal\/connection-token|fetchConnectionToken/);
+assert.match(tokenProvider, /io\.execute/);
 assert.doesNotMatch(tokenProvider, /tml_/);
+assert.doesNotMatch(tokenProvider, /Log\.|println\(|sk_live_/);
 
 var api = read("android/app/src/main/java/com/sandrconcretecrafts/pos/data/SrApi.kt");
 assert.match(api, /\/api\/admin\/terminal\/connection-token/);
@@ -52,6 +54,7 @@ assert.match(api, /\/api\/admin\/terminal\/payment-intent/);
 assert.match(api, /admin_users/);
 assert.doesNotMatch(api, /STRIPE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
 assert.doesNotMatch(api, /tml_[A-Za-z0-9_]{6,}/);
+assert.match(api, /refreshTerminalLocation/);
 
 var controller = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/TerminalController.kt"
@@ -64,7 +67,17 @@ assert.match(controller, /PublicConfig\.simulatedReader/);
 assert.doesNotMatch(controller, /\|\|\s*debuggable/);
 assert.match(controller, /processPaymentIntent/);
 assert.match(controller, /safeDiagnostics/);
+assert.match(controller, /refreshTerminalLocation|awaitLocationId/);
+assert.match(controller, /isSimulated = useSimulatedReader/);
 assert.doesNotMatch(controller, /tml_/);
+
+var viewModel = read(
+  "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectViewModel.kt"
+);
+assert.match(viewModel, /UiState\.Ready/);
+assert.match(viewModel, /terminal\.connect/);
+assert.doesNotMatch(viewModel, /createPaymentIntent/);
+assert.doesNotMatch(viewModel, /collectExisting/);
 
 var collect = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
@@ -73,6 +86,7 @@ assert.match(collect, /TerminalPermissions\.missingRuntimePermissions/);
 assert.match(collect, /checkSelfPermission|missingRuntimePermissions/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
+assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.doesNotMatch(collect, /granted\.values\.all/);
 
 var permissions = read(

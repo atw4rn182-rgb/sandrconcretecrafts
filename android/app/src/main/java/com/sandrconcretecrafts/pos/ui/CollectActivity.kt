@@ -111,6 +111,7 @@ class CollectActivity : AppCompatActivity() {
             is CollectViewModel.UiState.Working -> {
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 binding.amount.text = state.amountLabel
+                binding.status.textSize = 22f
                 binding.status.text = state.title
                 binding.detail.text = state.detail
                 binding.busy.visibility = View.VISIBLE
@@ -119,6 +120,18 @@ class CollectActivity : AppCompatActivity() {
                 binding.cancel.setOnClickListener { viewModel.cancel() }
                 binding.backToPos.visibility = View.GONE
                 binding.openSettings.visibility = View.GONE
+            }
+            is CollectViewModel.UiState.Ready -> {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                binding.amount.text = state.amountLabel
+                binding.status.textSize = 28f
+                binding.status.text = getString(R.string.tap_ready_title)
+                binding.detail.text = getString(R.string.tap_ready_copy)
+                binding.busy.visibility = View.GONE
+                binding.cancel.visibility = View.GONE
+                binding.backToPos.visibility = View.VISIBLE
+                binding.openSettings.visibility = View.GONE
+                binding.backToPos.setOnClickListener { openPayments(null) }
             }
             is CollectViewModel.UiState.Success -> {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -136,7 +149,7 @@ class CollectActivity : AppCompatActivity() {
             is CollectViewModel.UiState.Failed -> {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 binding.amount.text = state.amountLabel
-                binding.status.text = "Payment didn’t finish"
+                binding.status.text = "Tap to Pay didn’t finish"
                 binding.detail.text = state.message
                 binding.busy.visibility = View.GONE
                 binding.cancel.visibility = View.VISIBLE

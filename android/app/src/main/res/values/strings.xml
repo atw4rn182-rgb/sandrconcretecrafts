@@ -11,5 +11,7 @@
     <string name="cancel">Cancel</string>
     <string name="back_to_pos">Back to S&amp;R Payments</string>
     <string name="open_settings">Open Settings</string>
+    <string name="tap_ready_title">Tap to Pay Ready</string>
+    <string name="tap_ready_copy">TEST — Simulated Reader. Initialization succeeded. No payment was taken.</string>
     <string name="config_missing">Add the public Supabase URL and anon key to android/local.properties. Never add secret keys.</string>
 </resources>

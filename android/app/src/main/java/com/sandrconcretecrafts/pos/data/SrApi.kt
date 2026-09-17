@@ -49,20 +49,15 @@ class SrApi(private val session: SessionStore) {
     }
 
     fun fetchConnectionToken(): String {
-        requireActiveAdmin()
-        val json = postJson(
-            "${PublicConfig.apiBaseUrl}/api/admin/terminal/connection-token",
-            JSONObject(),
-            adminHeaders()
-        )
-        val secret = json.optString("secret")
-        val locationId = json.optString("location_id")
-        if (secret.isBlank()) throw IllegalStateException("Stripe returned no connection token.")
-        if (!locationId.startsWith("tml_")) {
-            throw IllegalStateException("Stripe Terminal Location is not configured on the server.")
-        }
-        lastLocationId = locationId
-        return secret
+        val pair = requestConnectionToken()
+        lastLocationId = pair.locationId
+        return pair.secret
+    }
+
+    fun refreshTerminalLocation(): String {
+        val pair = requestConnectionToken()
+        lastLocationId = pair.locationId
+        return pair.locationId
     }
 
     fun createPaymentIntent(sale: JSONObject): PaymentSession {
@@ -84,6 +79,29 @@ class SrApi(private val session: SessionStore) {
 
     fun locationId(): String {
         return lastLocationId ?: throw IllegalStateException("Connect a Terminal session first.")
+    }
+
+    fun awaitLocationId(timeoutMs: Long = 20000): String {
+        lastLocationId?.let { return it }
+        return refreshTerminalLocation()
+    }
+
+    private data class ConnectionTokenPair(val secret: String, val locationId: String)
+
+    private fun requestConnectionToken(): ConnectionTokenPair {
+        requireActiveAdmin()
+        val json = postJson(
+            "${PublicConfig.apiBaseUrl}/api/admin/terminal/connection-token",
+            JSONObject(),
+            adminHeaders()
+        )
+        val secret = json.optString("secret")
+        val locationId = json.optString("location_id")
+        if (secret.isBlank()) throw IllegalStateException("Stripe returned no connection token.")
+        if (!locationId.startsWith("tml_")) {
+            throw IllegalStateException("Stripe Terminal Location is not configured on the server.")
+        }
+        return ConnectionTokenPair(secret, locationId)
     }
 
     private fun adminHeaders(): Map<String, String> {

@@ -7,7 +7,6 @@ import android.location.LocationManager
 import android.nfc.NfcAdapter
 import androidx.core.content.ContextCompat
 import com.sandrconcretecrafts.pos.BuildConfig
-import com.stripe.stripeterminal.Terminal
 
 /**
  * Fresh Android permission/state checks for Stripe Terminal 5.8.1.
@@ -68,20 +67,13 @@ object TerminalPermissions {
     fun safeDiagnostics(context: Context, extra: String = ""): String {
         if (!BuildConfig.SIMULATED_READER) return ""
         val lines = mutableListOf(
-            "TEST diagnostics",
-            "Location fine: ${label(fineLocationGranted(context))}",
-            "Location coarse: ${label(granted(context, Manifest.permission.ACCESS_COARSE_LOCATION))}",
-            "Location services: ${if (locationServicesOn(context)) "on" else "off"}",
-            "Nearby connect: ${label(granted(context, Manifest.permission.BLUETOOTH_CONNECT))}",
-            "Nearby scan: ${label(granted(context, Manifest.permission.BLUETOOTH_SCAN))}",
-            "NFC available: ${if (nfcAvailable(context)) "yes" else "no"}",
-            "NFC enabled: ${if (nfcEnabled(context)) "yes" else "no"}",
-            "Terminal initialized: ${if (Terminal.isInitialized()) "yes" else "no"}",
-            "Simulated reader: yes"
+            "Location: ${if (fineLocationGranted(context)) "Granted" else "Missing"}",
+            "Nearby Devices: ${if (nearbyGranted(context)) "Granted" else "Missing"}",
+            "NFC: ${if (nfcAvailable(context)) "Available" else "Unavailable"}" +
+                if (nfcAvailable(context) && !nfcEnabled(context)) " (off)" else "",
+            "Mode: TEST — Simulated Reader"
         )
         if (extra.isNotBlank()) lines.add(extra)
         return lines.joinToString("\n")
     }
-
-    private fun label(ok: Boolean): String = if (ok) "granted" else "denied"
 }
