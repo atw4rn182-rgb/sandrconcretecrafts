@@ -1,7 +1,6 @@
 package com.sandrconcretecrafts.pos.terminal
 
 import android.app.Application
-import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
@@ -17,12 +16,12 @@ import com.stripe.stripeterminal.external.callable.TapToPayReaderListener
 import com.stripe.stripeterminal.external.callable.TerminalListener
 import com.stripe.stripeterminal.external.models.CollectPaymentIntentConfiguration
 import com.stripe.stripeterminal.external.models.ConfirmPaymentIntentConfiguration
+import com.stripe.stripeterminal.external.models.ConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionStatus
+import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.PaymentIntent
 import com.stripe.stripeterminal.external.models.PaymentStatus
 import com.stripe.stripeterminal.external.models.Reader
-import com.stripe.stripeterminal.external.models.TapToPayConnectionConfiguration
-import com.stripe.stripeterminal.external.models.TapToPayDiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.TapToPayUxConfiguration
 import com.stripe.stripeterminal.external.models.TerminalException
 import com.stripe.stripeterminal.log.LogLevel
@@ -41,6 +40,12 @@ class TerminalController(
     private var paymentCancelable: Cancelable? = null
     @Volatile
     private var connecting = false
+    @Volatile
+    private var discoveryStarted = false
+    @Volatile
+    private var readerDiscovered = false
+    @Volatile
+    private var lastSafeError: String? = null
 
     fun initialize() {
         if (Terminal.isInitialized()) return
@@ -147,12 +152,18 @@ class TerminalController(
         }
         if (connecting) return
         connecting = true
-        val config = TapToPayDiscoveryConfiguration(isSimulated = useSimulatedReader())
+        discoveryStarted = true
+        readerDiscovered = false
+        lastSafeError = null
+        val config = DiscoveryConfiguration.TapToPayDiscoveryConfiguration(
+            isSimulated = useSimulatedReader()
+        )
         discoverCancelable = Terminal.getInstance().discoverReaders(
             config,
             object : DiscoveryListener {
                 override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
                     val reader = readers.firstOrNull() ?: return
+                    readerDiscovered = true
                     connectReader(reader, onReady, onError)
                 }
             },
@@ -161,7 +172,8 @@ class TerminalController(
 
                 override fun onFailure(e: TerminalException) {
                     connecting = false
-                    onError(friendly(e))
+                    lastSafeError = friendly(e)
+                    onError(lastSafeError ?: friendly(e))
                 }
             }
         )
@@ -175,7 +187,7 @@ class TerminalController(
             onError(error.message ?: "Stripe Terminal Location is not configured.")
             return
         }
-        val config = TapToPayConnectionConfiguration(
+        val config = ConnectionConfiguration.TapToPayConnectionConfiguration(
             locationId,
             true,
             object : TapToPayReaderListener {}
@@ -191,20 +203,32 @@ class TerminalController(
 
                 override fun onFailure(e: TerminalException) {
                     connecting = false
-                    onError(friendly(e))
+                    lastSafeError = friendly(e)
+                    onError(lastSafeError ?: friendly(e))
                 }
             }
         )
     }
 
     private fun useSimulatedReader(): Boolean {
-        val debuggable =
-            application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        return PublicConfig.simulatedReader || debuggable
+        // Honor SR_SIMULATED_READER from local.properties. Default remains true.
+        // A real Tap-to-Pay test requires an explicit false rebuild — never inferred.
+        return PublicConfig.simulatedReader
+    }
+
+    fun safeDiagnostics(): String {
+        return listOf(
+            "Discovery started: ${if (discoveryStarted) "yes" else "no"}",
+            "Reader discovered: ${if (readerDiscovered) "yes" else "no"}",
+            lastSafeError?.let { "Last Terminal error: $it" }
+        ).filterNotNull().joinToString("\n")
     }
 
     private fun friendly(error: TerminalException): String {
-        return error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
+        val message = error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
+        val code = error.errorCode.toString().substringAfterLast('.')
+        if (code.isBlank() || message.contains(code)) return message
+        return "$message ($code)"
     }
 
     companion object {

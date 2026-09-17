@@ -60,20 +60,26 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                         if (PublicConfig.simulatedReader) {
                             "Test mode: Stripe’s simulated Tap to Pay reader is in use. No live card is charged."
                         } else {
-                            "Hold the card or phone near the Razr NFC area until it finishes."
+                            "LIVE charge: hold your card or phone to this Pixel until it finishes. Do not tap twice."
                         }
                     )
                 )
                 terminal.connect(
                     onReady = { collectExisting() },
                     onError = { message ->
-                        _state.postValue(UiState.Failed(money(created.amount), message, true))
+                        _state.postValue(
+                            UiState.Failed(money(created.amount), withDiagnostics(message), true)
+                        )
                     }
                 )
             } catch (error: Exception) {
                 started.set(false)
                 _state.postValue(
-                    UiState.Failed(amountLabel, error.message ?: "Couldn’t start Tap to Pay.", true)
+                    UiState.Failed(
+                        amountLabel,
+                        withDiagnostics(error.message ?: "Couldn’t start Tap to Pay."),
+                        true
+                    )
                 )
             }
         }
@@ -101,9 +107,19 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
             },
             onError = { message ->
                 collecting.set(false)
-                _state.postValue(UiState.Failed(money(current.amount), message, true))
+                _state.postValue(UiState.Failed(money(current.amount), withDiagnostics(message), true))
             }
         )
+    }
+
+    fun safeTerminalDiagnostics(): String {
+        return terminal.safeDiagnostics()
+    }
+
+    private fun withDiagnostics(message: String): String {
+        if (!PublicConfig.simulatedReader) return message
+        val extra = terminal.safeDiagnostics()
+        return if (extra.isBlank()) message else message + "\n\n" + extra
     }
 
     override fun onCleared() {

@@ -11,6 +11,6 @@ SR_API_BASE_URL=https://www.sandrconcretecrafts.com
 SR_SUPABASE_URL=
 SR_SUPABASE_ANON_KEY=
 
-# Keep true until Stripe Terminal test mode is proven. A real tap requires false
-# on a release build after Terminal is enabled server-side.
+# Keep true for compile/install verification. Set false only on the one real
+# $1 Tap-to-Pay test rebuild. Never commit a false value.
 SR_SIMULATED_READER=true

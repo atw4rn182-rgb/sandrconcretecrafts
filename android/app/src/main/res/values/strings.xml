@@ -7,8 +7,9 @@
     <string name="password">Password</string>
     <string name="sign_in">Sign in</string>
     <string name="tap_title">Ask the customer to tap</string>
-    <string name="tap_copy">Hold the card or phone near the Razr NFC area until it finishes.</string>
+    <string name="tap_copy">Hold the card or phone to this Pixel until it finishes. Do not tap twice.</string>
     <string name="cancel">Cancel</string>
     <string name="back_to_pos">Back to S&amp;R Payments</string>
+    <string name="open_settings">Open Settings</string>
     <string name="config_missing">Add the public Supabase URL and anon key to android/local.properties. Never add secret keys.</string>
 </resources>

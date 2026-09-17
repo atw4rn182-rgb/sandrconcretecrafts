@@ -28,10 +28,16 @@ var manifest = read("android/app/src/main/AndroidManifest.xml");
 assert.match(manifest, /android:scheme="sandrpos"/);
 assert.match(manifest, /android:host="collect"/);
 assert.match(manifest, /android:name="android.permission.NFC"/);
+assert.match(manifest, /android:name="android.permission.ACCESS_FINE_LOCATION"/);
+assert.match(manifest, /tools:node="replace"/);
+assert.match(manifest, /android:name="android.permission.BLUETOOTH_CONNECT"/);
+assert.match(manifest, /android:name="android.permission.BLUETOOTH_SCAN"/);
+assert.doesNotMatch(manifest, /ACCESS_FINE_LOCATION[\s\S]{0,80}maxSdkVersion/);
 assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="false"/);
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
+assert.match(gradleApp, /versionCode = 2/);
 assert.match(gradleApp, /SIMULATED_READER/);
 
 var tokenProvider = read(
@@ -54,8 +60,28 @@ assert.match(controller, /Terminal\.init\(/);
 assert.doesNotMatch(controller, /initTerminal/);
 assert.match(controller, /TapToPayDiscoveryConfiguration/);
 assert.match(controller, /isSimulated/);
+assert.match(controller, /PublicConfig\.simulatedReader/);
+assert.doesNotMatch(controller, /\|\|\s*debuggable/);
 assert.match(controller, /processPaymentIntent/);
+assert.match(controller, /safeDiagnostics/);
 assert.doesNotMatch(controller, /tml_/);
+
+var collect = read(
+  "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
+);
+assert.match(collect, /TerminalPermissions\.missingRuntimePermissions/);
+assert.match(collect, /checkSelfPermission|missingRuntimePermissions/);
+assert.match(collect, /override fun onResume/);
+assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
+assert.doesNotMatch(collect, /granted\.values\.all/);
+
+var permissions = read(
+  "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/TerminalPermissions.kt"
+);
+assert.match(permissions, /ACCESS_FINE_LOCATION/);
+assert.match(permissions, /BLUETOOTH_CONNECT/);
+assert.match(permissions, /checkSelfPermission/);
+assert.doesNotMatch(permissions, /client_secret|sk_live_|whsec_/);
 
 var files = [];
 walk(path.join(root, "android"), files);
@@ -81,4 +107,25 @@ files.forEach(function (file) {
 });
 
 assert.doesNotMatch(read("api/create-checkout-session.js"), /sandrpos/);
+
+var merged = path.join(
+  root,
+  "android",
+  "app",
+  "build",
+  "intermediates",
+  "merged_manifest",
+  "debug",
+  "processDebugMainManifest",
+  "AndroidManifest.xml"
+);
+if (fs.existsSync(merged)) {
+  var mergedXml = fs.readFileSync(merged, "utf8");
+  assert.match(mergedXml, /android:name="android.permission.ACCESS_FINE_LOCATION"/);
+  assert.doesNotMatch(
+    mergedXml,
+    /ACCESS_FINE_LOCATION"[\s\S]{0,80}maxSdkVersion/
+  );
+}
+
 console.log("android companion structure, 5.8.1 SDK pair, and secret hygiene: ok");

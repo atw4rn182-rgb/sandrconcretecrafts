@@ -48,6 +48,17 @@
             android:textColor="@color/brown"
             android:textSize="16sp" />
 
+        <TextView
+            android:id="@+id/diagnostics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:gravity="start"
+            android:textColor="@color/brown"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
         <ProgressBar
             android:id="@+id/busy"
             android:layout_width="48dp"
@@ -72,6 +83,16 @@
             android:layout_height="64dp"
             android:layout_marginTop="12dp"
             android:text="@string/back_to_pos"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openSettings"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/open_settings"
             android:textSize="18sp"
             android:visibility="gone" />
     </LinearLayout>
