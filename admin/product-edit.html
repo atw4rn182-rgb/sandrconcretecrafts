@@ -79,7 +79,7 @@
             </div>
             <div class="store-card-body">
               <h3 id="previewTitle">Product title</h3>
-              <p class="store-card-desc" id="previewDesc">Short description appears here.</p>
+              <p class="store-card-desc" id="previewDesc" hidden></p>
               <div class="store-card-foot">
                 <div class="store-card-prices">
                   <span class="price" id="previewPrice">$0.00</span>
@@ -103,8 +103,8 @@
                 <input id="title" name="title" required maxlength="120" placeholder="e.g. Succulent Planter" />
               </div>
               <div class="field">
-                <label for="description">Description <span class="req">*</span></label>
-                <textarea id="description" name="description" rows="5" required maxlength="4000" placeholder="Tell customers about your product…"></textarea>
+                <label for="description">Description <span class="optional">optional</span></label>
+                <textarea id="description" name="description" rows="5" maxlength="4000" placeholder="Measurements and details can be added later"></textarea>
               </div>
               <div class="form-grid-2">
                 <div class="field">

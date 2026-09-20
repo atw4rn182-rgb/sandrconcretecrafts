@@ -140,9 +140,15 @@
   function updatePreview() {
     var data = readForm();
     var title = String(data.title || "").trim() || "Product title";
-    var desc = String(data.description || "").trim() || "Short description appears here.";
+    var desc = String(data.description || "").trim();
     $("previewTitle").textContent = title;
-    $("previewDesc").textContent = desc.length > 140 ? desc.slice(0, 137) + "…" : desc;
+    if (desc) {
+      $("previewDesc").hidden = false;
+      $("previewDesc").textContent = desc.length > 140 ? desc.slice(0, 137) + "…" : desc;
+    } else {
+      $("previewDesc").hidden = true;
+      $("previewDesc").textContent = "";
+    }
 
     var priceParsed = SRCatalog.parseMoneyInput(data.price, { required: false, label: "Raw Concrete price" });
     var paintedParsed = SRCatalog.parseMoneyInput(data.painted_price, {

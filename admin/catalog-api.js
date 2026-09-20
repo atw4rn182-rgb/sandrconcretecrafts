@@ -258,7 +258,6 @@
     var itemNo = String(input.item_no || "").trim() || null;
 
     if (!title) errors.push("Please add a product title.");
-    if (!description) errors.push("Please add a short description.");
     if (!priceParsed.ok) errors.push(priceParsed.error);
     if (!paintedParsed.ok) errors.push(paintedParsed.error);
     if (paintedParsed.ok && painted != null && painted <= 0) {
@@ -293,7 +292,7 @@
       errors.push("Choose a valid product type.");
     }
     if ((opts && opts.publishing) || status === "published") {
-      if (!title || !description) {
+      if (!title) {
         /* already covered */
       }
       if (imageCount < 1) errors.push("Add at least one photo before publishing.");

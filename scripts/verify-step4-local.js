@@ -79,6 +79,18 @@ assert(indexHtml.includes("storefront-catalog.js"), "index loads storefront cata
 assert(!indexHtml.includes("USE_LIVE_CATALOG"), "index does not hardcode live flag");
 assert(indexHtml.includes("No order was placed"), "checkout honesty copy present");
 
+const editHtml = fs.readFileSync(path.join(root, "admin/product-edit.html"), "utf8");
+assert(!/id="description"[^>]*required/.test(editHtml), "description field is not required");
+assert(
+  appJs.includes('String(p.desc || "").trim()') &&
+    appJs.includes('? \'<p class="card-desc">\'') &&
+    appJs.includes(": \"\""),
+  "storefront omits empty product descriptions"
+);
+assert(appJs.includes("descEl.hidden = true"), "quick view hides empty descriptions");
+assert(appJs.includes("canPurchase"), "sold-out items stay non-purchasable");
+assert(appJs.includes("card--sold-out"), "sold-out badge styling remains");
+
 require("child_process").execSync("node scripts/write-public-env.js", {
   cwd: root,
   stdio: "pipe",

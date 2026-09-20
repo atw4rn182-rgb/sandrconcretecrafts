@@ -66,6 +66,38 @@ assert.strictEqual(
   false
 );
 
+checked = admin.validateProductInput(validProduct({ description: "" }));
+assert.strictEqual(checked.ok, true, "blank description is allowed");
+assert.strictEqual(checked.value.description, "");
+
+checked = admin.validateProductInput(validProduct({ description: "   " }));
+assert.strictEqual(checked.ok, true, "whitespace-only description is stored empty");
+assert.strictEqual(checked.value.description, "");
+
+checked = admin.validateProductInput(
+  validProduct({
+    description: "",
+    quantity: "0",
+    status: "sold_out",
+    track_inventory: true,
+    imageCount: 1,
+  })
+);
+assert.strictEqual(checked.ok, true, "sold-out showcase can start at zero inventory");
+
+assert.strictEqual(
+  admin.validateProductInput(
+    validProduct({
+      quantity: "0",
+      status: "published",
+      track_inventory: true,
+    }),
+    { publishing: true }
+  ).ok,
+  false,
+  "published tracked items still need stock"
+);
+
 const serverCatalog = require(path.join(root, "api/_lib/supabase-catalog.js"));
 const product = {
   title: "Skull Planter",
@@ -90,6 +122,15 @@ assert.strictEqual(serverCatalog.assertPurchasable(product, 2, "raw").ok, true);
 assert.strictEqual(serverCatalog.assertPurchasable(product, 2, "painted").ok, true);
 assert.strictEqual(serverCatalog.assertPurchasable(product, 4, "raw").ok, false);
 assert.strictEqual(serverCatalog.assertPurchasable(product, 1, "custom").ok, false);
+assert.strictEqual(
+  serverCatalog.assertPurchasable(
+    Object.assign({}, product, { status: "sold_out", quantity: 0 }),
+    1,
+    "raw"
+  ).ok,
+  false,
+  "sold-out showcase items cannot be purchased"
+);
 
 const app = read("app.js");
 const checkout = read("api/create-checkout-session.js");

@@ -686,9 +686,9 @@
             ? '<span class="card-item">Item #' + esc(p.itemNo) + "</span>"
             : "") +
           lowStock +
-          '<p class="card-desc">' +
-          esc(shortDesc(p.desc)) +
-          "</p>" +
+          (String(p.desc || "").trim()
+            ? '<p class="card-desc">' + esc(shortDesc(p.desc)) + "</p>"
+            : "") +
           '<div class="card-foot">' +
           '<div class="card-prices">' +
           priceHtml(p) +
@@ -1115,7 +1115,15 @@
       finishChoice.hidden = true;
       $("#modalPrice").textContent = money(unitPrice(modalProduct, "raw"));
     }
-    $("#modalDesc").textContent = modalProduct.desc;
+    var descEl = $("#modalDesc");
+    var fullDesc = String(modalProduct.desc || "").trim();
+    if (fullDesc) {
+      descEl.hidden = false;
+      descEl.textContent = fullDesc;
+    } else {
+      descEl.hidden = true;
+      descEl.textContent = "";
+    }
     const tagEl = $("#modalTag");
     tagEl.textContent =
       modalProduct.tag ||
