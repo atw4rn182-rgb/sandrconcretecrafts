@@ -4247,6 +4247,154 @@ body.action-sheet-open { overflow: hidden; }
   font-size: 1.12rem;
 }
 
+.tap-entry-tabs {
+  margin: 0 0 1rem;
+}
+
+.pos-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.pos-keypad button {
+  min-height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--charcoal);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.pos-quick-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+}
+
+.pos-quick-actions .btn {
+  min-height: 52px;
+}
+
+.pos-quick-lines {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+}
+
+.pos-quick-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pos-adjust {
+  margin: 1rem 0 1.1rem;
+}
+
+.pos-discount-row {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+}
+
+.pos-discount-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pos-discount-btns .payment-tab,
+.pos-discount-btns .btn {
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+}
+
+.pos-totals {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+}
+
+.pos-totals > div,
+.pos-receipt dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pos-totals-grand,
+.pos-receipt-total {
+  padding-top: 0.45rem;
+  border-top: 2px solid var(--charcoal);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.pos-total-banner {
+  margin: 0 0 0.7rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: #2c2118;
+  color: #fff8ef;
+  font-size: 1.55rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.pos-receipt-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+
+.pos-receipt {
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.pos-receipt header {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 0.85rem;
+  text-align: center;
+}
+
+.pos-receipt ul {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.pos-receipt li,
+.pos-receipt dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.28rem 0;
+}
+
+.pos-receipt p {
+  margin: 0.35rem 0 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.order-delete-btn {
+  color: #8a2a1d;
+}
+
 .tap-catalog-details {
   margin: 0 0 0.2rem;
   border: 1px solid var(--border);

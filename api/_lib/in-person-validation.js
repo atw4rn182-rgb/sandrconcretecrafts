@@ -131,6 +131,9 @@ function normalizeSale(input, options) {
   if (!Array.isArray(items) || items.length < 1 || items.length > 100) {
     invalid("items must contain 1 to 100 lines.", "items");
   }
+  var discountMilli =
+    row.discount_milli == null ? 0 : cents(row.discount_milli, "discount_milli", 0, 100000);
+  var taxMilli = row.tax_milli == null ? 0 : cents(row.tax_milli, "tax_milli", 0, 200000);
   var normalized = {
     sold_at: soldAt(row.sold_at, options && options.nowMs),
     idempotency_key: idempotencyKey(row.idempotency_key, "idempotency_key"),
@@ -139,6 +142,12 @@ function normalizeSale(input, options) {
     customer_email: optionalEmail(row.customer_email, "customer_email"),
     customer_phone: optionalText(row.customer_phone, "customer_phone", 40),
     receipt_email: optionalEmail(row.receipt_email, "receipt_email"),
+    discount_milli: discountMilli,
+    tax_milli: taxMilli,
+    amount_total_cents:
+      row.amount_total_cents == null
+        ? null
+        : cents(row.amount_total_cents, "amount_total_cents", 1, 100000000),
     items: items.map(lineItem),
   };
   return normalized;

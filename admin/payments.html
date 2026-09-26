@@ -44,9 +44,10 @@
       <div class="flash" id="paymentStatus" hidden role="status" aria-live="polite"></div>
       <section class="payment-panel receipt-success" id="receiptSuccess" hidden aria-labelledby="receiptSuccessTitle">
         <div class="payment-panel-head">
-          <div><p class="payment-eyebrow">Sale complete</p><h2 id="receiptSuccessTitle">Send a receipt</h2></div>
+          <div><p class="payment-eyebrow">Sale complete</p><h2 id="receiptSuccessTitle">Receipt</h2></div>
         </div>
-        <p class="payment-intro">The sale is safely recorded. Emailing a receipt is optional and will not change the sale.</p>
+        <p class="payment-intro">Screenshot this receipt to text it. Email is optional and will not change the sale.</p>
+        <div id="posReceiptList" class="pos-receipt-list"></div>
         <div id="receiptOrderList" class="receipt-order-list"></div>
       </section>
 
@@ -59,7 +60,7 @@
         </a>
         <a class="payment-choice-card payment-choice-card--tap" href="#tapPayment">
           <span class="payment-choice-icon" aria-hidden="true">▰</span>
-          <span><strong>Tap to Pay</strong><small>Type an amount or select website products</small></span>
+          <span><strong>Tap to Pay</strong><small>Quick-sale calculator or website products</small></span>
           <span class="payment-choice-arrow" aria-hidden="true">›</span>
         </a>
       </section>
@@ -131,8 +132,13 @@
           <p>Enter an amount here. Taking an NFC payment requires the S&amp;R Tap to Pay app on this Pixel.</p>
         </div>
 
+        <div class="payment-mode-tabs tap-entry-tabs" role="group" aria-label="Tap to Pay entry mode">
+          <button type="button" class="payment-tab is-active" id="tapQuickModeBtn" aria-pressed="true">Quick Sale</button>
+          <button type="button" class="payment-tab" id="tapCatalogModeBtn" aria-pressed="false">Website Products</button>
+        </div>
+
         <section class="tap-quick" id="tapQuickAmount" aria-labelledby="quickAmountTitle">
-          <h3 id="quickAmountTitle">Enter Amount</h3>
+          <h3 id="quickAmountTitle">Quick Sale</h3>
           <label class="tap-amount-field">
             <span class="sr-only">Amount in dollars</span>
             <span class="tap-amount-input">
@@ -140,19 +146,34 @@
               <input id="quickAmount" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="transaction-amount" placeholder="0.00" />
             </span>
           </label>
+          <div class="pos-keypad" id="posKeypad">
+            <button type="button" data-pos-key="1">1</button>
+            <button type="button" data-pos-key="2">2</button>
+            <button type="button" data-pos-key="3">3</button>
+            <button type="button" data-pos-key="4">4</button>
+            <button type="button" data-pos-key="5">5</button>
+            <button type="button" data-pos-key="6">6</button>
+            <button type="button" data-pos-key="7">7</button>
+            <button type="button" data-pos-key="8">8</button>
+            <button type="button" data-pos-key="9">9</button>
+            <button type="button" data-pos-key=".">.</button>
+            <button type="button" data-pos-key="0">0</button>
+            <button type="button" data-pos-key="back" aria-label="Backspace">⌫</button>
+          </div>
+          <div class="pos-quick-actions">
+            <button type="button" class="btn btn-primary btn-block" id="addQuickLine">Add</button>
+            <button type="button" class="btn btn-ghost btn-block" id="clearQuickSale">Clear Sale</button>
+          </div>
+          <div id="quickLines" class="pos-quick-lines"></div>
           <label class="payment-field tap-quick-note">
             <span>Sale note (optional)</span>
             <input id="quickSaleNote" type="text" maxlength="120" placeholder="2 painted pumpkins" autocomplete="off" />
           </label>
-          <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
-          <p class="tap-charge-source" id="tapChargeSource" aria-live="polite">Enter an amount or select website products. Only one total is charged.</p>
-          <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">Take Payment — Native App Required</button>
-          <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
         </section>
 
         <details class="tap-catalog-details" id="tapCatalogDetails">
           <summary>Select Products from Website</summary>
-          <p class="payment-help">Catalog prices set the total. This does not add to a typed amount.</p>
+          <p class="payment-help">Catalog prices replace a Quick Sale total. They are not added together.</p>
           <label class="payment-field catalog-search-field">
             <span>Search catalog products</span>
             <input id="catalogSearch" type="search" autocomplete="off" placeholder="Search by product name or item number" />
@@ -168,6 +189,33 @@
             <button type="button" class="btn btn-ghost btn-block" id="clearTapCart" hidden>Clear cart</button>
           </section>
         </details>
+
+        <section class="pos-adjust" id="posAdjust" aria-label="Discount, tax, and total">
+          <div class="pos-discount-row">
+            <span>Discount</span>
+            <div class="pos-discount-btns">
+              <button type="button" class="payment-tab" data-discount-milli="5000">5%</button>
+              <button type="button" class="payment-tab" data-discount-milli="10000">10%</button>
+              <button type="button" class="payment-tab" id="customDiscountBtn">Custom %</button>
+              <button type="button" class="btn btn-ghost btn-small" id="clearDiscountBtn">Remove</button>
+            </div>
+          </div>
+          <label class="payment-field" id="customDiscountField" hidden>
+            <span>Custom discount %</span>
+            <input id="customDiscountInput" type="text" inputmode="decimal" autocomplete="off" placeholder="12.5" />
+          </label>
+          <dl class="pos-totals">
+            <div><dt>Subtotal</dt><dd id="posSubtotal">$0.00</dd></div>
+            <div id="posDiscountRow" hidden><dt id="posDiscountLabel">Discount</dt><dd id="posDiscount">$0.00</dd></div>
+            <div><dt id="posTaxLabel">Tax</dt><dd id="posTax">$0.00</dd></div>
+            <div class="pos-totals-grand"><dt>TOTAL</dt><dd id="posGrandTotal">$0.00</dd></div>
+          </dl>
+          <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
+          <p class="tap-charge-source" id="tapChargeSource" aria-live="polite">Enter amounts or select website products. Only one total is charged.</p>
+          <p class="pos-total-banner" id="posTotalBanner">TOTAL: $0.00</p>
+          <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">TAKE PAYMENT — Native App Required</button>
+          <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
+        </section>
 
         <section class="pos-app-card" id="posAppCard" aria-labelledby="posAppTitle">
           <div class="pos-app-card-head">
@@ -201,7 +249,9 @@
   <script src="/js/supabase-client.js"></script>
   <script src="/admin/admin-auth.js"></script>
   <script src="/admin/admin-shell.js"></script>
+  <script src="/js/store-settings.js"></script>
   <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/pos-totals.js"></script>
   <script src="/admin/payments.js"></script>
 </body>
 </html>

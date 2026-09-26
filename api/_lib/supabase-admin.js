@@ -98,6 +98,15 @@ async function recordInPersonSale(adminUserId, paymentSource, sale) {
     p_receipt_email: sale.receipt_email,
     p_stripe_payment_intent: sale.stripe_payment_intent || null,
     p_items: sale.items,
+    p_discount_milli: sale.discount_milli || 0,
+    p_tax_milli: sale.tax_milli || 0,
+  });
+}
+
+async function deleteAdminOrder(adminUserId, orderId) {
+  return rpc("admin_delete_order", {
+    p_order_id: orderId,
+    p_recorded_by: adminUserId,
   });
 }
 
@@ -264,6 +273,7 @@ module.exports = {
   updateOrderPaymentStatusByPaymentIntent: updateOrderPaymentStatusByPaymentIntent,
   recordCashSalesBatch: recordCashSalesBatch,
   recordInPersonSale: recordInPersonSale,
+  deleteAdminOrder: deleteAdminOrder,
   attachTerminalPaymentIntent: attachTerminalPaymentIntent,
   confirmTapToPayPayment: confirmTapToPayPayment,
   getPaidOrderForReceipt: getPaidOrderForReceipt,

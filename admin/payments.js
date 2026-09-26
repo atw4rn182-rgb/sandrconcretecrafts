@@ -9,9 +9,14 @@
   var products = [];
   var batchRows = [];
   var tapLines = [];
+  var quickLines = [];
   var tapMode = "quick";
+  var discountMilli = 0;
+  var taxMilli = 0;
+  var customDiscountOpen = false;
   var tapIdempotencyKey = null;
   var tapSubmitting = false;
+  var RECEIPT_STORE_KEY = "sr_pos_last_receipt";
   var singleSubmitting = false;
   var batchSubmitting = false;
   var adminSession = null;
@@ -173,8 +178,8 @@
     try {
       var result = await postCashSales([sale]);
       resetSingle();
-      showReceiptOptions((result && result.orders) || [], [sale]);
-      announce("Cash sale recorded. You can send a receipt now or continue.", "ok");
+      showReceiptOptions((result && result.orders) || [], [sale], "cash");
+      announce("Cash sale recorded. You can screenshot the receipt now.", "ok");
     } catch (err) {
       setError("singleError", err.message || "Couldn’t record the cash sale.");
     } finally {
@@ -323,8 +328,8 @@
     try {
       var result = await postCashSales(sales);
       resetBatch();
-      showReceiptOptions((result && result.orders) || [], sales);
-      announce(sales.length + " cash sales recorded. Receipts are optional.", "ok");
+      showReceiptOptions((result && result.orders) || [], sales, "cash");
+      announce(sales.length + " cash sales recorded. You can screenshot the receipts now.", "ok");
     } catch (err) {
       setError("batchError", err.message || "Couldn’t record the cash batch.");
     } finally {
@@ -380,7 +385,149 @@
     }
   }
 
-  function showReceiptOptions(orders, submittedSales) {
+  function methodLabel(method) {
+    if (method === "cash") return "Cash";
+    if (method === "tap_to_pay") return "Tap to Pay";
+    if (method === "online") return "Online";
+    return "Paid";
+  }
+
+  function receiptNumber(orderId) {
+    var id = String(orderId || "").replace(/-/g, "");
+    return id ? "SR-" + id.slice(0, 8).toUpperCase() : "SR-SALE";
+  }
+
+  function saleLinesForReceipt(sale) {
+    return ((sale && sale.items) || []).map(function (item) {
+      if (item.type === "custom") {
+        return {
+          name: item.name || "Sale",
+          detail: "",
+          cents: Number(item.unit_amount_cents) * (Number(item.quantity) || 1),
+        };
+      }
+      return {
+        name: item.name || "Website product",
+        detail: item.finish === "painted" ? "Painted" : item.finish === "raw" ? "Raw" : "",
+        cents: Number(item.unit_amount_cents || 0) * (Number(item.quantity) || 1),
+      };
+    });
+  }
+
+  function receiptSaleFromState(sale, quote) {
+    var copy = Object.assign({}, sale);
+    if (tapMode === "catalog") {
+      copy.items = tapLines.map(function (line) {
+        return {
+          type: "custom",
+          name: line.product.title,
+          finish: line.finish,
+          unit_amount_cents: lineUnitCents(line),
+          quantity: line.quantity,
+        };
+      });
+    }
+    copy.discount_milli = quote.discountMilli;
+    copy.tax_milli = quote.taxMilli;
+    return copy;
+  }
+
+  function quoteFromSale(sale) {
+    var lines = ((sale && sale.items) || []).map(function (item) {
+      return Number(item.unit_amount_cents || 0) * (Number(item.quantity) || 1);
+    });
+    return SRPosTotals.quote({
+      lines: lines,
+      discountMilli: sale && sale.discount_milli,
+      taxMilli: sale && sale.tax_milli,
+    });
+  }
+
+  function writeReceiptStore(payload) {
+    try {
+      window.sessionStorage.setItem(RECEIPT_STORE_KEY, JSON.stringify(payload));
+    } catch (_err) {
+      /* ignore quota / private mode */
+    }
+  }
+
+  function readReceiptStore() {
+    try {
+      var raw = window.sessionStorage.getItem(RECEIPT_STORE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function renderPosReceipts(orders, submittedSales, method) {
+    var wrap = byId("posReceiptList");
+    if (!wrap) return;
+    wrap.innerHTML = orders
+      .map(function (order, index) {
+        var sale = submittedSales[index] || {};
+        var quote = quoteFromSale(sale);
+        if (!quote.total && Number(order.amount_total) > 0) {
+          quote = {
+            subtotal: Number(order.amount_total),
+            discount: 0,
+            discountMilli: 0,
+            tax: 0,
+            taxMilli: 0,
+            total: Number(order.amount_total),
+          };
+        }
+        var when = sale.sold_at ? new Date(sale.sold_at) : new Date();
+        var lines = saleLinesForReceipt(sale);
+        if (!lines.length && quote.total) {
+          lines = [{ name: "Sale", detail: "", cents: quote.total }];
+        }
+        return (
+          '<article class="pos-receipt">' +
+          "<header><strong>S&amp;R Concrete Crafts</strong><span>Receipt " +
+          escapeHtml(receiptNumber(order.id)) +
+          "</span><span>" +
+          escapeHtml(when.toLocaleString()) +
+          "</span></header><ul>" +
+          lines
+            .map(function (line) {
+              return (
+                "<li><span>" +
+                escapeHtml(line.name) +
+                (line.detail ? " <small>" + escapeHtml(line.detail) + "</small>" : "") +
+                "</span><strong>" +
+                money(line.cents) +
+                "</strong></li>"
+              );
+            })
+            .join("") +
+          '</ul><dl><div><dt>Subtotal</dt><dd>' +
+          money(quote.subtotal) +
+          "</dd></div>" +
+          (quote.discount
+            ? "<div><dt>Discount " +
+              escapeHtml(SRPosTotals.percentLabel(quote.discountMilli)) +
+              "%</dt><dd>-" +
+              money(quote.discount) +
+              "</dd></div>"
+            : "") +
+          "<div><dt>Tax" +
+          (quote.taxMilli
+            ? " " + escapeHtml(SRPosTotals.percentLabel(quote.taxMilli)) + "%"
+            : "") +
+          "</dt><dd>" +
+          money(quote.tax) +
+          "</dd></div><div class=\"pos-receipt-total\"><dt>TOTAL PAID</dt><dd>" +
+          money(order.amount_total || quote.total) +
+          "</dd></div></dl><p>Payment method: " +
+          escapeHtml(methodLabel(method)) +
+          "</p><p>Payment status: Paid</p></article>"
+        );
+      })
+      .join("");
+  }
+
+  function showReceiptOptions(orders, submittedSales, method) {
     var panel = byId("receiptSuccess");
     var list = byId("receiptOrderList");
     if (!orders.length) {
@@ -388,6 +535,12 @@
       return;
     }
     panel.hidden = false;
+    writeReceiptStore({
+      orders: orders,
+      sales: submittedSales,
+      method: method || "cash",
+    });
+    renderPosReceipts(orders, submittedSales, method || "cash");
     list.innerHTML = orders.map(function (order, index) {
       var sale = submittedSales[index] || {};
       return (
@@ -395,7 +548,7 @@
         escapeHtml(order.id) +
         '"><div class="receipt-order-summary"><strong>' +
         money(order.amount_total) +
-        '</strong><span>Cash sale ' +
+        '</strong><span>Sale ' +
         (orders.length > 1 ? index + 1 : "") +
         '</span></div><label class="payment-field"><span>Receipt email</span>' +
         '<input type="email" maxlength="254" autocomplete="email" data-receipt-email value="' +
@@ -505,6 +658,7 @@
 
   function addProductLine(product, finish) {
     if (!product) return;
+    setTapMode("catalog", { preserve: true });
     var existing = tapLines.find(function (line) {
       return line.type === "product" && line.product.id === product.id && line.finish === finish;
     });
@@ -520,11 +674,6 @@
         quantity: 1,
       });
     }
-    tapMode = "catalog";
-    var amount = byId("quickAmount");
-    if (amount) amount.value = "";
-    var details = byId("tapCatalogDetails");
-    if (details) details.open = true;
     setError("tapError", "");
     renderTapCart();
   }
@@ -540,27 +689,217 @@
     return note || null;
   }
 
-  function onQuickAmountInput() {
-    var cents = quickAmountCents();
-    if (cents != null) {
-      tapMode = "quick";
-      var details = byId("tapCatalogDetails");
-      if (details) details.open = false;
-      if (tapLines.length) {
-        tapLines = [];
-        renderTapCart();
+  function quickLineCents() {
+    return quickLines.map(function (line) {
+      return line.unitAmountCents;
+    });
+  }
+
+  function catalogLineCents() {
+    return tapLines.map(function (line) {
+      return lineUnitCents(line) * line.quantity;
+    });
+  }
+
+  function activeLineCents() {
+    return tapMode === "catalog" ? catalogLineCents() : quickLineCents();
+  }
+
+  function currentQuote() {
+    return SRPosTotals.quote({
+      lines: activeLineCents(),
+      discountMilli: discountMilli,
+      taxMilli: taxMilli,
+    });
+  }
+
+  function setTapMode(mode, options) {
+    var next = mode === "catalog" ? "catalog" : "quick";
+    var preserve = options && options.preserve;
+    if (next !== tapMode && !preserve) {
+      var losing = next === "catalog" ? quickLines.length : tapLines.length;
+      if (
+        losing &&
+        !window.confirm("Switch modes? The current sale amounts will be cleared so totals do not mix.")
+      ) {
         return;
       }
+      if (next === "catalog") {
+        quickLines = [];
+        var amount = byId("quickAmount");
+        if (amount) amount.value = "";
+      } else {
+        tapLines = [];
+      }
+      tapIdempotencyKey = newKey("tap");
     }
+    tapMode = next;
+    var quick = byId("tapQuickAmount");
+    var catalog = byId("tapCatalogDetails");
+    var quickBtn = byId("tapQuickModeBtn");
+    var catalogBtn = byId("tapCatalogModeBtn");
+    if (quick) quick.hidden = tapMode === "catalog";
+    if (catalog) {
+      catalog.hidden = tapMode === "quick";
+      catalog.open = tapMode === "catalog";
+    }
+    if (quickBtn) {
+      quickBtn.classList.toggle("is-active", tapMode === "quick");
+      quickBtn.setAttribute("aria-pressed", tapMode === "quick" ? "true" : "false");
+    }
+    if (catalogBtn) {
+      catalogBtn.classList.toggle("is-active", tapMode === "catalog");
+      catalogBtn.setAttribute("aria-pressed", tapMode === "catalog" ? "true" : "false");
+    }
+    if (!preserve) {
+      setError("tapError", "");
+      renderQuickLines();
+      renderTapCart();
+    }
+  }
+
+  function renderQuickLines() {
+    var wrap = byId("quickLines");
+    if (!wrap) return;
+    if (!quickLines.length) {
+      wrap.innerHTML = '<p class="payment-inline-state">No amounts added yet.</p>';
+      return;
+    }
+    wrap.innerHTML = quickLines
+      .map(function (line, index) {
+        return (
+          '<article class="pos-quick-line" data-quick-key="' +
+          escapeHtml(line.key) +
+          '"><span>Item ' +
+          (index + 1) +
+          "</span><strong>" +
+          money(line.unitAmountCents) +
+          '</strong><button type="button" class="tap-line-remove" data-remove-quick aria-label="Remove item ' +
+          (index + 1) +
+          '">Remove</button></article>'
+        );
+      })
+      .join("");
+    wrap.querySelectorAll("[data-remove-quick]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var root = button.closest("[data-quick-key]");
+        var key = root && root.getAttribute("data-quick-key");
+        quickLines = quickLines.filter(function (line) {
+          return line.key !== key;
+        });
+        tapIdempotencyKey = newKey("tap");
+        renderQuickLines();
+        updateTakePaymentButton();
+      });
+    });
+  }
+
+  function addQuickLine() {
+    setTapMode("quick", { preserve: true });
+    var cents = quickAmountCents();
+    if (cents == null) {
+      setError("tapError", "Enter an amount from $0.01 to $10,000.00, then tap Add.");
+      if (byId("quickAmount")) byId("quickAmount").focus();
+      return;
+    }
+    if (quickLines.length >= 100) {
+      setError("tapError", "This sale already has the maximum number of amounts.");
+      return;
+    }
+    quickLines.push({
+      key: newKey("tap-quick"),
+      unitAmountCents: cents,
+    });
+    var amount = byId("quickAmount");
+    if (amount) {
+      amount.value = "";
+      amount.focus();
+    }
+    setError("tapError", "");
+    tapIdempotencyKey = newKey("tap");
+    renderQuickLines();
     updateTakePaymentButton();
   }
 
-  function resetQuickAmount() {
-    tapMode = "quick";
+  function clearQuickSale(force) {
+    if (
+      !force &&
+      (quickLines.length || byId("quickAmount").value || discountMilli) &&
+      !window.confirm("Clear this Quick Sale? Entered amounts and the discount will be removed.")
+    ) {
+      return;
+    }
+    quickLines = [];
+    discountMilli = 0;
+    customDiscountOpen = false;
     var amount = byId("quickAmount");
     var note = byId("quickSaleNote");
+    var custom = byId("customDiscountInput");
     if (amount) amount.value = "";
     if (note) note.value = "";
+    if (custom) custom.value = "";
+    if (byId("customDiscountField")) byId("customDiscountField").hidden = true;
+    tapIdempotencyKey = newKey("tap");
+    setError("tapError", "");
+    renderQuickLines();
+    updateDiscountButtons();
+    updateTakePaymentButton();
+  }
+
+  function onQuickAmountInput() {
+    setError("tapError", "");
+  }
+
+  function appendKeypad(key) {
+    var input = byId("quickAmount");
+    if (!input) return;
+    var current = String(input.value || "");
+    if (key === "back") {
+      input.value = current.slice(0, -1);
+    } else if (key === ".") {
+      if (current.indexOf(".") === -1) input.value = (current || "0") + ".";
+    } else {
+      var next = current + key;
+      if (/^\d{0,7}(?:\.\d{0,2})?$/.test(next)) input.value = next;
+    }
+    onQuickAmountInput();
+  }
+
+  function updateDiscountButtons() {
+    document.querySelectorAll("[data-discount-milli]").forEach(function (button) {
+      button.classList.toggle(
+        "is-active",
+        !customDiscountOpen && Number(button.getAttribute("data-discount-milli")) === discountMilli
+      );
+    });
+    var customBtn = byId("customDiscountBtn");
+    if (customBtn) customBtn.classList.toggle("is-active", customDiscountOpen);
+    if (byId("customDiscountField")) {
+      byId("customDiscountField").hidden = !customDiscountOpen;
+    }
+  }
+
+  function applyDiscountMilli(value, custom) {
+    discountMilli = SRPosTotals.clampDiscountMilli(value);
+    customDiscountOpen = !!custom;
+    tapIdempotencyKey = newKey("tap");
+    updateDiscountButtons();
+    updateTakePaymentButton();
+  }
+
+  function applyCustomDiscount() {
+    var parsed = SRPosTotals.parsePercentToMilli(byId("customDiscountInput").value);
+    if (!parsed.ok) {
+      setError("tapError", parsed.error || "Enter a discount from 0% to 100%.");
+      return;
+    }
+    setError("tapError", "");
+    applyDiscountMilli(parsed.value, true);
+  }
+
+  function resetQuickAmount() {
+    setTapMode("quick");
+    clearQuickSale(true);
   }
 
   function lineUnitCents(line) {
@@ -725,19 +1064,19 @@
   function tapSalePayload() {
     if (!tapIdempotencyKey) tapIdempotencyKey = newKey("tap");
     var note = quickSaleNote();
+    var quote = currentQuote();
     var items;
     if (tapMode === "catalog") {
       items = trustedTapPayload();
     } else {
-      var cents = quickAmountCents();
-      items = [
-        {
+      items = quickLines.map(function (line, index) {
+        return {
           type: "custom",
-          name: (note || "Quick sale").slice(0, 120),
-          unit_amount_cents: cents,
+          name: (note || "Quick sale " + (index + 1)).slice(0, 120),
+          unit_amount_cents: line.unitAmountCents,
           quantity: 1,
-        },
-      ];
+        };
+      });
     }
     return {
       sold_at: new Date().toISOString(),
@@ -747,6 +1086,9 @@
       customer_email: null,
       customer_phone: null,
       receipt_email: null,
+      discount_milli: quote.discountMilli,
+      tax_milli: quote.taxMilli,
+      amount_total_cents: quote.total,
       items: items,
     };
   }
@@ -758,7 +1100,7 @@
   }
 
   function activeTapTotal() {
-    return tapMode === "catalog" ? tapCartTotal() : quickAmountCents() || 0;
+    return currentQuote().total;
   }
 
   function syncTapModeUi(total) {
@@ -767,10 +1109,10 @@
     var source = byId("tapChargeSource");
     var catalogBtn = byId("takeCatalogPaymentBtn");
     var catalogCharging = tapMode === "catalog" && tapCartTotal() > 0;
-    var quickCharging = tapMode === "quick" && (quickAmountCents() || 0) > 0;
+    var quickCharging = tapMode === "quick" && currentQuote().subtotal > 0;
     if (quick) {
-      quick.classList.toggle("is-charging", !catalogCharging);
-      quick.classList.toggle("is-idle", catalogCharging);
+      quick.classList.toggle("is-charging", tapMode === "quick" && quickCharging);
+      quick.classList.toggle("is-idle", tapMode === "catalog");
     }
     if (catalog) {
       catalog.classList.toggle("is-charging", catalogCharging);
@@ -783,12 +1125,12 @@
           ". Typed amount is not used.";
       } else if (quickCharging) {
         source.textContent =
-          "Charging typed amount — " +
+          "Charging Quick Sale — " +
           money(total) +
           ". Website products are not used.";
       } else {
         source.textContent =
-          "Enter an amount or select website products. Only one total is charged.";
+          "Enter amounts or select website products. Only one total is charged.";
       }
     }
     if (catalogBtn) {
@@ -796,8 +1138,29 @@
       catalogBtn.disabled = !catalogCharging || !isAndroidPos() || tapSubmitting;
       catalogBtn.textContent = tapSubmitting
         ? "Opening Tap to Pay…"
-        : "Take Payment — " + money(tapCartTotal());
+        : "TAKE PAYMENT — " + money(total);
     }
+  }
+
+  function updatePosTotals() {
+    var quote = currentQuote();
+    if (byId("posSubtotal")) byId("posSubtotal").textContent = money(quote.subtotal);
+    if (byId("posDiscount")) byId("posDiscount").textContent = "-" + money(quote.discount);
+    if (byId("posDiscountRow")) byId("posDiscountRow").hidden = !quote.discount;
+    if (byId("posDiscountLabel")) {
+      byId("posDiscountLabel").textContent = quote.discountMilli
+        ? "Discount " + SRPosTotals.percentLabel(quote.discountMilli) + "%"
+        : "Discount";
+    }
+    if (byId("posTax")) byId("posTax").textContent = money(quote.tax);
+    if (byId("posTaxLabel")) {
+      byId("posTaxLabel").textContent = taxMilli
+        ? "Tax " + SRPosTotals.percentLabel(taxMilli) + "%"
+        : "Tax";
+    }
+    if (byId("posGrandTotal")) byId("posGrandTotal").textContent = money(quote.total);
+    if (byId("posTotalBanner")) byId("posTotalBanner").textContent = "TOTAL: " + money(quote.total);
+    return quote;
   }
 
   function updateTakePaymentButton() {
@@ -806,7 +1169,8 @@
     var status = byId("terminalStatus");
     var blocked = byId("terminalBlocked");
     var android = isAndroidPos();
-    var total = activeTapTotal();
+    var quote = updatePosTotals();
+    var total = quote.total;
     var ready = android && total > 0 && !tapSubmitting;
     syncTapModeUi(total);
     if (button) {
@@ -814,8 +1178,8 @@
       button.textContent = android
         ? tapSubmitting
           ? "Opening Tap to Pay…"
-          : "Take Payment — " + money(total)
-        : "Take Payment — Native App Required";
+          : "TAKE PAYMENT — " + money(total)
+        : "TAKE PAYMENT — Native App Required";
     }
     if (status) {
       status.textContent = android ? "Opens S&R Tap to Pay" : "Native app required";
@@ -826,8 +1190,8 @@
     if (blocked) blocked.hidden = android;
     if (help) {
       help.textContent = android
-        ? "Take Payment opens the S&R Tap to Pay app on this phone. The S&R server still sets the charge amount."
-        : "This browser does not tap cards. On the Pixel, Take Payment opens the S&R Tap to Pay app.";
+        ? "TAKE PAYMENT opens the S&R Tap to Pay app on this phone. The S&R server still sets the charge amount."
+        : "This browser does not tap cards. On the Pixel, TAKE PAYMENT opens the S&R Tap to Pay app.";
     }
   }
 
@@ -861,19 +1225,42 @@
   function takePayment() {
     if (tapSubmitting || !isAndroidPos()) return;
     setError("tapError", "");
+    var quote = currentQuote();
     if (tapMode === "catalog") {
       if (!tapLines.length || tapCartTotal() <= 0) {
         setError("tapError", "Add a website product first.");
         return;
       }
-    } else if (quickAmountCents() == null) {
-      setError("tapError", "Enter an amount greater than $0.00.");
+    } else if (!quickLines.length || quote.subtotal <= 0) {
+      setError("tapError", "Add at least one amount greater than $0.00.");
       if (byId("quickAmount")) byId("quickAmount").focus();
+      return;
+    }
+    if (quote.total <= 0) {
+      setError("tapError", "TOTAL must be greater than $0.00.");
+      return;
+    }
+    if (quote.discount > quote.subtotal || quote.discountMilli < 0 || quote.discountMilli > 100000) {
+      setError("tapError", "That discount is not valid.");
+      return;
+    }
+    if (quote.taxMilli !== taxMilli || quote.tax < 0) {
+      setError("tapError", "Tax could not be calculated. Check Settings.");
+      return;
+    }
+    var sale = tapSalePayload();
+    if (sale.amount_total_cents !== quote.total) {
+      setError("tapError", "The total changed. Review the sale and try again.");
       return;
     }
     tapSubmitting = true;
     updateTakePaymentButton();
-    openNativeCollect(tapSalePayload());
+    writeReceiptStore({
+      orders: [{ id: "pending", amount_total: quote.total }],
+      sales: [receiptSaleFromState(sale, quote)],
+      method: "tap_to_pay",
+    });
+    openNativeCollect(sale);
   }
 
   function handleTapReturn() {
@@ -896,11 +1283,19 @@
       tapLines = [];
       resetQuickAmount();
       renderTapCart();
+      var stored = readReceiptStore() || {};
+      var amount = Number(params.get("amount"));
       showReceiptOptions(
-        [{ id: paid, amount_total: Number(params.get("amount")) || 0 }],
-        [{}]
+        [{
+          id: paid,
+          amount_total: Number.isFinite(amount)
+            ? amount
+            : ((stored.orders && stored.orders[0] && stored.orders[0].amount_total) || 0),
+        }],
+        stored.sales || [{}],
+        "tap_to_pay"
       );
-      announce("Tap to Pay sale recorded. You can send a receipt now.", "ok");
+      announce("Tap to Pay sale recorded. Screenshot the receipt if needed.", "ok");
       return;
     }
     if (tap === "missing") {
@@ -938,7 +1333,6 @@
     }, 0);
     byId("tapCartTotal").textContent = money(total);
     if (byId("tapCatalogTotal")) byId("tapCatalogTotal").textContent = money(total);
-    if (!tapLines.length) tapMode = "quick";
     empty.hidden = tapLines.length > 0;
     wrap.hidden = tapLines.length === 0;
     byId("clearTapCart").hidden = tapLines.length === 0;
@@ -1027,16 +1421,52 @@
       renderBatchRows(true);
     });
     byId("catalogSearch").addEventListener("input", renderCatalog);
+    byId("tapQuickModeBtn").addEventListener("click", function () {
+      setTapMode("quick");
+    });
+    byId("tapCatalogModeBtn").addEventListener("click", function () {
+      setTapMode("catalog");
+    });
     byId("quickAmount").addEventListener("input", onQuickAmountInput);
     byId("quickAmount").addEventListener("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
-        takePayment();
+        addQuickLine();
       }
+    });
+    byId("addQuickLine").addEventListener("click", addQuickLine);
+    byId("clearQuickSale").addEventListener("click", function () {
+      clearQuickSale(false);
+    });
+    byId("posKeypad").addEventListener("click", function (event) {
+      var key = event.target && event.target.getAttribute("data-pos-key");
+      if (key) appendKeypad(key);
+    });
+    document.querySelectorAll("[data-discount-milli]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        applyDiscountMilli(Number(button.getAttribute("data-discount-milli")), false);
+      });
+    });
+    byId("customDiscountBtn").addEventListener("click", function () {
+      customDiscountOpen = true;
+      if (byId("customDiscountField")) byId("customDiscountField").hidden = false;
+      updateDiscountButtons();
+      if (byId("customDiscountInput")) byId("customDiscountInput").focus();
+    });
+    byId("customDiscountInput").addEventListener("change", applyCustomDiscount);
+    byId("customDiscountInput").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyCustomDiscount();
+      }
+    });
+    byId("clearDiscountBtn").addEventListener("click", function () {
+      if (byId("customDiscountInput")) byId("customDiscountInput").value = "";
+      applyDiscountMilli(0, false);
     });
     byId("clearTapCart").addEventListener("click", function () {
       tapLines = [];
-      tapMode = "quick";
+      tapIdempotencyKey = newKey("tap");
       setError("tapError", "");
       renderTapCart();
     });
@@ -1062,11 +1492,24 @@
     tapIdempotencyKey = newKey("tap");
     resetSingle();
     resetBatch();
+    setTapMode("quick", { preserve: true });
+    renderQuickLines();
     renderTapCart();
+    updateDiscountButtons();
     renderPosAppCard();
     bindEvents();
     handleTapReturn();
     loadCatalog();
     loadPosAppMeta();
+    SRCatalog.getStoreSettings()
+      .then(function (row) {
+        var settings = SRStoreSettings.normalize((row && row.settings) || {});
+        taxMilli = SRPosTotals.clampTaxMilli(settings.pos && settings.pos.tax_milli);
+        updateTakePaymentButton();
+      })
+      .catch(function () {
+        taxMilli = 0;
+        updateTakePaymentButton();
+      });
   });
 })();

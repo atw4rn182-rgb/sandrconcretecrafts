@@ -75,6 +75,14 @@
         show_about: $("prefAbout").checked,
         show_social_links: $("prefSocial").checked,
       },
+      pos: {
+        tax_milli: (function () {
+          var parsed = window.SRPosTotals
+            ? SRPosTotals.parsePercentToMilli($("posTaxRate").value)
+            : { ok: true, value: 0 };
+          return parsed.ok ? parsed.value : 0;
+        })(),
+      },
     });
   }
 
@@ -106,6 +114,9 @@
     $("prefLowStock").checked = s.storefront.show_low_stock;
     $("prefAbout").checked = s.storefront.show_about;
     $("prefSocial").checked = s.storefront.show_social_links;
+    $("posTaxRate").value = window.SRPosTotals
+      ? SRPosTotals.percentLabel(s.pos && s.pos.tax_milli)
+      : "0";
 
     document.querySelectorAll("[data-announce-style]").forEach(function (btn) {
       var on = btn.getAttribute("data-announce-style") === announceStyle;
@@ -143,6 +154,11 @@
       "</dd></div>" +
       "<div><dt>Reviews</dt><dd>" +
       (s.reviews.google_review_url ? "Google link configured" : "Not configured") +
+      "</dd></div>" +
+      "<div><dt>In-person tax</dt><dd>" +
+      (s.pos && s.pos.tax_milli
+        ? SRPosTotals.percentLabel(s.pos.tax_milli) + "%"
+        : "0% — not collecting tax at events") +
       "</dd></div>" +
       "</dl>";
     $("settingsSummary").innerHTML = html;
@@ -184,6 +200,7 @@
       "prefLowStock",
       "prefAbout",
       "prefSocial",
+      "posTaxRate",
     ].forEach(function (id) {
       var el = $(id);
       if (!el) return;
@@ -203,8 +220,12 @@
     $("saveSettingsBtn").addEventListener("click", async function () {
       var btn = $("saveSettingsBtn");
       var enteredReviewUrl = $("googleReviewUrl").value.trim();
+      var taxParsed = SRPosTotals.parsePercentToMilli($("posTaxRate").value);
       readFormIntoDraft();
       var errors = SRStoreSettings.validateDraft(draft);
+      if (!taxParsed.ok) {
+        errors.unshift(taxParsed.error || "Enter a tax rate from 0% to 100%.");
+      }
       if (
         enteredReviewUrl &&
         !SRStoreSettings.cleanGoogleReviewUrl(enteredReviewUrl)

@@ -20,6 +20,8 @@ var posAppFileRoute = read("api/admin/pos-app-file.js");
 var db = read("api/_lib/supabase-admin.js");
 var posMigration = read("supabase/migrations/20260917000001_staff_pos_apk_storage.sql");
 var posManifest = read("api/_lib/pos-app.js");
+var deleteRoute = read("api/admin/delete-order.js");
+var posTotalsMigration = read("supabase/migrations/20260926000001_pos_totals_and_admin_delete.sql");
 
 assert.match(migration, /alter column stripe_session_id drop not null/i);
 assert.match(migration, /payment_source in \('online', 'cash', 'tap_to_pay'\)/);
@@ -34,9 +36,16 @@ assert.match(migration, /revoke all on function public\.record_in_person_sale[\s
 assert.match(migration, /grant execute on function public\.record_cash_sales_batch[\s\S]*to service_role/i);
 assert.doesNotMatch(migration, /create policy[\s\S]{0,160}for insert/i);
 
-[cashRoute, terminalRoute, tokenRoute, receiptRoute, posAppRoute].forEach(function (route) {
+[cashRoute, terminalRoute, tokenRoute, receiptRoute, posAppRoute, deleteRoute].forEach(function (route) {
   assert.match(route, /auth\.requireActiveAdmin\(req\)/);
 });
+assert.match(posTotalsMigration, /p_discount_milli integer default 0/);
+assert.match(posTotalsMigration, /p_tax_milli integer default 0/);
+assert.match(posTotalsMigration, /admin_delete_order/);
+assert.match(posTotalsMigration, /grant execute on function public\.record_cash_sales_batch/);
+assert.match(deleteRoute, /db\.deleteAdminOrder/);
+assert.match(terminalRoute, /amount_total_cents/);
+assert.doesNotMatch(deleteRoute, /from\("customers"\)/);
 assert.match(posAppRoute, /download_url/);
 assert.match(posAppRoute, /mintDownloadToken/);
 assert.match(posAppRoute, /pos-app-file\?t=/);

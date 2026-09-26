@@ -1119,6 +1119,30 @@
     return result.data;
   }
 
+  async function deleteAdminOrder(orderId) {
+    var session = await SRAdminAuth.getSession();
+    var token = session && session.access_token;
+    if (!token) throw new Error("Your admin session is missing. Please sign in again.");
+    var response = await fetch("/api/admin/delete-order", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ order_id: orderId }),
+    });
+    var body = null;
+    try {
+      body = await response.json();
+    } catch (_err) {
+      body = null;
+    }
+    if (!response.ok) {
+      throw new Error((body && body.error) || "Couldn’t delete that order.");
+    }
+    return body;
+  }
+
   async function getSalesGoals() {
     var supabase = await client();
     var result = await supabase
@@ -1340,6 +1364,7 @@
       announcement: settings.announcement,
       fulfillment: settings.fulfillment,
       storefront: settings.storefront,
+      pos: settings.pos,
     });
 
     var supabase = await client();
@@ -1513,6 +1538,7 @@
     countOrders: countOrders,
     listPaidOrdersLite: listPaidOrdersLite,
     updateOrderFulfillment: updateOrderFulfillment,
+    deleteAdminOrder: deleteAdminOrder,
     getSalesGoals: getSalesGoals,
     saveSalesGoals: saveSalesGoals,
     getAppearance: getAppearance,

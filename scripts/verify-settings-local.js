@@ -15,6 +15,7 @@ assert(d.business.state === "NM", "default state");
 assert(d.announcement.enabled === false, "announce off");
 assert(d.fulfillment.pickup_enabled === true, "pickup on");
 assert(d.reviews.google_review_url === "", "review url blank by default");
+assert(d.pos.tax_milli === 0, "POS tax defaults to 0 — no guessed rate");
 
 var n = S.normalize({
   business: { name: " Test Shop ", city: "Milan", state: "New Mexico" },
@@ -58,6 +59,7 @@ assert(html.indexOf("Save Settings") >= 0, "save btn");
 assert(html.indexOf("Business Information") >= 0, "biz section");
 assert(html.indexOf("Store Announcement") >= 0, "announce");
 assert(html.indexOf("googleReviewUrl") >= 0, "review url admin field");
+assert(html.indexOf("posTaxRate") >= 0, "POS tax is configurable in Settings");
 
 var shell = fs.readFileSync("admin/admin-shell.js", "utf8");
 assert(shell.indexOf("settings.html") >= 0, "nav settings");
@@ -76,6 +78,7 @@ assert(api.indexOf("saveStoreSettings") >= 0, "save api");
 assert(api.indexOf("appearance: appearance") >= 0 || api.indexOf("appearance:appearance") >= 0 || api.indexOf("config.appearance") >= 0 || api.indexOf("appearance: appearance") >= 0, "appearance preserved path exists");
 assert(api.indexOf("sales_goals") >= 0, "sales goals untouched elsewhere");
 assert(api.indexOf("reviews: Object.assign") >= 0, "review config merged");
+assert(api.indexOf("pos: settings.pos") >= 0, "POS tax is merged without wiping appearance");
 
 var pageJs = fs.readFileSync("admin/settings.js", "utf8");
 assert(pageJs.indexOf("SRAdminShell.boot({") >= 0, "settings uses SRAdminShell.boot");

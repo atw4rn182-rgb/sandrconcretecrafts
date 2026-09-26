@@ -50,6 +50,9 @@
       show_about: true,
       show_social_links: true,
     },
+    pos: {
+      tax_milli: 0,
+    },
   };
 
   var ANNOUNCEMENT_STYLES = ["neutral", "sale", "seasonal"];
@@ -64,6 +67,15 @@
   var MAX_URL = 400;
   var MAX_PICKUP_LABEL = 60;
   var MAX_NOTE = 240;
+
+  function normalizeTaxMilli(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    n = Math.round(n);
+    if (n < 0) return 0;
+    if (n > 200000) return 200000;
+    return n;
+  }
 
   function asBool(v, fallback) {
     if (typeof v === "boolean") return v;
@@ -174,6 +186,7 @@
       announcement: Object.assign({}, DEFAULTS.announcement, src.announcement || {}),
       fulfillment: Object.assign({}, DEFAULTS.fulfillment, src.fulfillment || {}),
       storefront: Object.assign({}, DEFAULTS.storefront, src.storefront || {}),
+      pos: Object.assign({}, DEFAULTS.pos, src.pos || {}),
     };
   }
 
@@ -186,6 +199,7 @@
     var a = merged.announcement || {};
     var f = merged.fulfillment || {};
     var st = merged.storefront || {};
+    var pos = merged.pos || {};
 
     var social = {};
     SOCIAL_KEYS.forEach(function (key) {
@@ -231,6 +245,9 @@
         show_about: asBool(st.show_about, true),
         show_social_links: asBool(st.show_social_links, true),
       },
+      pos: {
+        tax_milli: normalizeTaxMilli(pos.tax_milli),
+      },
     };
   }
 
@@ -272,6 +289,12 @@
     }
     if (!cleanText(d.business && d.business.name, MAX_NAME)) {
       errors.push("Business name is required.");
+    }
+    if (d.pos && d.pos.tax_milli != null) {
+      var taxMilli = Number(d.pos.tax_milli);
+      if (!Number.isFinite(taxMilli) || taxMilli < 0 || taxMilli > 200000) {
+        errors.push("In-person tax rate must be 0% through 200%.");
+      }
     }
     return errors;
   }

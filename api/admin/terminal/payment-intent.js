@@ -32,6 +32,15 @@ module.exports = async function handler(req, res) {
     if (!order || !order.id || !Number.isSafeInteger(Number(order.amount_total))) {
       throw new Error("Terminal order creation returned an invalid result.");
     }
+    if (
+      sale.amount_total_cents != null &&
+      Number(sale.amount_total_cents) !== Number(order.amount_total)
+    ) {
+      var mismatch = new Error("Displayed total does not match the server total.");
+      mismatch.code = "TOTAL_MISMATCH";
+      mismatch.status = 400;
+      throw mismatch;
+    }
 
     var intent = await stripe.createTerminalPaymentIntent({
       amount: Number(order.amount_total),

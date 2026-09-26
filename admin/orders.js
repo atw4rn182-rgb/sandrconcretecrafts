@@ -448,9 +448,15 @@
       "</p>" +
       "</details>" +
       "</div>"
-        : "");
+        : "") +
+      '<div class="order-detail-section order-delete-section">' +
+      "<h3>Delete</h3>" +
+      '<p class="muted">Removes this order and its line items. Customers are not deleted. Today/week/month totals update after this is gone.</p>' +
+      '<button type="button" class="btn btn-ghost btn-block order-delete-btn" id="deleteOrderBtn">Delete this order</button>' +
+      "</div>";
 
     bindFulfillmentButtons(order);
+    bindDeleteButton(order);
   }
 
   function mergeFulfillment(id, patch) {
@@ -519,6 +525,38 @@
         }
       });
     }
+  }
+
+  function bindDeleteButton(order) {
+    var btn = $("deleteOrderBtn");
+    if (!btn) return;
+    btn.addEventListener("click", async function () {
+      var source = sourceValue(order);
+      var paidOnline =
+        source === "online" && String(order.payment_status || "").toLowerCase() === "paid";
+      var message = paidOnline
+        ? "This looks like a paid online Stripe order. Delete it only if it is a test or incorrect record. This cannot be undone."
+        : "Delete this order/payment? This cannot be undone.";
+      if (!window.confirm(message)) return;
+      if (paidOnline && !window.confirm("Really delete this paid online order? Real card money is not refunded by this button.")) {
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Deleting…";
+      try {
+        await SRCatalog.deleteAdminOrder(order.id);
+        orders = orders.filter(function (row) {
+          return row.id !== order.id;
+        });
+        closeDetail();
+        renderList();
+        showFlash("Order deleted. Sales totals will refresh from remaining paid orders.");
+      } catch (err) {
+        showFlash((err && err.message) || "Couldn’t delete that order.", "err");
+        btn.disabled = false;
+        btn.textContent = "Delete this order";
+      }
+    });
   }
 
   function openDetail(id) {

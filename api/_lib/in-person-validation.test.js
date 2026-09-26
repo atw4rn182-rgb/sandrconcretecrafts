@@ -103,6 +103,31 @@ var twentyFive = validation.normalizeSale(
 );
 assert.strictEqual(twentyFive.items[0].unit_amount_cents, 2500);
 
+var withRates = validation.normalizeSale(
+  sale({
+    discount_milli: 10000,
+    tax_milli: 7875,
+    amount_total_cents: 2233,
+    items: [
+      { type: "custom", name: "A", unit_amount_cents: 800, quantity: 1 },
+      { type: "custom", name: "B", unit_amount_cents: 500, quantity: 1 },
+      { type: "custom", name: "C", unit_amount_cents: 400, quantity: 1 },
+      { type: "custom", name: "D", unit_amount_cents: 600, quantity: 1 },
+    ],
+  }),
+  { nowMs: now }
+);
+assert.strictEqual(withRates.discount_milli, 10000);
+assert.strictEqual(withRates.tax_milli, 7875);
+assert.strictEqual(withRates.amount_total_cents, 2233);
+
+assert.throws(function () {
+  validation.normalizeSale(sale({ discount_milli: -1 }), { nowMs: now });
+}, /outside the allowed range/);
+assert.throws(function () {
+  validation.normalizeSale(sale({ discount_milli: 100001 }), { nowMs: now });
+}, /outside the allowed range/);
+
 assert.throws(function () {
   validation.normalizeSale(sale({ receipt_email: "not-an-email" }), {
     nowMs: now,

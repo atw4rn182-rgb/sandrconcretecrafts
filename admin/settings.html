@@ -194,6 +194,15 @@
           </fieldset>
 
           <fieldset class="settings-card">
+            <legend>In-person tax (Pay Center)</legend>
+            <p class="muted">Used only for Admin cash/Tap to Pay totals. Leave 0 if you do not collect tax at events. This is not a guessed New Mexico rate.</p>
+            <label class="field">
+              <span>Tax rate (%)</span>
+              <input type="text" id="posTaxRate" inputmode="decimal" autocomplete="off" placeholder="0" />
+            </label>
+          </fieldset>
+
+          <fieldset class="settings-card">
             <legend>Storefront Preferences</legend>
             <label class="toggle">
               <input type="checkbox" id="prefSoldOut" />
@@ -233,6 +242,7 @@
   <script src="/admin/admin-auth.js"></script>
   <script src="/admin/admin-shell.js"></script>
   <script src="/admin/catalog-api.js"></script>
+  <script src="/admin/pos-totals.js"></script>
   <script src="/admin/settings.js"></script>
 </body>
 </html>

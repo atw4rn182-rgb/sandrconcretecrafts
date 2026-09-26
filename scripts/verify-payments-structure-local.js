@@ -22,9 +22,13 @@ assert.match(html, /id="receiptSuccess"/);
 assert.match(html, /id="tapCartLines"/);
 assert.match(html, /id="takePaymentBtn"[^>]*disabled/);
 assert.match(html, /Native App Required/);
-assert.match(html, /Enter Amount/);
+assert.match(html, /Quick Sale/);
 assert.match(html, /id="quickAmount"[^>]*inputmode="decimal"/);
 assert.match(html, /id="quickAmount"[^>]*enterkeyhint="done"/);
+assert.match(html, /id="addQuickLine"/);
+assert.match(html, /id="posKeypad"/);
+assert.match(html, /id="posGrandTotal"/);
+assert.match(html, /TAKE PAYMENT/);
 assert.match(html, /id="tapChargeSource"/);
 assert.match(html, /id="takeCatalogPaymentBtn"/);
 assert.match(html, /Sale note \(optional\)/);
@@ -34,16 +38,16 @@ assert.match(html, /Select Products from Website/);
 assert.match(html, /Cart Total:/);
 assert.doesNotMatch(html, /id="tapCatalogDetails"[^>]*\sopen\b/);
 assert.ok(
-  html.indexOf("Enter Amount") < html.indexOf("Select Products from Website"),
-  "Enter Amount stays above website products"
+  html.indexOf("Quick Sale") < html.indexOf("Select Products from Website"),
+  "Quick Sale stays above website products"
 );
 assert.ok(
   html.indexOf('id="quickAmount"') < html.indexOf('id="tapCatalogDetails"'),
   "amount field stays above the collapsed catalog"
 );
 assert.ok(
-  html.indexOf("Enter Amount") < html.indexOf('id="posAppCard"'),
-  "quick amount stays above the installer card"
+  html.indexOf("Quick Sale") < html.indexOf('id="posAppCard"'),
+  "quick sale stays above the installer card"
 );
 assert.match(html, /id="posAppCard"/);
 assert.match(html, /Install S&amp;R Tap to Pay/);
@@ -68,12 +72,16 @@ assert.match(js, /tapMode = "quick"/);
 assert.match(js, /syncTapModeUi/);
 assert.match(js, /Typed amount is not used/);
 assert.match(js, /Website products are not used/);
-assert.match(js, /details\.open = false/);
-assert.match(js, /name: \(note \|\| "Quick sale"\)/);
+assert.match(js, /amount_total_cents:\s*quote\.total/);
+assert.match(js, /discount_milli:\s*quote\.discountMilli/);
+assert.match(js, /tax_milli:\s*quote\.taxMilli/);
+assert.match(js, /SRPosTotals\.quote/);
+assert.match(js, /name: \(note \|\| "Quick sale " \+ \(index \+ 1\)\)/);
 assert.match(js, /if \(amount\) amount\.value = ""/);
 assert.match(js, /productCents\(line\.product, line\.finish\)/);
 assert.match(js, /product_id:\s*line\.product\.id/);
 assert.match(js, /clearTapCart/);
+assert.match(js, /clearQuickSale/);
 assert.match(js, /sandrpos:\/\/collect|scheme=sandrpos/);
 assert.match(js, /com\.sandrconcretecrafts\.pos/);
 assert.doesNotMatch(js, /github\.com\/.*\/releases/);
@@ -92,6 +100,9 @@ assert.match(css, /\.tap-take-payment/);
 assert.match(css, /\.tap-charge-source/);
 assert.match(css, /\.tap-quick\.is-idle/);
 assert.match(css, /\.tap-catalog-details\.is-charging/);
+assert.match(css, /\.pos-keypad/);
+assert.match(css, /\.pos-total-banner/);
+assert.match(css, /\.pos-receipt/);
 
 function parseCents(raw) {
   var text = String(raw == null ? "" : raw)
