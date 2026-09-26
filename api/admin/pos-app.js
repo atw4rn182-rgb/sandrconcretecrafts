@@ -41,13 +41,16 @@ module.exports = async function handler(req, res) {
       filename: manifest.filename,
       package: manifest.packageName,
       version_name: manifest.versionName,
+      version_code: manifest.versionCode || null,
     };
     if (wantsDownload(req)) {
       var token = tickets.mintDownloadToken(manifest.channel, 90);
       payload.download_url =
         tickets.requestOrigin(req) +
         "/api/admin/pos-app-file?t=" +
-        encodeURIComponent(token);
+        encodeURIComponent(token) +
+        "&v=" +
+        encodeURIComponent(String(manifest.versionCode || manifest.versionName || ""));
       res.setHeader(
         "Set-Cookie",
         "sr_pos_apk=" +

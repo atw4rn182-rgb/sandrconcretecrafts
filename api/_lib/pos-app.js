@@ -16,7 +16,8 @@ var CHANNELS = {
     simulated: true,
     label: "TEST VERSION — Simulated payments only",
     filename: "S-and-R-Tap-to-Pay-TEST.apk",
-    versionName: "0.1.2-test",
+    versionName: "0.1.3-test",
+    versionCode: 4,
   },
   production: {
     object: "production/app-release.apk",
@@ -51,7 +52,9 @@ function testFallbackUrl() {
   if (fromEnv) return fromEnv;
   return (
     "https://github.com/atw4rn182-rgb/sandrconcretecrafts/releases/download/staff-pos-test/" +
-    CHANNELS.test.filename
+    CHANNELS.test.filename +
+    "?v=" +
+    encodeURIComponent(String(CHANNELS.test.versionCode || "4"))
   );
 }
 

@@ -70,6 +70,15 @@
             android:layout_height="24dp" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/takePayment"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_marginTop="28dp"
+            android:text="@string/take_payment"
+            android:textSize="20sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/cancel"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"

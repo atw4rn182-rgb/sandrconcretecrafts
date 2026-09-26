@@ -54,24 +54,30 @@ object TerminalPermissions {
         if (!fineLocationGranted(context)) {
             needed.addAll(locationPermissions)
         }
-        nearbyPermissions.forEach { permission ->
-            if (!granted(context, permission)) needed.add(permission)
-        }
         return needed.toTypedArray()
     }
 
     fun readyForTerminal(context: Context): Boolean {
-        return fineLocationGranted(context) && nearbyGranted(context)
+        return fineLocationGranted(context) && locationServicesOn(context)
+    }
+
+    fun grantedLabel(granted: Boolean): String {
+        return if (granted) "granted" else "denied"
     }
 
     fun safeDiagnostics(context: Context, extra: String = ""): String {
         if (!BuildConfig.SIMULATED_READER) return ""
+        val nfc = nfcAvailable(context)
         val lines = mutableListOf(
-            "Location: ${if (fineLocationGranted(context)) "Granted" else "Missing"}",
-            "Nearby Devices: ${if (nearbyGranted(context)) "Granted" else "Missing"}",
-            "NFC: ${if (nfcAvailable(context)) "Available" else "Unavailable"}" +
-                if (nfcAvailable(context) && !nfcEnabled(context)) " (off)" else "",
-            "Mode: TEST — Simulated Reader"
+            "App version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            "Location fine: ${grantedLabel(fineLocationGranted(context))}",
+            "Location coarse: ${grantedLabel(granted(context, Manifest.permission.ACCESS_COARSE_LOCATION))}",
+            "Location services: ${if (locationServicesOn(context)) "on" else "off"}",
+            "Nearby / Bluetooth Scan: ${grantedLabel(granted(context, Manifest.permission.BLUETOOTH_SCAN))} / not required for Tap to Pay",
+            "Bluetooth Connect: ${grantedLabel(granted(context, Manifest.permission.BLUETOOTH_CONNECT))} / not required for Tap to Pay",
+            "NFC: ${if (nfc) "available" else "unavailable"}",
+            "NFC enabled: ${if (!nfc) "n/a" else if (nfcEnabled(context)) "yes" else "no"}",
+            "Simulation mode: ON"
         )
         if (extra.isNotBlank()) lines.add(extra)
         return lines.joinToString("\n")

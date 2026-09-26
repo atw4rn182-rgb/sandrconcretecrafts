@@ -37,7 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 3/);
+assert.match(gradleApp, /versionCode = 4/);
+assert.match(gradleApp, /versionName = "0\.1\.3-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 
 var tokenProvider = read(
@@ -76,8 +77,10 @@ var viewModel = read(
 );
 assert.match(viewModel, /UiState\.Ready/);
 assert.match(viewModel, /terminal\.connect/);
-assert.doesNotMatch(viewModel, /createPaymentIntent/);
+assert.match(viewModel, /createPaymentIntent/);
+assert.match(viewModel, /SalePayload\.amountCents/);
 assert.doesNotMatch(viewModel, /collectExisting/);
+assert.doesNotMatch(viewModel, /type"\) == "custom"/);
 
 var collect = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
@@ -87,6 +90,7 @@ assert.match(collect, /checkSelfPermission|missingRuntimePermissions/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
+assert.match(collect, /takePayment/);
 assert.doesNotMatch(collect, /granted\.values\.all/);
 
 var permissions = read(
@@ -95,7 +99,14 @@ var permissions = read(
 assert.match(permissions, /ACCESS_FINE_LOCATION/);
 assert.match(permissions, /BLUETOOTH_CONNECT/);
 assert.match(permissions, /checkSelfPermission/);
+assert.match(permissions, /fineLocationGranted\(context\) && locationServicesOn/);
 assert.doesNotMatch(permissions, /client_secret|sk_live_|whsec_/);
+
+var salePayload = read(
+  "android/app/src/main/java/com/sandrconcretecrafts/pos/data/SalePayload.kt"
+);
+assert.match(salePayload, /amount_total_cents/);
+assert.doesNotMatch(salePayload, /unit_amount_cents/);
 
 var files = [];
 walk(path.join(root, "android"), files);

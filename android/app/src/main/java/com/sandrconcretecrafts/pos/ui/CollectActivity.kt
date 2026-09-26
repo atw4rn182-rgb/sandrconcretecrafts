@@ -115,6 +115,7 @@ class CollectActivity : AppCompatActivity() {
                 binding.status.text = state.title
                 binding.detail.text = state.detail
                 binding.busy.visibility = View.VISIBLE
+                binding.takePayment.visibility = View.GONE
                 binding.cancel.visibility = View.VISIBLE
                 binding.cancel.text = getString(R.string.cancel)
                 binding.cancel.setOnClickListener { viewModel.cancel() }
@@ -128,6 +129,10 @@ class CollectActivity : AppCompatActivity() {
                 binding.status.text = getString(R.string.tap_ready_title)
                 binding.detail.text = getString(R.string.tap_ready_copy)
                 binding.busy.visibility = View.GONE
+                binding.takePayment.visibility = View.VISIBLE
+                binding.takePayment.isEnabled = true
+                binding.takePayment.text = state.takePaymentLabel
+                binding.takePayment.setOnClickListener { viewModel.takePayment() }
                 binding.cancel.visibility = View.GONE
                 binding.backToPos.visibility = View.VISIBLE
                 binding.openSettings.visibility = View.GONE
@@ -139,6 +144,7 @@ class CollectActivity : AppCompatActivity() {
                 binding.status.text = "Payment received"
                 binding.detail.text = "The sale is recorded. You can send a receipt from Payments."
                 binding.busy.visibility = View.GONE
+                binding.takePayment.visibility = View.GONE
                 binding.cancel.visibility = View.GONE
                 binding.backToPos.visibility = View.VISIBLE
                 binding.openSettings.visibility = View.GONE
@@ -152,6 +158,7 @@ class CollectActivity : AppCompatActivity() {
                 binding.status.text = "Tap to Pay didn’t finish"
                 binding.detail.text = state.message
                 binding.busy.visibility = View.GONE
+                binding.takePayment.visibility = View.GONE
                 binding.cancel.visibility = View.VISIBLE
                 binding.backToPos.visibility = View.VISIBLE
                 binding.openSettings.visibility = View.GONE
@@ -184,6 +191,7 @@ class CollectActivity : AppCompatActivity() {
         binding.status.text = "Tap to Pay isn’t ready"
         binding.detail.text = message
         binding.busy.visibility = View.GONE
+        binding.takePayment.visibility = View.GONE
         binding.cancel.visibility = View.GONE
         binding.backToPos.visibility = View.VISIBLE
         binding.openSettings.visibility = View.VISIBLE
@@ -194,6 +202,7 @@ class CollectActivity : AppCompatActivity() {
         binding.status.text = "Tap to Pay isn’t ready"
         binding.detail.text = message
         binding.busy.visibility = View.GONE
+        binding.takePayment.visibility = View.GONE
         binding.cancel.visibility = View.GONE
         binding.backToPos.visibility = View.VISIBLE
         refreshDiagnostics()

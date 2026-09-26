@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.sandrconcretecrafts.pos.data.PublicConfig
+import com.sandrconcretecrafts.pos.data.SalePayload
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.terminal.TerminalController
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CollectViewModel(application: Application) : AndroidViewModel(application) {
     sealed class UiState {
         data class Working(val amountLabel: String, val title: String, val detail: String) : UiState()
-        data class Ready(val amountLabel: String) : UiState()
+        data class Ready(val amountLabel: String, val takePaymentLabel: String) : UiState()
         data class Success(val orderId: String, val amount: Int, val amountLabel: String) : UiState()
         data class Failed(val amountLabel: String, val message: String, val canRetry: Boolean) : UiState()
         data object Cancelled : UiState()
@@ -26,6 +27,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
     private val terminal = TerminalController(application, api)
     private val io = Executors.newSingleThreadExecutor()
     private val started = AtomicBoolean(false)
+    private val collecting = AtomicBoolean(false)
 
     private val _state = MutableLiveData<UiState>()
     val state: LiveData<UiState> = _state
@@ -35,7 +37,18 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
     fun start(saleJson: String) {
         sale = JSONObject(saleJson)
         if (!started.compareAndSet(false, true)) return
-        val amountLabel = amountLabel(sale)
+        val amountLabel = SalePayload.amountLabel(sale)
+        if (SalePayload.amountCents(sale) == null) {
+            started.set(false)
+            _state.postValue(
+                UiState.Failed(
+                    amountLabel,
+                    "This sale has no total. Return to Payments and start Take Payment again.",
+                    false
+                )
+            )
+            return
+        }
         _state.postValue(
             UiState.Working(
                 amountLabel,
@@ -61,7 +74,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                         amountLabel,
                         "Initializing Stripe Terminal",
                         if (PublicConfig.simulatedReader) {
-                            "TEST — Simulated Reader. No PaymentIntent is created."
+                            "TEST — Simulated Reader. Preparing the reader, not charging yet."
                         } else {
                             "Connecting this phone as a card reader."
                         }
@@ -74,7 +87,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                                 amountLabel,
                                 phase,
                                 if (PublicConfig.simulatedReader) {
-                                    "TEST — Simulated Reader. No payment is being taken."
+                                    "TEST — Simulated Reader. Connecting the reader, not charging yet."
                                 } else {
                                     "Connecting this phone as a card reader."
                                 }
@@ -82,7 +95,9 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                         )
                     },
                     onReady = {
-                        _state.postValue(UiState.Ready(amountLabel))
+                        _state.postValue(
+                            UiState.Ready(amountLabel, SalePayload.takePaymentLabel(sale))
+                        )
                     },
                     onError = { message ->
                         started.set(false)
@@ -104,9 +119,87 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun takePayment() {
+        val currentSale = sale
+        val expected = SalePayload.amountCents(currentSale)
+        val amountLabel = SalePayload.amountLabel(currentSale)
+        if (currentSale == null || expected == null) {
+            _state.postValue(
+                UiState.Failed(amountLabel, "This sale has no total. Return to Payments.", false)
+            )
+            return
+        }
+        if (!collecting.compareAndSet(false, true)) return
+        _state.postValue(
+            UiState.Working(
+                amountLabel,
+                "Creating payment",
+                if (PublicConfig.simulatedReader) {
+                    "TEST — Simulated payment. No real card will be charged."
+                } else {
+                    "Preparing the charge on the S&R server."
+                }
+            )
+        )
+        io.execute {
+            try {
+                val payment = api.createPaymentIntent(currentSale)
+                if (payment.amount != expected) {
+                    collecting.set(false)
+                    _state.postValue(
+                        UiState.Failed(
+                            amountLabel,
+                            "The server total did not match this sale. No card was charged.",
+                            true
+                        )
+                    )
+                    return@execute
+                }
+                _state.postValue(
+                    UiState.Working(
+                        amountLabel,
+                        if (PublicConfig.simulatedReader) "Simulated tap in progress" else "Ask the customer to tap",
+                        if (PublicConfig.simulatedReader) {
+                            "TEST — Simulated Reader. Completing a test payment for $amountLabel."
+                        } else {
+                            "Hold the card or phone to this Pixel until it finishes."
+                        }
+                    )
+                )
+                terminal.collect(
+                    payment.clientSecret,
+                    onSuccess = {
+                        collecting.set(false)
+                        _state.postValue(
+                            UiState.Success(
+                                payment.orderId,
+                                payment.amount,
+                                SalePayload.money(payment.amount)
+                            )
+                        )
+                    },
+                    onError = { message ->
+                        collecting.set(false)
+                        _state.postValue(UiState.Failed(amountLabel, withDiagnostics(message), true))
+                    }
+                )
+            } catch (error: Exception) {
+                collecting.set(false)
+                _state.postValue(
+                    UiState.Failed(
+                        amountLabel,
+                        withDiagnostics(error.message ?: "Couldn’t start the payment."),
+                        true
+                    )
+                )
+            }
+        }
+    }
+
     fun retry() {
         terminal.cancel()
         started.set(false)
+        collecting.set(false)
         val json = sale?.toString() ?: return
         start(json)
     }
@@ -131,21 +224,4 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
         super.onCleared()
     }
 
-    companion object {
-        fun amountLabel(sale: JSONObject?): String {
-            val items = sale?.optJSONArray("items") ?: return "$0.00"
-            var total = 0
-            for (i in 0 until items.length()) {
-                val item = items.optJSONObject(i) ?: continue
-                val qty = item.optInt("quantity", 1)
-                val unit = item.optInt("unit_amount_cents", 0)
-                total += if (item.optString("type") == "custom") unit * qty else 0
-            }
-            return if (total > 0) money(total) else "Sale"
-        }
-
-        fun money(cents: Int): String {
-            return "$" + String.format("%.2f", cents / 100.0)
-        }
-    }
 }

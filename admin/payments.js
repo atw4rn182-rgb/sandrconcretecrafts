@@ -941,7 +941,9 @@
     var badge = byId("posAppBadge");
     var seen = posAppSeen();
     if (posAppMeta && badge) {
-      badge.textContent = posAppMeta.label;
+      badge.textContent = posAppMeta.version_name
+        ? posAppMeta.label + " · " + posAppMeta.version_name
+        : posAppMeta.label;
       badge.className =
         "pos-app-badge " +
         (posAppMeta.simulated ? "pos-app-badge--test" : "pos-app-badge--live");
