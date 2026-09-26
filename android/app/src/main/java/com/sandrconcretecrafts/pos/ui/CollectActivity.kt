@@ -91,7 +91,7 @@ class CollectActivity : AppCompatActivity() {
         }
         binding.collectBanner.visibility = View.VISIBLE
         binding.collectBanner.text =
-            "TEST BUILD ${BuildConfig.VERSION_NAME}\nCODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}\nCOLLECT CODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}"
+            "COLLECT SCREEN\nCODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}\nTEST BUILD ${BuildConfig.VERSION_NAME}"
     }
 
     private fun continueIfReady() {
@@ -234,30 +234,32 @@ class CollectActivity : AppCompatActivity() {
         val location = lastLocation
         val ok = result as? CollectPayloadParser.Result.Ok
         val error = result as? CollectPayloadParser.Result.Error
+        val amounts = ok?.amounts ?: error?.amounts
         val source = when {
             error != null -> ErrorSource.HANDOFF_PAYLOAD
             location != null && location.block != TerminalPermissions.Block.NONE -> location.source
             else -> ErrorSource.ANDROID_PERMISSION_CHECK
         }
         val lines = listOf(
-            "TEST BUILD ${BuildConfig.VERSION_NAME}",
+            "COLLECT SCREEN",
             "CODE ${BuildConfig.VERSION_CODE}",
             BuildConfig.BUILD_ID,
+            "TEST BUILD ${BuildConfig.VERSION_NAME}",
             "SCREEN: CollectActivity",
             "SOURCE: $source",
-            "HANDOFF VERSION: ${ok?.version ?: error?.versionReceived ?: "absent"}",
-            "PAYLOAD PRESENT: ${if (ok != null || error?.payloadPresent == true) "YES" else "NO"}",
-            "AMOUNT FIELD PRESENT: ${if (ok != null || error?.amountFieldPresent == true) "YES" else "NO"}",
-            "AMOUNT_TOTAL_CENTS: ${ok?.amountCents?.toString() ?: error?.amountValue ?: "INVALID"}",
-            "DISPLAY TOTAL: ${ok?.let { SalePayload.money(it.amountCents) } ?: "—"}",
+            "HANDOFF VERSION: ${ok?.version ?: amounts?.label(amounts.payloadVersion ?: amounts.extraVersion ?: amounts.pathVersion)}",
+            "PATH AMOUNT: ${amounts?.label(amounts.pathAmount) ?: "absent"}",
+            "EXTRA AMOUNT: ${amounts?.label(amounts.extraAmount) ?: "absent"}",
+            "PAYLOAD AMOUNT: ${amounts?.label(amounts.payloadAmount) ?: "absent"}",
+            "FINAL AMOUNT: ${ok?.amountCents?.toString() ?: "INVALID"}",
+            "DISPLAY: ${ok?.let { SalePayload.money(it.amountCents) } ?: "—"}",
             "COARSE: ${location?.let { if (it.coarseGranted) "GRANTED" else "DENIED" } ?: "NOT EVALUATED"}",
             "FINE: ${location?.let { if (it.fineGranted) "GRANTED" else "DENIED" } ?: "NOT EVALUATED"}",
             "LOCATION REQUIREMENT: ${location?.let { if (it.requirementSatisfied) "SATISFIED" else "NOT SATISFIED" } ?: "NOT EVALUATED"}",
             "LOCATION SERVICES: ${location?.let { if (it.servicesOn) "ON" else "OFF" } ?: "NOT EVALUATED"}",
             "TERMINAL INIT REACHED: ${if (viewModel.terminalInitReached()) "YES" else "NO"}",
-            "LAST EVENT:",
-            EventTrace.render(),
-            viewModel.safeTerminalDiagnostics()
+            viewModel.safeTerminalDiagnostics(),
+            EventTrace.render()
         )
         binding.handoffPanel.visibility = View.VISIBLE
         binding.handoffPanel.text = lines.filter { it.isNotBlank() }.joinToString("\n")

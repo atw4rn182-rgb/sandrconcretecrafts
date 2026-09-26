@@ -124,7 +124,11 @@
 
       <section class="payment-panel" id="tapPayment" aria-labelledby="tapTitle">
         <div class="payment-panel-head">
-          <div><p class="payment-eyebrow">Card</p><h2 id="tapTitle">Tap to Pay</h2></div>
+          <div>
+            <p class="payment-eyebrow">Card</p>
+            <h2 id="tapTitle">Tap to Pay</h2>
+            <p class="pos-handoff-build" id="handoffBuildMarker">HANDOFF BUILD: v2 / p311</p>
+          </div>
           <span class="terminal-status terminal-status--blocked" id="terminalStatus">Native app required</span>
         </div>
         <div class="terminal-blocked" id="terminalBlocked" role="status">
@@ -239,9 +243,10 @@
             <a id="posAppDownloadLink" href="#" download="S-and-R-Tap-to-Pay-TEST.apk">Tap here if the download did not start.</a>
           </p>
           <div class="pos-app-actions">
-            <button class="btn btn-primary btn-block" id="installPosAppBtn" type="button" hidden>Install S&amp;R Tap to Pay</button>
+            <button class="btn btn-primary btn-block" id="installPosAppBtn" type="button" hidden>Install S&amp;R Tap to Pay<br />0.1.10-test · Code 11</button>
             <button class="btn btn-ghost btn-block" id="openPosAppBtn" type="button" hidden>Open S&amp;R Tap to Pay</button>
           </div>
+          <pre class="pos-handoff-diag" id="posAppInstallerDiag" hidden></pre>
           <p class="payment-help" id="posAppHelp">Authorized S&amp;R staff devices only.</p>
         </section>
       </section>
@@ -255,8 +260,8 @@
   <script src="/admin/admin-shell.js"></script>
   <script src="/js/store-settings.js"></script>
   <script src="/admin/catalog-api.js"></script>
-  <script src="/admin/pos-totals.js"></script>
-  <script src="/admin/tap-handoff.js"></script>
-  <script src="/admin/payments.js"></script>
+  <script src="/admin/pos-totals.js?v=11"></script>
+  <script src="/admin/tap-handoff.js?v=11"></script>
+  <script src="/admin/payments.js?v=11"></script>
 </body>
 </html>

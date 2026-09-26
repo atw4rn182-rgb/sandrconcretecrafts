@@ -13,6 +13,7 @@
   "use strict";
 
   var HANDOFF_VERSION = 2;
+  var HANDOFF_BUILD = "p311";
   var PACKAGE_NAME = "com.sandrconcretecrafts.pos";
   var SCHEME = "sandrpos";
   var HOST = "collect";
@@ -99,7 +100,7 @@
       HANDOFF_VERSION +
       "/" +
       cents +
-      "#Intent;scheme=" +
+      "#Intent;action=android.intent.action.VIEW;scheme=" +
       SCHEME +
       ";package=" +
       PACKAGE_NAME +
@@ -113,6 +114,92 @@
       encodeURIComponent(fallback) +
       ";end"
     );
+  }
+
+  function parseChromeIntentUri(uri) {
+    var text = String(uri || "");
+    var marker = "#Intent;";
+    var hash = text.indexOf(marker);
+    if (text.indexOf("intent://") !== 0 || hash < 0 || text.slice(-4) !== ";end") {
+      throw new Error("NOT_CHROME_INTENT");
+    }
+    var opaque = text.slice("intent://".length, hash);
+    var body = text.slice(hash + marker.length, text.length - 4);
+    var extras = {};
+    var scheme = "";
+    var pkg = "";
+    body.split(";").forEach(function (part) {
+      if (!part) return;
+      if (part.indexOf("scheme=") === 0) scheme = part.slice(7);
+      else if (part.indexOf("package=") === 0) pkg = part.slice(8);
+      else if (part.indexOf("S.") === 0 || part.indexOf("i.") === 0) {
+        var eq = part.indexOf("=");
+        extras[part.slice(2, eq)] =
+          part.charAt(0) === "i" ? Number(part.slice(eq + 1)) : part.slice(eq + 1);
+      }
+    });
+    var pathPart = opaque.split("?")[0];
+    var query = opaque.indexOf("?") >= 0 ? opaque.slice(opaque.indexOf("?") + 1) : "";
+    var pathMatch = pathPart.match(/^collect\/v(\d+)\/(\d+)$/);
+    var queryP = "";
+    if (query) {
+      query.split("&").forEach(function (pair) {
+        var eq = pair.indexOf("=");
+        if (eq < 1) return;
+        if (decodeURIComponent(pair.slice(0, eq)) === "p") {
+          queryP = decodeURIComponent(pair.slice(eq + 1));
+        }
+      });
+    }
+    return {
+      opaque: opaque,
+      scheme: scheme,
+      package: pkg,
+      pathVersion: pathMatch ? Number(pathMatch[1]) : null,
+      pathAmount: pathMatch ? Number(pathMatch[2]) : null,
+      extraVersion: extras.handoff_version != null ? Number(extras.handoff_version) : null,
+      extraAmount: extras.amount_total_cents != null ? Number(extras.amount_total_cents) : null,
+      extraPayload: extras.p || "",
+      queryPayload: queryP,
+      hasQueryPayload: Boolean(queryP),
+    };
+  }
+
+  function classifyHandoff(parts) {
+    var raw = parts.extraPayload || parts.queryPayload || "";
+    var sale = null;
+    if (raw) {
+      try {
+        sale = raw.charAt(0) === "{" ? JSON.parse(raw) : JSON.parse(base64UrlToUtf8(raw));
+      } catch (_err) {
+        sale = null;
+      }
+    }
+    if (parts.hasQueryPayload && parts.pathVersion == null && parts.extraVersion == null) {
+      return { ok: false, reason: "LEGACY_HANDOFF" };
+    }
+    var payloadVersion =
+      sale && sale.handoff_version != null ? Number(sale.handoff_version) : null;
+    var payloadAmount = sale ? asPositiveCents(sale.amount_total_cents) : null;
+    var versions = [parts.pathVersion, parts.extraVersion, payloadVersion].filter(function (v) {
+      return v != null && !Number.isNaN(v);
+    });
+    if (!versions.length) return { ok: false, reason: "HANDOFF_VERSION_MISSING" };
+    if (versions.some(function (v) { return v !== versions[0]; })) {
+      return { ok: false, reason: "HANDOFF_DATA_MISMATCH" };
+    }
+    if (versions[0] !== HANDOFF_VERSION) {
+      return { ok: false, reason: "HANDOFF_VERSION_MISMATCH" };
+    }
+    var amounts = [parts.pathAmount, parts.extraAmount, payloadAmount].filter(function (v) {
+      return v != null;
+    });
+    if (!amounts.length) return { ok: false, reason: "AMOUNT_TOTAL_MISSING" };
+    if (amounts.some(function (v) { return v !== amounts[0]; })) {
+      return { ok: false, reason: "HANDOFF_DATA_MISMATCH" };
+    }
+    if (!sale) return { ok: false, reason: "AMOUNT_TOTAL_MISSING" };
+    return { ok: true, reason: "OK", amount: amounts[0], version: HANDOFF_VERSION, sale: sale };
   }
 
   function buildOpenAppIntent(fallbackUrl) {
@@ -159,6 +246,7 @@
 
   return {
     HANDOFF_VERSION: HANDOFF_VERSION,
+    HANDOFF_BUILD: HANDOFF_BUILD,
     PACKAGE_NAME: PACKAGE_NAME,
     SCHEME: SCHEME,
     HOST: HOST,
@@ -172,5 +260,7 @@
     dollarFixture: dollarFixture,
     utf8ToBase64Url: utf8ToBase64Url,
     base64UrlToUtf8: base64UrlToUtf8,
+    parseChromeIntentUri: parseChromeIntentUri,
+    classifyHandoff: classifyHandoff,
   };
 });

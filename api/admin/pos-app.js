@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
       package: manifest.packageName,
       version_name: manifest.versionName,
       version_code: manifest.versionCode || null,
+      build_id: manifest.buildId || null,
     };
     if (wantsDownload(req)) {
       var token = tickets.mintDownloadToken(manifest.channel, 90);

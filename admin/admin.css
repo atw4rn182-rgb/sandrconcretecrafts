@@ -4351,6 +4351,14 @@ body.action-sheet-open { overflow: hidden; }
   text-align: center;
 }
 
+.pos-handoff-build {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--turquoise);
+}
+
 .pos-handoff-diag {
   margin: 0 0 0.7rem;
   padding: 0.75rem 0.85rem;

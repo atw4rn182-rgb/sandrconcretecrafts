@@ -13,6 +13,18 @@
         android:padding="24dp">
 
         <TextView
+            android:id="@+id/buildPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@color/turquoise"
+            android:fontFamily="monospace"
+            android:padding="12dp"
+            android:textColor="@color/cream"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/eyebrow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

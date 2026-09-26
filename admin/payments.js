@@ -963,10 +963,27 @@
       installBtn.className = seen
         ? "btn btn-ghost btn-block"
         : "btn btn-primary btn-block";
-      installBtn.textContent = seen
-        ? "Reinstall S&R Tap to Pay"
-        : "Install S&R Tap to Pay";
+      var versionName = (posAppMeta && posAppMeta.version_name) || "0.1.10-test";
+      var versionCode = (posAppMeta && posAppMeta.version_code) || 11;
+      var buildId = (posAppMeta && posAppMeta.build_id) || "p311-physical";
+      installBtn.innerHTML =
+        (seen ? "Reinstall S&R Tap to Pay" : "Install S&R Tap to Pay") +
+        "<br />" +
+        versionName +
+        " · Code " +
+        versionCode;
       installBtn.disabled = posAppBusy;
+      var installerDiag = byId("posAppInstallerDiag");
+      if (installerDiag) {
+        installerDiag.hidden = false;
+        installerDiag.textContent =
+          "APK VERSION: " +
+          versionName +
+          "\nAPK CODE: " +
+          versionCode +
+          "\nBUILD: " +
+          buildId;
+      }
     }
     if (openBtn) {
       openBtn.hidden = !android;
@@ -1199,15 +1216,13 @@
     if (!box) return;
     box.hidden = false;
     box.textContent = [
-      "ADMIN PAYMENT HANDOFF",
-      "HANDOFF BUILD",
+      "SENDING TO TAP TO PAY",
+      "Total: " + (window.SRTapHandoff ? window.SRTapHandoff.money(sale.amount_total_cents) : ""),
+      "Total cents: " + sale.amount_total_cents,
+      "Handoff: v" + (window.SRTapHandoff && window.SRTapHandoff.HANDOFF_VERSION),
+      "Build: " + (window.SRTapHandoff && window.SRTapHandoff.HANDOFF_BUILD),
       "calculated_total_cents=" + quote.total,
       "handoff_total_cents=" + sale.amount_total_cents,
-      "amount_total_cents=" + sale.amount_total_cents,
-      "handoff_version=" + (window.SRTapHandoff && window.SRTapHandoff.HANDOFF_VERSION),
-      "payload_version=" + sale.handoff_version,
-      "handoff_target=sandrpos://collect extras S.p + i.amount_total_cents",
-      "Sending to Tap to Pay: " + (window.SRTapHandoff ? window.SRTapHandoff.money(sale.amount_total_cents) : ""),
     ].join("\n");
   }
 

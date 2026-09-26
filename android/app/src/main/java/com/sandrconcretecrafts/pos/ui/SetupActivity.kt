@@ -46,6 +46,7 @@ class SetupActivity : AppCompatActivity() {
         session = SessionStore(this)
         EventTrace.add("APP_OPEN path=launcher")
         EventTrace.add("BUILD_VERIFIED code=${BuildConfig.VERSION_CODE} id=${BuildConfig.BUILD_ID}")
+        paintBuildPanel()
         binding.diagnosticsToggle.setOnClickListener {
             showDiagnostics = !showDiagnostics
             refreshDiagnostics(currentView())
@@ -91,9 +92,41 @@ class SetupActivity : AppCompatActivity() {
         )
     }
 
+    private fun paintBuildPanel() {
+        if (!BuildConfig.SIMULATED_READER) {
+            binding.buildPanel.visibility = View.GONE
+            return
+        }
+        binding.buildPanel.visibility = View.VISIBLE
+        binding.buildPanel.text = listOf(
+            "S&R TAP TO PAY",
+            "TEST BUILD",
+            "APP VERSION ${BuildConfig.VERSION_NAME}",
+            "CODE ${BuildConfig.VERSION_CODE}",
+            "BUILD ${BuildConfig.BUILD_ID}",
+            "PACKAGE ${packageName}",
+            "SIMULATED READER YES"
+        ).joinToString("\n")
+    }
+
     private fun render() {
         val view = currentView()
+        paintBuildPanel()
         if (view.skipWizard) {
+            if (!CollectActivity.payloadFrom(intent).isNullOrBlank()) {
+                finishSetup(view)
+                return
+            }
+            if (BuildConfig.SIMULATED_READER) {
+                binding.title.text = "S&R TAP TO PAY"
+                binding.body.text =
+                    "TEST BUILD ${BuildConfig.VERSION_NAME}\nCODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}\n\nConfirm this is the current app before taking a payment."
+                binding.primary.visibility = View.VISIBLE
+                binding.primary.text = "CONTINUE"
+                binding.checklistCard.visibility = View.GONE
+                refreshDiagnostics(view)
+                return
+            }
             finishSetup(view)
             return
         }

@@ -14,6 +14,10 @@ assert.strictEqual(testManifest.channel, "test");
 assert.match(testManifest.label, /TEST VERSION — Simulated payments only/);
 assert.match(posApp.currentManifest().filename, /TEST\.apk$/);
 assert.match(posApp.testFallbackUrl(), /staff-pos-test/);
+assert.strictEqual(posApp.CHANNELS.test.versionCode, 11);
+assert.strictEqual(posApp.CHANNELS.test.versionName, "0.1.10-test");
+assert.strictEqual(posApp.CHANNELS.test.buildId, "p311-physical");
+assert.match(posApp.testFallbackUrl(), /[?&]v=11/);
 
 process.env.SR_POS_APP_CHANNEL = "production";
 var liveManifest = posApp.currentManifest();

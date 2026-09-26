@@ -166,6 +166,8 @@ assert.doesNotMatch(gate, /BLUETOOTH_SCAN|Nearby Devices/);
 
 assert.match(setup, /SetupGate\.evaluate/);
 assert.match(setup, /evaluateAndTrace/);
+assert.match(setup, /paintBuildPanel|buildPanel/);
+assert.match(setup, /CODE \$\{BuildConfig\.VERSION_CODE\}/);
 assert.match(setup, /RequestMultiplePermissions/);
 assert.match(setup, /ACTION_NFC_SETTINGS/);
 assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);

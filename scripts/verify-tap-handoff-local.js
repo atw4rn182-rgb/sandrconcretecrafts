@@ -29,6 +29,7 @@ assert.strictEqual(handoff.money(decoded.amount_total_cents), "$1.00");
 
 var intent = handoff.buildCollectIntent(fixture);
 assert.match(intent, /^intent:\/\/collect\/v2\/100#Intent;/);
+assert.match(intent, /action=android\.intent\.action\.VIEW/);
 assert.match(intent, /scheme=sandrpos/);
 assert.match(intent, /package=com\.sandrconcretecrafts\.pos/);
 assert.match(intent, /S\.p=/);
@@ -39,6 +40,40 @@ assert.doesNotMatch(intent, /intent:\/\/collect\?p=/);
 var extra = intent.match(/;S\.p=([^;]+);/);
 assert.ok(extra, "intent extra S.p is present");
 assert.strictEqual(handoff.decodeSale(extra[1]).amount_total_cents, 100);
+
+var chrome = handoff.parseChromeIntentUri(intent);
+assert.strictEqual(chrome.pathVersion, 2);
+assert.strictEqual(chrome.pathAmount, 100);
+assert.strictEqual(chrome.extraVersion, 2);
+assert.strictEqual(chrome.extraAmount, 100);
+var classified = handoff.classifyHandoff(chrome);
+assert.strictEqual(classified.ok, true);
+assert.strictEqual(classified.amount, 100);
+assert.strictEqual(classified.sale.amount_total_cents, 100);
+assert.strictEqual(handoff.money(classified.amount), "$1.00");
+
+var legacy = handoff.parseChromeIntentUri(
+  "intent://collect?p=" +
+    encodeURIComponent(JSON.stringify({ amount_total_cents: 100 })) +
+    "#Intent;scheme=sandrpos;package=com.sandrconcretecrafts.pos;end"
+);
+assert.strictEqual(handoff.classifyHandoff(legacy).reason, "LEGACY_HANDOFF");
+
+var mismatch = handoff.parseChromeIntentUri(intent.replace("/v2/100", "/v2/200"));
+assert.strictEqual(handoff.classifyHandoff(mismatch).reason, "HANDOFF_DATA_MISMATCH");
+
+assert.strictEqual(
+  handoff.classifyHandoff({
+    pathVersion: null,
+    pathAmount: null,
+    extraVersion: null,
+    extraAmount: null,
+    extraPayload: "",
+    queryPayload: "",
+    hasQueryPayload: false,
+  }).reason,
+  "HANDOFF_VERSION_MISSING"
+);
 
 // D. Missing amount
 assert.throws(function () {
@@ -80,10 +115,13 @@ var kotlinParser = read(
 );
 assert.match(kotlinParser, /const val VERSION = 2/);
 assert.match(kotlinParser, /HANDOFF_VERSION_MISMATCH/);
+assert.match(kotlinParser, /HANDOFF_VERSION_MISSING/);
+assert.match(kotlinParser, /HANDOFF_DATA_MISMATCH/);
+assert.match(kotlinParser, /LEGACY_HANDOFF/);
 assert.match(kotlinParser, /AMOUNT_TOTAL_MISSING/);
-assert.match(kotlinParser, /AMOUNT_TOTAL_INVALID/);
 assert.match(kotlinParser, /HANDOFF_PAYLOAD/);
 assert.match(kotlinParser, /PAYLOAD_VALIDATION/);
+assert.match(kotlinParser, /parsePath/);
 assert.match(kotlinParser, /Base64/);
 assert.doesNotMatch(kotlinParser, /optInt\("amount_total_cents", 0\)/);
 
@@ -95,7 +133,7 @@ assert.match(sale, /return "—"/);
 
 var collect = read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt");
 assert.match(collect, /CollectPayloadParser\.parse/);
-assert.match(collect, /COLLECT CODE/);
+assert.match(collect, /COLLECT SCREEN/);
 assert.match(collect, /handoffPanel/);
 assert.match(collect, /showPayloadFailure/);
 assert.match(collect, /parsed !is CollectPayloadParser\.Result\.Ok/);
@@ -113,13 +151,16 @@ var payments = read("admin/payments.js");
 assert.match(payments, /SRTapHandoff/);
 assert.match(payments, /prepareSale/);
 assert.match(payments, /buildCollectIntent/);
-assert.match(payments, /ADMIN PAYMENT HANDOFF/);
+assert.match(payments, /SENDING TO TAP TO PAY/);
 assert.match(payments, /amount_total_cents: quote\.total/);
 assert.doesNotMatch(payments, /intent:\/\/collect\?p=/);
 
 var html = read("admin/payments.html");
-assert.match(html, /tap-handoff\.js/);
+assert.match(html, /tap-handoff\.js\?v=11/);
+assert.match(html, /payments\.js\?v=11/);
 assert.match(html, /tapHandoffDiag/);
+assert.match(html, /HANDOFF BUILD: v2 \/ p311/);
+assert.match(html, /0\.1\.10-test · Code 11/);
 
 var manifest = read("android/app/src/main/AndroidManifest.xml");
 assert.match(manifest, /android:scheme="sandrpos"/);

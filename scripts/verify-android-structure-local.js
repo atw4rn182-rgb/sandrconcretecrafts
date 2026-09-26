@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 10/);
-assert.match(gradleApp, /versionName = "0\.1\.9-test"/);
+assert.match(gradleApp, /versionCode = 11/);
+assert.match(gradleApp, /versionName = "0\.1\.10-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
 
@@ -97,7 +97,8 @@ assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);
 assert.match(collect, /STALE_UI_CLEARED/);
-assert.match(collect, /COLLECT CODE/);
+assert.match(collect, /COLLECT SCREEN/);
+assert.match(read("android/app/src/main/java/com/sandrconcretecrafts/pos/data/CollectPayloadParser.kt"), /LEGACY_HANDOFF/);
 assert.match(collect, /HANDOFF_PAYLOAD/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.match(collect, /takePayment/);

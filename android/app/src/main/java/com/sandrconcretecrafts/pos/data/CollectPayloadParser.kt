@@ -1,6 +1,7 @@
 package com.sandrconcretecrafts.pos.data
 
 import android.content.Intent
+import android.net.Uri
 import android.util.Base64
 import com.sandrconcretecrafts.pos.terminal.ErrorSource
 import com.sandrconcretecrafts.pos.terminal.EventTrace
@@ -8,29 +9,42 @@ import org.json.JSONObject
 
 /**
  * Single Admin → Android handoff parser. Version 2 is required.
- * Do not silently treat a missing amount as $0.00.
+ * Path, extras, and payload amounts must match. No silent $0.00.
  */
 object CollectPayloadParser {
     const val VERSION = 2
     const val EXTRA_PAYLOAD = "p"
     const val EXTRA_VERSION = "handoff_version"
     const val EXTRA_AMOUNT = "amount_total_cents"
+    private val pathPattern = Regex("^/v(\\d+)/(\\d+)$")
+
+    data class Amounts(
+        val pathVersion: Int?,
+        val pathAmount: Int?,
+        val extraVersion: Int?,
+        val extraAmount: Int?,
+        val payloadVersion: Int?,
+        val payloadAmount: Int?
+    ) {
+        fun label(value: Int?): String = value?.toString() ?: "absent"
+    }
 
     sealed class Result {
         data class Ok(
             val sale: JSONObject,
             val amountCents: Int,
             val version: Int,
-            val payloadPresent: Boolean,
-            val amountFieldPresent: Boolean
-        ) : Result()
+            val amounts: Amounts
+        ) : Result() {
+            val payloadPresent: Boolean get() = true
+            val amountFieldPresent: Boolean get() = true
+        }
 
         data class Error(
             val reason: String,
             val payloadPresent: Boolean,
             val amountFieldPresent: Boolean,
-            val amountValue: String,
-            val versionReceived: String
+            val amounts: Amounts
         ) : Result() {
             val userMessage: String
                 get() = listOf(
@@ -38,29 +52,32 @@ object CollectPayloadParser {
                     "BLOCKED STAGE: PAYLOAD_VALIDATION",
                     "REASON: $reason",
                     "Expected field: amount_total_cents",
-                    "Raw field present: ${if (amountFieldPresent) "YES" else "NO"}",
-                    "HANDOFF VERSION: $versionReceived",
-                    "expected=$VERSION"
+                    "HANDOFF VERSION: ${amounts.label(amounts.payloadVersion ?: amounts.extraVersion ?: amounts.pathVersion)}",
+                    "PATH AMOUNT: ${amounts.label(amounts.pathAmount)}",
+                    "EXTRA AMOUNT: ${amounts.label(amounts.extraAmount)}",
+                    "PAYLOAD AMOUNT: ${amounts.label(amounts.payloadAmount)}",
+                    "expected version=$VERSION"
                 ).joinToString("\n")
         }
     }
 
     fun parse(intent: Intent?, trace: Boolean = true): Result {
+        val data = intent?.data
         if (trace) {
             EventTrace.add("COLLECT_ACTIVITY_CREATED")
             EventTrace.add("intent_action=${safe(intent?.action)}")
-            EventTrace.add("intent_scheme=${safe(intent?.data?.scheme)}")
-            EventTrace.add("intent_host=${safe(intent?.data?.host)}")
-            EventTrace.add("intent_path=${safe(intent?.data?.path)}")
-            EventTrace.add("intent_data_present=${intent?.data != null}")
+            EventTrace.add("intent_scheme=${safe(data?.scheme)}")
+            EventTrace.add("intent_host=${safe(data?.host)}")
+            EventTrace.add("intent_path=${safe(data?.path)}")
+            EventTrace.add("intent_data_present=${data != null}")
         }
 
+        val path = parsePath(data)
         val extraPayload = intent?.getStringExtra(EXTRA_PAYLOAD)
             ?: intent?.getStringExtra("payload")
         val queryPayload = runCatching {
-            intent?.data?.getQueryParameter("p") ?: intent?.data?.getQueryParameter("payload")
+            data?.getQueryParameter("p") ?: data?.getQueryParameter("payload")
         }.getOrNull()
-        val raw = listOf(extraPayload, queryPayload).firstOrNull { !it.isNullOrBlank() }
         val extraVersion = if (intent?.hasExtra(EXTRA_VERSION) == true) {
             intent.getIntExtra(EXTRA_VERSION, -1)
         } else {
@@ -71,112 +88,86 @@ object CollectPayloadParser {
         } else {
             null
         }
+        val raw = listOf(extraPayload, queryPayload).firstOrNull { !it.isNullOrBlank() }
+        val sale = raw?.let { decodeToJson(it) }
+        val payloadVersion = if (sale != null && sale.has("handoff_version") && !sale.isNull("handoff_version")) {
+            sale.optInt("handoff_version", -1)
+        } else {
+            null
+        }
+        val payloadAmount = positiveCents(sale?.opt("amount_total_cents"))
+        val amounts = Amounts(
+            pathVersion = path.first,
+            pathAmount = path.second,
+            extraVersion = extraVersion,
+            extraAmount = extraAmount,
+            payloadVersion = payloadVersion,
+            payloadAmount = payloadAmount
+        )
 
         if (trace) {
             EventTrace.add("payload_parameter_present=${!raw.isNullOrBlank()}")
-            EventTrace.add("handoff_version=${extraVersion ?: "absent"}")
-            EventTrace.add("amount_total_cents_present=${extraAmount != null}")
-            if (extraAmount != null) {
-                EventTrace.add("amount_total_cents=$extraAmount")
-            }
+            EventTrace.add("handoff_version=${amounts.label(extraVersion ?: payloadVersion ?: path.first)}")
+            EventTrace.add("path_amount=${amounts.label(path.second)}")
+            EventTrace.add("extra_amount=${amounts.label(extraAmount)}")
+            EventTrace.add("payload_amount=${amounts.label(payloadAmount)}")
         }
 
-        if (raw.isNullOrBlank()) {
-            val reason = if (extraAmount != null && extraAmount >= 1) {
-                "AMOUNT_TOTAL_MISSING"
-            } else {
-                "AMOUNT_TOTAL_MISSING"
-            }
-            EventTrace.add("HANDOFF_ERROR reason=$reason")
-            EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
-            return Result.Error(
-                reason = reason,
-                payloadPresent = false,
-                amountFieldPresent = extraAmount != null,
-                amountValue = extraAmount?.toString() ?: "INVALID",
-                versionReceived = extraVersion?.toString() ?: "absent"
-            )
+        val queryOnlyLegacy = !queryPayload.isNullOrBlank() &&
+            extraPayload.isNullOrBlank() &&
+            extraVersion == null &&
+            path.first == null
+        if (queryOnlyLegacy) {
+            return fail("LEGACY_HANDOFF", !raw.isNullOrBlank(), payloadAmount != null, amounts)
         }
 
-        return parseRaw(raw, extraVersion, extraAmount)
-    }
-
-    fun parseRaw(
-        raw: String,
-        extraVersion: Int? = null,
-        extraAmount: Int? = null
-    ): Result {
-        val sale = decodeToJson(raw) ?: return Result.Error(
-            reason = "AMOUNT_TOTAL_INVALID",
-            payloadPresent = true,
-            amountFieldPresent = extraAmount != null,
-            amountValue = extraAmount?.toString() ?: "INVALID",
-            versionReceived = extraVersion?.toString() ?: "absent"
-        )
-
-        val receivedVersion = when {
-            sale.has("handoff_version") && !sale.isNull("handoff_version") ->
-                sale.optInt("handoff_version", -1)
-            extraVersion != null -> extraVersion
-            else -> -1
+        val versions = listOfNotNull(path.first, extraVersion, payloadVersion)
+        if (versions.isEmpty()) {
+            return fail("HANDOFF_VERSION_MISSING", !raw.isNullOrBlank(), payloadAmount != null, amounts)
         }
-        if (receivedVersion != VERSION) {
-            EventTrace.add("HANDOFF_ERROR reason=HANDOFF_VERSION_MISMATCH received=$receivedVersion")
-            EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
-            return Result.Error(
-                reason = "HANDOFF_VERSION_MISMATCH",
-                payloadPresent = true,
-                amountFieldPresent = sale.has("amount_total_cents") || extraAmount != null,
-                amountValue = readableAmount(sale, extraAmount),
-                versionReceived = if (receivedVersion < 0) "absent" else receivedVersion.toString()
-            )
+        if (versions.any { it != versions[0] }) {
+            return fail("HANDOFF_DATA_MISMATCH", !raw.isNullOrBlank(), payloadAmount != null, amounts)
+        }
+        if (versions[0] != VERSION) {
+            return fail("HANDOFF_VERSION_MISMATCH", !raw.isNullOrBlank(), payloadAmount != null, amounts)
         }
 
-        if (!sale.has("amount_total_cents") || sale.isNull("amount_total_cents")) {
-            EventTrace.add("HANDOFF_ERROR reason=AMOUNT_TOTAL_MISSING")
-            EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
-            return Result.Error(
-                reason = "AMOUNT_TOTAL_MISSING",
-                payloadPresent = true,
-                amountFieldPresent = false,
-                amountValue = extraAmount?.toString() ?: "INVALID",
-                versionReceived = receivedVersion.toString()
-            )
+        val centsList = listOfNotNull(path.second, extraAmount, payloadAmount)
+        if (centsList.isEmpty()) {
+            return fail("AMOUNT_TOTAL_MISSING", !raw.isNullOrBlank(), false, amounts)
+        }
+        if (centsList.any { it != centsList[0] }) {
+            return fail("HANDOFF_DATA_MISMATCH", !raw.isNullOrBlank(), true, amounts)
+        }
+        if (sale == null || payloadAmount == null) {
+            return fail("AMOUNT_TOTAL_MISSING", sale != null, payloadAmount != null, amounts)
         }
 
-        val cents = positiveCents(sale.opt("amount_total_cents"))
-        if (cents == null) {
-            EventTrace.add("HANDOFF_ERROR reason=AMOUNT_TOTAL_INVALID")
-            EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
-            return Result.Error(
-                reason = "AMOUNT_TOTAL_INVALID",
-                payloadPresent = true,
-                amountFieldPresent = true,
-                amountValue = sale.opt("amount_total_cents")?.toString() ?: "INVALID",
-                versionReceived = receivedVersion.toString()
-            )
-        }
-        if (extraAmount != null && extraAmount != cents) {
-            EventTrace.add("HANDOFF_ERROR reason=AMOUNT_TOTAL_INVALID extra=$extraAmount json=$cents")
-            EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
-            return Result.Error(
-                reason = "AMOUNT_TOTAL_INVALID",
-                payloadPresent = true,
-                amountFieldPresent = true,
-                amountValue = cents.toString(),
-                versionReceived = receivedVersion.toString()
-            )
-        }
-
-        EventTrace.add("HANDOFF_OK version=$receivedVersion amount_total_cents=$cents")
-        EventTrace.add("ANDROID_PARSED_TOTAL=$cents")
+        EventTrace.add("HANDOFF_OK version=${versions[0]} amount_total_cents=${centsList[0]}")
+        EventTrace.add("ANDROID_PARSED_TOTAL=${centsList[0]}")
         return Result.Ok(
             sale = sale,
-            amountCents = cents,
-            version = receivedVersion,
-            payloadPresent = true,
-            amountFieldPresent = true
+            amountCents = centsList[0],
+            version = versions[0],
+            amounts = amounts
         )
+    }
+
+    private fun fail(
+        reason: String,
+        payloadPresent: Boolean,
+        amountFieldPresent: Boolean,
+        amounts: Amounts
+    ): Result.Error {
+        EventTrace.add("HANDOFF_ERROR reason=$reason")
+        EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.HANDOFF_PAYLOAD}")
+        return Result.Error(reason, payloadPresent, amountFieldPresent, amounts)
+    }
+
+    fun parsePath(data: Uri?): Pair<Int?, Int?> {
+        val path = data?.path ?: return null to null
+        val match = pathPattern.matchEntire(path) ?: return null to null
+        return match.groupValues[1].toInt() to match.groupValues[2].toInt()
     }
 
     private fun decodeToJson(raw: String): JSONObject? {
@@ -201,14 +192,6 @@ object CollectPayloadParser {
             else -> null
         }
         return if (cents != null && cents >= 1) cents else null
-    }
-
-    private fun readableAmount(sale: JSONObject, extraAmount: Int?): String {
-        return when {
-            extraAmount != null -> extraAmount.toString()
-            sale.has("amount_total_cents") -> sale.opt("amount_total_cents")?.toString() ?: "INVALID"
-            else -> "INVALID"
-        }
     }
 
     private fun safe(value: String?): String {

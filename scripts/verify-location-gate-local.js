@@ -111,8 +111,9 @@ assert.match(controller, /SOURCE: \$\{ErrorSource\.STRIPE_SDK\}|STRIPE_SDK/);
 assert.match(controller, /TERMINAL_MODE_GATE/);
 assert.match(controller, /TERMINAL_INIT_START/);
 assert.match(controller, /DISCOVERY_START/);
-assert.match(controller, /Stripe error code/);
-assert.match(controller, /Stripe SDK version/);
+assert.match(controller, /ERROR CODE/);
+assert.match(controller, /STRIPE MESSAGE/);
+assert.match(controller, /SDK: \$\{TerminalPermissions\.STRIPE_SDK_VERSION\}|SDK: 5\.8\.1/);
 
 var sale = fs.readFileSync(
   path.join(root, "android/app/src/main/java/com/sandrconcretecrafts/pos/data/SalePayload.kt"),

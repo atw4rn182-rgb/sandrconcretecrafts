@@ -424,12 +424,11 @@ class TerminalController(
         EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK} stage=$blocked")
         return listOfNotNull(
             "SOURCE: ${ErrorSource.STRIPE_SDK}",
-            "STAGE_SOURCE: $blocked",
             "BLOCKED STAGE: $blocked",
-            "Stripe error code: ${code ?: "unknown"}",
-            "Stripe error message: ${message ?: "Tap to Pay couldn’t finish."}",
-            "Stripe exception class: TerminalException",
-            "Stripe SDK version: ${TerminalPermissions.STRIPE_SDK_VERSION}"
+            "ERROR CODE: ${code ?: "unknown"}",
+            "ERROR CLASS: TerminalException",
+            "STRIPE MESSAGE: ${message ?: "Tap to Pay couldn’t finish."}",
+            "SDK: ${TerminalPermissions.STRIPE_SDK_VERSION}"
         ).joinToString("\n")
     }
 
