@@ -5,6 +5,7 @@
 "use strict";
 
 var crypto = require("crypto");
+var terminalMode = require("./terminal-mode");
 
 function env(name) {
   return String(process.env[name] || "").trim();
@@ -319,7 +320,11 @@ function terminalConfig() {
     live.status = 503;
     throw live;
   }
-  return { secret: secret, locationId: locationId };
+  return {
+    secret: secret,
+    locationId: locationId,
+    mode: terminalMode.fromSecret(secret),
+  };
 }
 
 async function stripeFormRequest(path, params, idempotencyKey, secretOverride) {
@@ -471,6 +476,7 @@ module.exports = {
   createTerminalConnectionToken: createTerminalConnectionToken,
   createTerminalPaymentIntent: createTerminalPaymentIntent,
   terminalConfig: terminalConfig,
+  terminalMode: terminalMode,
   constructEvent: constructEvent,
   readRawBody: readRawBody,
   stripeLiveAllowed: stripeLiveAllowed,

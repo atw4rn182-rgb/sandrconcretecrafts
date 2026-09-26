@@ -63,6 +63,15 @@ class TerminalController(
     @Volatile
     var lastSafeError: String? = null
         private set
+    @Volatile
+    var lastStage: String = "idle"
+        private set
+    @Volatile
+    var lastErrorCode: String? = null
+        private set
+    @Volatile
+    var backendLivemode: Boolean? = null
+        private set
 
     private val readerClaimed = AtomicBoolean(false)
     private var phaseListener: ((String) -> Unit)? = null
@@ -83,22 +92,39 @@ class TerminalController(
         if (connecting) return
         connecting = true
         lastSafeError = null
+        lastErrorCode = null
+        lastStage = "permission-check"
         readerClaimed.set(false)
         io.execute {
             try {
+                lastStage = "terminal-init"
                 terminalStatus = TerminalStatus.Initializing
                 notifyPhase("Initializing Stripe Terminal")
                 initialize()
                 terminalStatus = TerminalStatus.Initialized
                 notifyPhase("Stripe Terminal initialized")
-                notifyPhase("Loading Terminal location")
-                val locationId = api.refreshTerminalLocation()
-                main.post { startDiscovery(locationId, onReady, onError) }
+                lastStage = "connection-token"
+                notifyPhase("Requesting connection token")
+                val session = api.refreshTerminalSession()
+                backendLivemode = session.livemode
+                tokenStatus = TokenStatus.Received
+                if (useSimulatedReader() && session.livemode == true) {
+                    connecting = false
+                    terminalStatus = TerminalStatus.Failed
+                    lastErrorCode = "TERMINAL_MODE_MISMATCH"
+                    lastSafeError =
+                        "Stage: connection-token\nTERMINAL_MODE_MISMATCH\nThis TEST APK is simulated only. The Terminal backend is LIVE. Online Checkout was not changed. Stop and use a TEST Terminal key/location/webhook for simulation."
+                    onError(lastSafeError ?: "Terminal mode mismatch.")
+                    return@execute
+                }
+                lastStage = "reader-discovery"
+                main.post { startDiscovery(session.locationId, onReady, onError) }
             } catch (error: Exception) {
                 connecting = false
                 terminalStatus = TerminalStatus.Failed
-                lastSafeError = error.message
-                onError(error.message ?: "Tap to Pay SDK did not start.")
+                lastSafeError = sanitize(error.message ?: "Tap to Pay SDK did not start.")
+                lastErrorCode = lastErrorCode ?: "INIT_FAILED"
+                onError(formatError(lastStage, lastErrorCode, lastSafeError))
             }
         }
     }
@@ -225,7 +251,11 @@ class TerminalController(
             onReady()
             return
         }
-        if (discoverCancelable != null) return
+        if (discoverCancelable != null) {
+            discoverCancelable?.cancel(noopCallback)
+            discoverCancelable = null
+        }
+        lastStage = "reader-discovery"
         discoveryStatus = DiscoveryStatus.Starting
         notifyPhase("Starting simulated reader discovery")
         val config = DiscoveryConfiguration.TapToPayDiscoveryConfiguration(
@@ -251,6 +281,7 @@ class TerminalController(
                     connecting = false
                     discoverCancelable = null
                     discoveryStatus = DiscoveryStatus.Failed
+                    lastStage = "reader-discovery"
                     lastSafeError = friendly(e)
                     onError(lastSafeError ?: friendly(e))
                 }
@@ -264,6 +295,7 @@ class TerminalController(
         onReady: () -> Unit,
         onError: (String) -> Unit
     ) {
+        lastStage = "reader-connection"
         connectionStatus = ConnectionPhase.Connecting
         notifyPhase("Connecting simulated reader")
         val config = ConnectionConfiguration.TapToPayConnectionConfiguration(
@@ -287,6 +319,7 @@ class TerminalController(
                     connecting = false
                     readerClaimed.set(false)
                     connectionStatus = ConnectionPhase.Failed
+                    lastStage = "reader-connection"
                     lastSafeError = friendly(e)
                     onError(lastSafeError ?: friendly(e))
                 }
@@ -300,10 +333,13 @@ class TerminalController(
 
     fun safeDiagnostics(): String {
         return listOf(
-            "Terminal: ${label(terminalStatus)}",
+            "Stage: $lastStage",
+            "Terminal initialized: ${if (terminalStatus == TerminalStatus.Initialized) "yes" else "no"}",
+            "Terminal backend: ${backendLabel()}",
             "Connection token: ${label(tokenStatus)}",
             "Reader discovery: ${label(discoveryStatus)}",
             "Reader connection: ${label(connectionStatus)}",
+            lastErrorCode?.let { "Last error code: $it" },
             lastSafeError?.let { "Last error: $it" }
         ).filterNotNull().joinToString("\n")
     }
@@ -331,11 +367,35 @@ class TerminalController(
         }
     }
 
+    private fun backendLabel(): String {
+        return when (backendLivemode) {
+            true -> "LIVE"
+            false -> "TEST"
+            null -> "unknown"
+        }
+    }
+
     private fun friendly(error: TerminalException): String {
-        val message = error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
         val code = error.errorCode.toString().substringAfterLast('.')
-        if (code.isBlank() || message.contains(code)) return message
-        return "$message ($code)"
+        lastErrorCode = code.ifBlank { "TERMINAL_EXCEPTION" }
+        val message = sanitize(
+            error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
+        )
+        return formatError(lastStage, lastErrorCode, message)
+    }
+
+    private fun formatError(stage: String, code: String?, message: String?): String {
+        return listOfNotNull(
+            "Stage: $stage",
+            code?.takeIf { it.isNotBlank() },
+            message?.takeIf { it.isNotBlank() }
+        ).joinToString("\n")
+    }
+
+    private fun sanitize(raw: String): String {
+        return raw
+            .replace(Regex("(?i)(sk|rk|whsec|pst|pi|tml|eyJ)[_A-Za-z0-9\\-]{8,}"), "[redacted]")
+            .replace(Regex("(?i)(client_secret|Bearer)\\s+[A-Za-z0-9_\\-\\.]+"), "[redacted]")
     }
 
     companion object {

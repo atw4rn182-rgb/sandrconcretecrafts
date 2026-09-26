@@ -37,6 +37,15 @@ var viewModel = fs.readFileSync(
 );
 assert.match(viewModel, /SalePayload\.amountCents/);
 assert.match(viewModel, /createPaymentIntent/);
+assert.match(viewModel, /collecting\.compareAndSet\(false, true\)/);
 assert.doesNotMatch(viewModel, /type"\) == "custom"/);
+
+var payments = fs.readFileSync(
+  path.join(__dirname, "..", "admin/payments.js"),
+  "utf8"
+);
+assert.match(payments, /amount_total_cents: quote\.total/);
+assert.match(payments, /tapSubmitting/);
+assert.match(payments, /idempotency_key: tapIdempotencyKey/);
 
 console.log("tap handoff amount_total_cents contract: ok");

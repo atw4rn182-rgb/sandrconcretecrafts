@@ -26,9 +26,21 @@ module.exports = async function handler(req, res) {
   }
   try {
     var admin = await auth.requireActiveAdmin(req);
-    // Fail closed before creating a database draft when Terminal is disabled.
-    stripe.terminalConfig();
-    var sale = validation.normalizeSale(api.readJsonBody(req));
+    var cfg = stripe.terminalConfig();
+    var body = api.readJsonBody(req);
+    if (body && body.simulated === true && cfg.mode === "live") {
+      var mismatch = new Error(
+        "This TEST app can only simulate payments against a TEST Terminal backend. Online Checkout was not changed."
+      );
+      mismatch.code = "TERMINAL_MODE_MISMATCH";
+      mismatch.status = 409;
+      throw mismatch;
+    }
+    console.log("[admin/terminal/payment-intent]", {
+      mode: cfg.mode,
+      livemode: cfg.mode === "live",
+    });
+    var sale = validation.normalizeSale(body);
     var order = one(await db.recordInPersonSale(admin.id, "tap_to_pay", sale));
     if (!order || !order.id || !Number.isSafeInteger(Number(order.amount_total))) {
       throw new Error("Terminal order creation returned an invalid result.");

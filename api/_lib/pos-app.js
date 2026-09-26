@@ -16,8 +16,8 @@ var CHANNELS = {
     simulated: true,
     label: "TEST VERSION — Simulated payments only",
     filename: "S-and-R-Tap-to-Pay-TEST.apk",
-    versionName: "0.1.3-test",
-    versionCode: 4,
+    versionName: "0.1.4-test",
+    versionCode: 5,
   },
   production: {
     object: "production/app-release.apk",

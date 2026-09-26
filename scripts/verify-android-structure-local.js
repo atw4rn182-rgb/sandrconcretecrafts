@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 4/);
-assert.match(gradleApp, /versionName = "0\.1\.3-test"/);
+assert.match(gradleApp, /versionCode = 5/);
+assert.match(gradleApp, /versionName = "0\.1\.4-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 
 var tokenProvider = read(
@@ -56,6 +56,8 @@ assert.match(api, /admin_users/);
 assert.doesNotMatch(api, /STRIPE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
 assert.doesNotMatch(api, /tml_[A-Za-z0-9_]{6,}/);
 assert.match(api, /refreshTerminalLocation/);
+assert.match(api, /simulated/);
+assert.match(api, /livemode/);
 
 var controller = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/TerminalController.kt"
@@ -68,8 +70,10 @@ assert.match(controller, /PublicConfig\.simulatedReader/);
 assert.doesNotMatch(controller, /\|\|\s*debuggable/);
 assert.match(controller, /processPaymentIntent/);
 assert.match(controller, /safeDiagnostics/);
-assert.match(controller, /refreshTerminalLocation|awaitLocationId/);
+assert.match(controller, /refreshTerminalSession|refreshTerminalLocation|awaitLocationId/);
 assert.match(controller, /isSimulated = useSimulatedReader/);
+assert.match(controller, /TERMINAL_MODE_MISMATCH/);
+assert.match(controller, /Stage:/);
 assert.doesNotMatch(controller, /tml_/);
 
 var viewModel = read(

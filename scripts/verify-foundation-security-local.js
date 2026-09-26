@@ -63,7 +63,11 @@ assert.match(posManifest, /TEST VERSION — Simulated payments only/);
 assert.match(posManifest, /Production — Real Tap to Pay/);
 assert.match(db, /createSignedStorageUrl/);
 assert.match(tokenRoute, /location_id:\s*cfg\.locationId/);
+assert.match(tokenRoute, /livemode:/);
 assert.doesNotMatch(tokenRoute, /tml_/);
+assert.match(terminalRoute, /TERMINAL_MODE_MISMATCH/);
+assert.doesNotMatch(read("api/stripe-webhook.js"), /STRIPE_TERMINAL_SECRET_KEY/);
+assert.doesNotMatch(read("api/create-checkout-session.js"), /sandrpos|STRIPE_TERMINAL_SECRET_KEY/);
 assert.match(read("api/_lib/stripe.js"), /STRIPE_TERMINAL_SECRET_KEY/);
 assert.match(
   read("api/_lib/stripe.js"),

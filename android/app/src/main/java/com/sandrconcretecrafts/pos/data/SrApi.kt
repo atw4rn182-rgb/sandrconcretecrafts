@@ -7,7 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class SrApi(private val session: SessionStore) {
-    data class TerminalToken(val locationId: String)
+    data class TerminalToken(val locationId: String, val livemode: Boolean?)
     data class PaymentSession(
         val orderId: String,
         val paymentIntentId: String,
@@ -51,20 +51,34 @@ class SrApi(private val session: SessionStore) {
     fun fetchConnectionToken(): String {
         val pair = requestConnectionToken()
         lastLocationId = pair.locationId
+        lastLivemode = pair.livemode
         return pair.secret
     }
 
     fun refreshTerminalLocation(): String {
+        return refreshTerminalSession().locationId
+    }
+
+    fun refreshTerminalSession(): TerminalToken {
         val pair = requestConnectionToken()
         lastLocationId = pair.locationId
-        return pair.locationId
+        lastLivemode = pair.livemode
+        return TerminalToken(pair.locationId, pair.livemode)
+    }
+
+    fun lastKnownLivemode(): Boolean? {
+        return lastLivemode
     }
 
     fun createPaymentIntent(sale: JSONObject): PaymentSession {
         requireActiveAdmin()
+        val payload = JSONObject(sale.toString())
+        if (PublicConfig.simulatedReader) {
+            payload.put("simulated", true)
+        }
         val json = postJson(
             "${PublicConfig.apiBaseUrl}/api/admin/terminal/payment-intent",
-            sale,
+            payload,
             adminHeaders()
         )
         val secret = json.optString("client_secret")
@@ -86,7 +100,11 @@ class SrApi(private val session: SessionStore) {
         return refreshTerminalLocation()
     }
 
-    private data class ConnectionTokenPair(val secret: String, val locationId: String)
+    private data class ConnectionTokenPair(
+        val secret: String,
+        val locationId: String,
+        val livemode: Boolean?
+    )
 
     private fun requestConnectionToken(): ConnectionTokenPair {
         requireActiveAdmin()
@@ -97,11 +115,16 @@ class SrApi(private val session: SessionStore) {
         )
         val secret = json.optString("secret")
         val locationId = json.optString("location_id")
+        val livemode = if (json.has("livemode") && !json.isNull("livemode")) {
+            json.optBoolean("livemode")
+        } else {
+            null
+        }
         if (secret.isBlank()) throw IllegalStateException("Stripe returned no connection token.")
         if (!locationId.startsWith("tml_")) {
             throw IllegalStateException("Stripe Terminal Location is not configured on the server.")
         }
-        return ConnectionTokenPair(secret, locationId)
+        return ConnectionTokenPair(secret, locationId, livemode)
     }
 
     private fun adminHeaders(): Map<String, String> {
@@ -172,5 +195,7 @@ class SrApi(private val session: SessionStore) {
     companion object {
         @Volatile
         private var lastLocationId: String? = null
+        @Volatile
+        private var lastLivemode: Boolean? = null
     }
 }

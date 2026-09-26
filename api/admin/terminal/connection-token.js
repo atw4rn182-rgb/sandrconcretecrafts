@@ -19,9 +19,15 @@ module.exports = async function handler(req, res) {
     var cfg = stripe.terminalConfig();
     var token = await stripe.createTerminalConnectionToken();
     if (!token || !token.secret) throw new Error("Stripe returned no connection token.");
+    var mode = stripe.terminalMode.fromStripeToken(token, cfg.secret);
+    console.log("[admin/terminal/connection-token]", {
+      mode: mode,
+      livemode: mode === "live",
+    });
     api.sendJson(res, 200, {
       secret: token.secret,
       location_id: cfg.locationId,
+      livemode: mode === "live",
     });
   } catch (err) {
     var status = api.errorStatus(err);
