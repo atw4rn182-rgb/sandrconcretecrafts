@@ -5,11 +5,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.sandrconcretecrafts.pos.BuildConfig
 import com.sandrconcretecrafts.pos.R
 import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.databinding.ActivityLoginBinding
+import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 import java.util.concurrent.Executors
 
 class LoginActivity : AppCompatActivity() {
@@ -20,6 +22,10 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        if (BuildConfig.SIMULATED_READER) {
+            binding.buildBanner.visibility = View.VISIBLE
+            binding.buildBanner.text = TerminalPermissions.buildBanner()
+        }
 
         val session = SessionStore(this)
         if (!PublicConfig.isConfigured()) {

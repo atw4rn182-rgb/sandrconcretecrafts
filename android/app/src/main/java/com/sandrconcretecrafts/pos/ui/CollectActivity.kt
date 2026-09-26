@@ -1,6 +1,5 @@
 package com.sandrconcretecrafts.pos.ui
 
-import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -21,13 +20,13 @@ import java.net.URLDecoder
 class CollectActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCollectBinding
     private val viewModel: CollectViewModel by viewModels()
-    private var waitingForPermissions = false
+    private var waitingForLocation = false
     private var startedCollect = false
-    private var requestedPermissionsThisSession = false
+    private var requestedFineThisSession = false
     private val permission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        // Re-read Android's current grant state. Do not trust a stale denial.
+        requestedFineThisSession = true
         continueIfReady()
     }
 
@@ -35,6 +34,7 @@ class CollectActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCollectBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        showBuildBanner()
 
         if (SessionStore(this).accessToken.isNullOrBlank()) {
             startActivity(Intent(this, LoginActivity::class.java).apply {
@@ -48,14 +48,13 @@ class CollectActivity : AppCompatActivity() {
         viewModel.state.observe(this) { render(it) }
         binding.cancel.setOnClickListener { viewModel.cancel() }
         binding.backToPos.setOnClickListener { openPayments(null) }
-        binding.openSettings.setOnClickListener { openAppSettings() }
         continueIfReady()
     }
 
     override fun onResume() {
         super.onResume()
         refreshDiagnostics()
-        if (waitingForPermissions) continueIfReady()
+        if (waitingForLocation || !startedCollect) continueIfReady()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -65,42 +64,46 @@ class CollectActivity : AppCompatActivity() {
         continueIfReady()
     }
 
+    private fun currentState(): TerminalPermissions.LocationState {
+        return TerminalPermissions.evaluate(
+            this,
+            requestedFineThisSession,
+            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+        )
+    }
+
     private fun continueIfReady() {
-        refreshDiagnostics()
-        val missing = TerminalPermissions.missingRuntimePermissions(this)
-        if (missing.isNotEmpty()) {
-            waitingForPermissions = true
-            if (shouldRequest(missing)) {
-                requestedPermissionsThisSession = true
-                permission.launch(missing)
-            } else {
-                showPermissionBlocked(missing)
+        val state = currentState()
+        refreshDiagnostics(state)
+        if (!state.fineGranted) {
+            waitingForLocation = true
+            if (!requestedFineThisSession) {
+                permission.launch(TerminalPermissions.locationRequestPermissions)
+                return
             }
+            showLocationBlocked(state)
             return
         }
-        if (!TerminalPermissions.locationServicesOn(this)) {
-            waitingForPermissions = true
-            showPermissionNeeded(
-                "Turn on Location in Android Settings. Stripe Terminal needs the phone’s location, not just the app permission."
-            )
+        if (!state.servicesOn) {
+            waitingForLocation = true
+            showLocationBlocked(state)
             return
         }
-        waitingForPermissions = false
+        waitingForLocation = false
         if (!startedCollect) {
             startedCollect = true
             startFromIntent()
         }
     }
 
-    private fun shouldRequest(missing: Array<String>): Boolean {
-        return !requestedPermissionsThisSession ||
-            missing.any { shouldShowRequestPermissionRationale(it) }
-    }
-
     private fun startFromIntent() {
         val payload = payloadFrom(intent)
         if (payload.isNullOrBlank()) {
-            showFailed("Open Take Payment from S&R Payments on this phone.")
+            showBlocked(
+                "HANDOFF",
+                "MISSING_AMOUNT_PAYLOAD",
+                "Open Take Payment from S&R Payments on this phone."
+            )
             return
         }
         viewModel.start(payload)
@@ -173,42 +176,39 @@ class CollectActivity : AppCompatActivity() {
         refreshDiagnostics()
     }
 
-    private fun showPermissionBlocked(missing: Array<String>) {
-        val needsLocation = missing.contains(Manifest.permission.ACCESS_FINE_LOCATION)
-        val needsNearby = missing.any { it in TerminalPermissions.nearbyPermissions }
-        val message = when {
-            needsLocation ->
-                "Location is still off for S&R Tap to Pay. Open Settings, allow Location, then return here."
-            needsNearby ->
-                "Nearby Devices is still off. Open Settings, allow Nearby Devices, then return here."
-            else ->
-                "A required permission is still off. Open Settings, then return here."
-        }
-        showPermissionNeeded(message)
-    }
-
-    private fun showPermissionNeeded(message: String) {
-        binding.status.text = "Tap to Pay isn’t ready"
-        binding.detail.text = message
-        binding.busy.visibility = View.GONE
-        binding.takePayment.visibility = View.GONE
-        binding.cancel.visibility = View.GONE
-        binding.backToPos.visibility = View.VISIBLE
+    private fun showLocationBlocked(state: TerminalPermissions.LocationState) {
+        showBlocked(state.stage, state.reason, TerminalPermissions.userMessage(state))
         binding.openSettings.visibility = View.VISIBLE
-        refreshDiagnostics()
+        binding.openSettings.text = if (state.block == TerminalPermissions.Block.LOCATION_SERVICES_DISABLED) {
+            getString(R.string.open_location_settings)
+        } else {
+            getString(R.string.open_settings)
+        }
+        binding.openSettings.setOnClickListener { openNeededSettings(state) }
     }
 
-    private fun showFailed(message: String) {
-        binding.status.text = "Tap to Pay isn’t ready"
-        binding.detail.text = message
+    private fun showBlocked(stage: String, reason: String, message: String) {
+        binding.status.text = "BLOCKED STAGE: $stage"
+        binding.detail.text = "REASON: $reason\n\n$message"
         binding.busy.visibility = View.GONE
         binding.takePayment.visibility = View.GONE
         binding.cancel.visibility = View.GONE
         binding.backToPos.visibility = View.VISIBLE
+        binding.openSettings.visibility = View.GONE
         refreshDiagnostics()
     }
 
-    private fun refreshDiagnostics() {
+    private fun showBuildBanner() {
+        if (!BuildConfig.SIMULATED_READER) {
+            binding.buildBanner.visibility = View.GONE
+            return
+        }
+        binding.buildBanner.visibility = View.VISIBLE
+        binding.buildBanner.text = TerminalPermissions.buildBanner()
+    }
+
+    private fun refreshDiagnostics(state: TerminalPermissions.LocationState = currentState()) {
+        showBuildBanner()
         if (!BuildConfig.SIMULATED_READER) {
             binding.diagnostics.visibility = View.GONE
             return
@@ -216,11 +216,17 @@ class CollectActivity : AppCompatActivity() {
         binding.diagnostics.visibility = View.VISIBLE
         binding.diagnostics.text = TerminalPermissions.safeDiagnostics(
             this,
+            state,
             viewModel.safeTerminalDiagnostics()
         )
     }
 
-    private fun openAppSettings() {
+    private fun openNeededSettings(state: TerminalPermissions.LocationState) {
+        val action = TerminalPermissions.settingsAction(state)
+        if (action == Settings.ACTION_LOCATION_SOURCE_SETTINGS) {
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            return
+        }
         startActivity(
             Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

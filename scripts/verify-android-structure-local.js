@@ -37,9 +37,10 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 5/);
-assert.match(gradleApp, /versionName = "0\.1\.4-test"/);
+assert.match(gradleApp, /versionCode = 6/);
+assert.match(gradleApp, /versionName = "0\.1\.5-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
+assert.match(gradleApp, /BUILD_ID/);
 
 var tokenProvider = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/SrConnectionTokenProvider.kt"
@@ -89,12 +90,15 @@ assert.doesNotMatch(viewModel, /type"\) == "custom"/);
 var collect = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
 );
-assert.match(collect, /TerminalPermissions\.missingRuntimePermissions/);
-assert.match(collect, /checkSelfPermission|missingRuntimePermissions/);
+assert.match(collect, /TerminalPermissions\.evaluate/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
+assert.match(collect, /ACTION_LOCATION_SOURCE_SETTINGS/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.match(collect, /takePayment/);
+assert.match(collect, /BLOCKED STAGE/);
+assert.doesNotMatch(collect, /missingRuntimePermissions/);
+assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);
 assert.doesNotMatch(collect, /granted\.values\.all/);
 
 var permissions = read(
@@ -103,8 +107,11 @@ var permissions = read(
 assert.match(permissions, /ACCESS_FINE_LOCATION/);
 assert.match(permissions, /BLUETOOTH_CONNECT/);
 assert.match(permissions, /checkSelfPermission/);
-assert.match(permissions, /fineLocationGranted\(context\) && locationServicesOn/);
+assert.match(permissions, /fun evaluate\(/);
+assert.match(permissions, /FINE_DENIED_COARSE_GRANTED/);
+assert.match(permissions, /LOCATION_SERVICES_DISABLED/);
 assert.doesNotMatch(permissions, /client_secret|sk_live_|whsec_/);
+assert.doesNotMatch(permissions, /Location permission is required for Stripe Terminal/);
 
 var salePayload = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/data/SalePayload.kt"
