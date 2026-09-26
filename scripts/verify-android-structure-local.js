@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 6/);
-assert.match(gradleApp, /versionName = "0\.1\.5-test"/);
+assert.match(gradleApp, /versionCode = 7/);
+assert.match(gradleApp, /versionName = "0\.1\.6-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
 
@@ -92,14 +92,20 @@ var collect = read(
 );
 assert.match(collect, /TerminalPermissions\.evaluate/);
 assert.match(collect, /override fun onResume/);
-assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
-assert.match(collect, /ACTION_LOCATION_SOURCE_SETTINGS/);
+assert.match(collect, /SetupActivity/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.match(collect, /takePayment/);
-assert.match(collect, /BLOCKED STAGE/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);
 assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);
 assert.doesNotMatch(collect, /granted\.values\.all/);
+
+var setup = read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/SetupActivity.kt");
+assert.match(setup, /SetupGate\.evaluate/);
+assert.match(setup, /ACTION_APPLICATION_DETAILS_SETTINGS/);
+assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);
+assert.match(setup, /ACTION_NFC_SETTINGS/);
+assert.match(setup, /GET STARTED|setup_get_started|MARK_WELCOME/);
+assert.match(read("android/app/src/main/AndroidManifest.xml"), /\.ui\.SetupActivity/);
 
 var permissions = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/TerminalPermissions.kt"

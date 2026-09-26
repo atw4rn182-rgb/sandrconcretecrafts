@@ -11,27 +11,30 @@ import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.databinding.ActivityLoginBinding
+import com.sandrconcretecrafts.pos.setup.SetupStore
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 import java.util.concurrent.Executors
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private val io = Executors.newSingleThreadExecutor()
+    private var showDiagnostics = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        if (BuildConfig.SIMULATED_READER) {
-            binding.buildBanner.visibility = View.VISIBLE
-            binding.buildBanner.text = TerminalPermissions.buildBanner()
+        binding.diagnosticsToggle.setOnClickListener {
+            showDiagnostics = !showDiagnostics
+            refreshDiagnostics()
         }
+        refreshDiagnostics()
 
         val session = SessionStore(this)
         if (!PublicConfig.isConfigured()) {
             showError(getString(R.string.config_missing))
         } else if (!session.accessToken.isNullOrBlank()) {
-            continueToCollect()
+            continueAfterAuth()
             return
         }
 
@@ -46,7 +49,7 @@ class LoginActivity : AppCompatActivity() {
             io.execute {
                 try {
                     SrApi(session).login(email, password)
-                    runOnUiThread { continueToCollect() }
+                    runOnUiThread { continueAfterAuth() }
                 } catch (error: Exception) {
                     runOnUiThread {
                         binding.signIn.isEnabled = true
@@ -57,7 +60,24 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun continueToCollect() {
+    private fun continueAfterAuth() {
+        val setup = SetupStore(this)
+        val location = TerminalPermissions.evaluate(this, false, false)
+        if (SetupActivity.needsWizard(
+                setup.welcomeSeen,
+                setup.completedOnce,
+                location,
+                TerminalPermissions.nfcAvailable(this),
+                TerminalPermissions.nfcEnabled(this)
+            )
+        ) {
+            startActivity(Intent(this, SetupActivity::class.java).apply {
+                data = intent.data
+                intent.extras?.let { putExtras(it) }
+            })
+            finish()
+            return
+        }
         if (CollectActivity.payloadFrom(intent).isNullOrBlank()) {
             startActivity(
                 Intent(
@@ -73,6 +93,31 @@ class LoginActivity : AppCompatActivity() {
         intent?.extras?.let { next.putExtras(it) }
         startActivity(next)
         finish()
+    }
+
+    private fun refreshDiagnostics() {
+        if (!BuildConfig.SIMULATED_READER) {
+            binding.diagnosticsToggle.visibility = View.GONE
+            binding.diagnostics.visibility = View.GONE
+            return
+        }
+        binding.diagnosticsToggle.visibility = View.VISIBLE
+        binding.diagnosticsToggle.text = if (showDiagnostics) {
+            getString(R.string.hide_test_diagnostics)
+        } else {
+            getString(R.string.test_diagnostics)
+        }
+        if (!showDiagnostics) {
+            binding.diagnostics.visibility = View.GONE
+            return
+        }
+        val location = TerminalPermissions.evaluate(
+            this,
+            false,
+            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+        )
+        binding.diagnostics.visibility = View.VISIBLE
+        binding.diagnostics.text = TerminalPermissions.safeDiagnostics(this, location)
     }
 
     private fun showError(message: String) {

@@ -16,4 +16,11 @@
     <string name="tap_ready_copy">TEST — Simulated payments only. The amount above is the same total from Admin Pay.</string>
     <string name="take_payment">Take Payment</string>
     <string name="config_missing">Add the public Supabase URL and anon key to android/local.properties. Never add secret keys.</string>
+    <string name="setup_eyebrow">S&amp;R Concrete Crafts</string>
+    <string name="setup_welcome_title">S&amp;R TAP TO PAY</string>
+    <string name="setup_welcome_body">Let\'s get Tap to Pay ready.\n\nWe\'ll check the few settings needed to accept contactless payments on this phone.</string>
+    <string name="setup_get_started">GET STARTED</string>
+    <string name="setup_progress_title">Setting up Tap to Pay</string>
+    <string name="test_diagnostics">TEST Diagnostics</string>
+    <string name="hide_test_diagnostics">Hide TEST Diagnostics</string>
 </resources>

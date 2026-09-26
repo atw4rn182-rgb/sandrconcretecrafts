@@ -44,14 +44,20 @@ assert.match(permissions, /BUILD_ID/);
 assert.doesNotMatch(permissions, /Location permission is required for Stripe Terminal/);
 
 assert.match(collect, /TerminalPermissions\.evaluate/);
-assert.match(collect, /requestedFineThisSession/);
 assert.match(collect, /override fun onResume/);
-assert.match(collect, /ACTION_LOCATION_SOURCE_SETTINGS/);
-assert.match(collect, /ACTION_APPLICATION_DETAILS_SETTINGS/);
-assert.match(collect, /BLOCKED STAGE/);
+assert.match(collect, /SetupActivity/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);
 assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);
 assert.doesNotMatch(collect, /permission\.launch\(missing\)/);
+
+var setup = fs.readFileSync(
+  path.join(root, "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/SetupActivity.kt"),
+  "utf8"
+);
+assert.match(setup, /requestedFineThisSession/);
+assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);
+assert.match(setup, /ACTION_APPLICATION_DETAILS_SETTINGS/);
+assert.match(setup, /BLOCKED STAGE/);
 
 var controller = fs.readFileSync(
   path.join(

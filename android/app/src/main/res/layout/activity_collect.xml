@@ -15,15 +15,25 @@
         android:padding="24dp">
 
         <TextView
-            android:id="@+id/buildBanner"
+            android:id="@+id/diagnosticsToggle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/brown"
             android:gravity="center"
-            android:padding="10dp"
-            android:textColor="@color/cream"
-            android:textSize="13sp"
-            android:textStyle="bold"
+            android:padding="8dp"
+            android:text="@string/test_diagnostics"
+            android:textColor="@color/turquoise"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/diagnostics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:gravity="start"
+            android:textColor="@color/brown"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <TextView
@@ -59,17 +69,6 @@
             android:text="@string/tap_copy"
             android:textColor="@color/brown"
             android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/diagnostics"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="monospace"
-            android:gravity="start"
-            android:textColor="@color/brown"
-            android:textSize="12sp"
-            android:visibility="gone" />
 
         <ProgressBar
             android:id="@+id/busy"

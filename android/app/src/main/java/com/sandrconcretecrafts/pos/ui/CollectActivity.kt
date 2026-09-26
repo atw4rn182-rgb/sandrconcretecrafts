@@ -3,10 +3,8 @@ package com.sandrconcretecrafts.pos.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.sandrconcretecrafts.pos.BuildConfig
@@ -14,27 +12,25 @@ import com.sandrconcretecrafts.pos.R
 import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.databinding.ActivityCollectBinding
+import com.sandrconcretecrafts.pos.setup.SetupStore
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 import java.net.URLDecoder
 
 class CollectActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCollectBinding
     private val viewModel: CollectViewModel by viewModels()
-    private var waitingForLocation = false
     private var startedCollect = false
-    private var requestedFineThisSession = false
-    private val permission = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        requestedFineThisSession = true
-        continueIfReady()
-    }
+    private var showDiagnostics = false
+    private var sentToSetup = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCollectBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        showBuildBanner()
+        binding.diagnosticsToggle.setOnClickListener {
+            showDiagnostics = !showDiagnostics
+            refreshDiagnostics()
+        }
 
         if (SessionStore(this).accessToken.isNullOrBlank()) {
             startActivity(Intent(this, LoginActivity::class.java).apply {
@@ -54,56 +50,71 @@ class CollectActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshDiagnostics()
-        if (waitingForLocation || !startedCollect) continueIfReady()
+        if (!startedCollect) continueIfReady()
+        else if (needsRepair()) sendToSetup()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         startedCollect = false
+        sentToSetup = false
         continueIfReady()
     }
 
     private fun currentState(): TerminalPermissions.LocationState {
         return TerminalPermissions.evaluate(
             this,
-            requestedFineThisSession,
+            false,
             shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+        )
+    }
+
+    private fun needsRepair(): Boolean {
+        val setup = SetupStore(this)
+        return SetupActivity.needsWizard(
+            setup.welcomeSeen,
+            setup.completedOnce,
+            currentState(),
+            TerminalPermissions.nfcAvailable(this),
+            TerminalPermissions.nfcEnabled(this)
         )
     }
 
     private fun continueIfReady() {
         val state = currentState()
         refreshDiagnostics(state)
-        if (!state.fineGranted) {
-            waitingForLocation = true
-            if (!requestedFineThisSession) {
-                permission.launch(TerminalPermissions.locationRequestPermissions)
-                return
-            }
-            showLocationBlocked(state)
+        if (needsRepair()) {
+            sendToSetup()
             return
         }
-        if (!state.servicesOn) {
-            waitingForLocation = true
-            showLocationBlocked(state)
-            return
-        }
-        waitingForLocation = false
         if (!startedCollect) {
             startedCollect = true
             startFromIntent()
         }
     }
 
+    private fun sendToSetup() {
+        if (sentToSetup) return
+        sentToSetup = true
+        startActivity(Intent(this, SetupActivity::class.java).apply {
+            data = intent.data
+            intent.extras?.let { putExtras(it) }
+            payloadFrom(intent)?.let { putExtra("p", it) }
+        })
+        finish()
+    }
+
     private fun startFromIntent() {
         val payload = payloadFrom(intent)
         if (payload.isNullOrBlank()) {
-            showBlocked(
-                "HANDOFF",
-                "MISSING_AMOUNT_PAYLOAD",
-                "Open Take Payment from S&R Payments on this phone."
-            )
+            binding.status.text = "Open Take Payment"
+            binding.detail.text = "Open Take Payment from S&R Payments on this phone."
+            binding.busy.visibility = View.GONE
+            binding.takePayment.visibility = View.GONE
+            binding.cancel.visibility = View.GONE
+            binding.backToPos.visibility = View.VISIBLE
+            refreshDiagnostics()
             return
         }
         viewModel.start(payload)
@@ -176,40 +187,19 @@ class CollectActivity : AppCompatActivity() {
         refreshDiagnostics()
     }
 
-    private fun showLocationBlocked(state: TerminalPermissions.LocationState) {
-        showBlocked(state.stage, state.reason, TerminalPermissions.userMessage(state))
-        binding.openSettings.visibility = View.VISIBLE
-        binding.openSettings.text = if (state.block == TerminalPermissions.Block.LOCATION_SERVICES_DISABLED) {
-            getString(R.string.open_location_settings)
-        } else {
-            getString(R.string.open_settings)
-        }
-        binding.openSettings.setOnClickListener { openNeededSettings(state) }
-    }
-
-    private fun showBlocked(stage: String, reason: String, message: String) {
-        binding.status.text = "BLOCKED STAGE: $stage"
-        binding.detail.text = "REASON: $reason\n\n$message"
-        binding.busy.visibility = View.GONE
-        binding.takePayment.visibility = View.GONE
-        binding.cancel.visibility = View.GONE
-        binding.backToPos.visibility = View.VISIBLE
-        binding.openSettings.visibility = View.GONE
-        refreshDiagnostics()
-    }
-
-    private fun showBuildBanner() {
+    private fun refreshDiagnostics(state: TerminalPermissions.LocationState = currentState()) {
         if (!BuildConfig.SIMULATED_READER) {
-            binding.buildBanner.visibility = View.GONE
+            binding.diagnosticsToggle.visibility = View.GONE
+            binding.diagnostics.visibility = View.GONE
             return
         }
-        binding.buildBanner.visibility = View.VISIBLE
-        binding.buildBanner.text = TerminalPermissions.buildBanner()
-    }
-
-    private fun refreshDiagnostics(state: TerminalPermissions.LocationState = currentState()) {
-        showBuildBanner()
-        if (!BuildConfig.SIMULATED_READER) {
+        binding.diagnosticsToggle.visibility = View.VISIBLE
+        binding.diagnosticsToggle.text = if (showDiagnostics) {
+            getString(R.string.hide_test_diagnostics)
+        } else {
+            getString(R.string.test_diagnostics)
+        }
+        if (!showDiagnostics) {
             binding.diagnostics.visibility = View.GONE
             return
         }
@@ -218,20 +208,6 @@ class CollectActivity : AppCompatActivity() {
             this,
             state,
             viewModel.safeTerminalDiagnostics()
-        )
-    }
-
-    private fun openNeededSettings(state: TerminalPermissions.LocationState) {
-        val action = TerminalPermissions.settingsAction(state)
-        if (action == Settings.ACTION_LOCATION_SOURCE_SETTINGS) {
-            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            return
-        }
-        startActivity(
-            Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", packageName, null)
-            )
         )
     }
 

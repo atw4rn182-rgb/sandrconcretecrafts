@@ -13,16 +13,25 @@
         android:padding="24dp">
 
         <TextView
-            android:id="@+id/buildBanner"
+            android:id="@+id/diagnosticsToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/test_diagnostics"
+            android:textColor="@color/turquoise"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/diagnostics"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:background="@color/brown"
-            android:gravity="center"
-            android:padding="10dp"
-            android:textColor="@color/cream"
-            android:textSize="13sp"
-            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:textColor="@color/brown"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <TextView
