@@ -43,6 +43,8 @@ var fileRoute = fs.readFileSync(
 );
 assert.match(fileRoute, /verifyDownloadToken/);
 assert.match(fileRoute, /application\/vnd\.android\.package-archive/);
+assert.match(fileRoute, /manifest\.simulated/);
+assert.match(fileRoute, /testFallbackUrl/);
 assert.doesNotMatch(fileRoute, /auth\.requireActiveAdmin/);
 
 process.env.POS_APP_DOWNLOAD_SECRET = "local-pos-app-download-test-secret";

@@ -21,19 +21,16 @@ function apkHeaders(res, filename) {
 }
 
 async function apkLocation(manifest) {
-  try {
-    return await db.createSignedStorageUrl(
-      manifest.bucket,
-      manifest.object,
-      90,
-      manifest.filename
-    );
-  } catch (err) {
-    if (!manifest.simulated) throw err;
+  if (manifest.simulated) {
     var fallback = posApp.testFallbackUrl();
-    if (!fallback) throw err;
-    return fallback;
+    if (fallback) return fallback;
   }
+  return await db.createSignedStorageUrl(
+    manifest.bucket,
+    manifest.object,
+    90,
+    manifest.filename
+  );
 }
 
 module.exports = async function handler(req, res) {
