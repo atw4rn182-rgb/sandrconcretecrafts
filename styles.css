@@ -187,6 +187,8 @@ img { max-width: 100%; display: block; }
   letter-spacing: -0.02em;
   line-height: 1.15;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .brand-tag {
   font-size: 0.68rem;
@@ -233,10 +235,10 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.45rem;
+  gap: 0.65rem;
   justify-self: end;
   z-index: 3;
-  min-width: 0;
+  flex-shrink: 0;
 }
 .lang-toggle {
   display: inline-flex;
@@ -1182,47 +1184,17 @@ img { max-width: 100%; display: block; }
   .modal-media img { min-height: 200px; max-height: 280px; }
   .checkout-grid { grid-template-columns: 1fr; }
   .checkout-summary { position: static; order: -1; }
-  .nav { grid-template-columns: auto auto 1fr; }
-  .nav-toggle { display: inline-flex; justify-self: start; }
-  .header-actions { grid-column: 3; position: relative; z-index: 3; }
+  .nav { grid-template-columns: minmax(0, 1fr) auto; gap: 0.7rem; }
+  .header-actions { position: relative; z-index: 3; }
   .lang-toggle button { font-size: 0.72rem; min-height: 38px; padding: 0 0.42rem; }
-  .nav-panel {
-    position: fixed;
-    inset: 0;
-    z-index: 2;
-    display: block;
-    padding: max(5.75rem, calc(env(safe-area-inset-top, 0px) + 4.75rem)) 1.25rem 2rem;
-    background: rgba(255, 248, 240, 0.98);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    transition: opacity 0.22s var(--ease), visibility 0.22s;
-  }
-  body.nav-open .nav-panel,
-  .nav-panel.is-open {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-  .nav-links { flex-direction: column; gap: 0.35rem; align-items: stretch; }
-  .nav-links a {
-    display: block; padding: 0.95rem 0.85rem; font-size: 1.2rem;
-    min-height: 44px; border-radius: 12px; border-bottom: none;
-  }
-  .nav-links a[href="#top"],
-  .nav-links a.is-active { border-bottom: none; color: var(--terracotta); }
-  .nav-links a:hover { background: rgba(196, 92, 50, 0.12); }
-  .nav-links a:focus-visible {
-    outline: none;
-    box-shadow: var(--focus);
-  }
+  .nav-panel { display: none; }
 }
 
 @media (max-width: 560px) {
   .product-grid { grid-template-columns: 1fr; }
   .brand-name { font-size: 0.95rem; }
+  .header-actions { gap: 0.5rem; }
+  .lang-toggle { flex-shrink: 0; }
   .hero {
     min-height: clamp(24rem, 78vh, 32rem);
   }

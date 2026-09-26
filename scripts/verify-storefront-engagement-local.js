@@ -54,6 +54,7 @@ assert.match(html, /data-lang-btn="en"/);
 assert.match(html, /data-lang-btn="es"/);
 assert.match(html, /js\/i18n\.js/);
 assert.match(html, /class="lang-toggle"/);
+assert.doesNotMatch(html, /id="navToggle"|class="nav-toggle"/);
 assert.doesNotMatch(html, /translate\.google|goog-te-banner|Google Translate/i);
 assert.match(i18n, /sr-storefront-lang/);
 assert.match(i18n, /lang = readStored\(\)/);
