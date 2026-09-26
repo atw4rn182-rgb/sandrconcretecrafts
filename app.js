@@ -238,6 +238,11 @@
   let verifiedCheckoutReturn = false;
 
   const $ = (sel) => document.querySelector(sel);
+  function t(key, vars) {
+    return window.SRStorefrontI18n && SRStorefrontI18n.t
+      ? SRStorefrontI18n.t(key, vars)
+      : key;
+  }
   function money(n) {
     var v = Number(n);
     if (!isFinite(v)) return "—";
@@ -307,7 +312,7 @@
   }
 
   function finishLabel(finish) {
-    return normalizeFinish(finish) === "painted" ? "Painted" : "Raw Concrete";
+    return normalizeFinish(finish) === "painted" ? t("finish.painted") : t("finish.raw");
   }
 
   function hasPaintedOption(p) {
@@ -376,7 +381,7 @@
     }
     if (navToggle) {
       navToggle.setAttribute("aria-expanded", "false");
-      navToggle.setAttribute("aria-label", "Open menu");
+      navToggle.setAttribute("aria-label", t("nav.openMenu"));
     }
   }
 
@@ -388,7 +393,7 @@
     }
     if (navToggle) {
       navToggle.setAttribute("aria-expanded", "true");
-      navToggle.setAttribute("aria-label", "Close menu");
+      navToggle.setAttribute("aria-label", t("nav.closeMenu"));
     }
     // Arm outside-tap close after this gesture finishes (avoids same-tap close).
     window.setTimeout(function () {
@@ -439,7 +444,7 @@
       activeCategory = "all";
     }
     filterWrap.hidden = false;
-    var chips = [{ id: "all", name: "All" }].concat(cats);
+    var chips = [{ id: "all", name: t("products.all") }].concat(cats);
     filterChips.innerHTML = chips
       .map(function (c) {
         var active = activeCategory === c.id;
@@ -534,9 +539,21 @@
     saveCart();
     if (notice && (removed || remapped)) {
       var parts = [];
-      if (remapped) parts.push("updated " + remapped + " saved item" + (remapped === 1 ? "" : "s"));
-      if (removed) parts.push("removed " + removed + " unavailable item" + (removed === 1 ? "" : "s"));
-      toast("Cart " + parts.join(" and ") + ".");
+      if (remapped) {
+        parts.push(
+          t(remapped === 1 ? "toast.cartUpdatedItems" : "toast.cartUpdatedItemsPlural", {
+            n: remapped,
+          })
+        );
+      }
+      if (removed) {
+        parts.push(
+          t(removed === 1 ? "toast.cartRemovedItems" : "toast.cartRemovedItemsPlural", {
+            n: removed,
+          })
+        );
+      }
+      toast(t("toast.cartUpdated", { parts: parts.join(t("toast.cartJoin")) }));
     }
   }
 
@@ -553,7 +570,9 @@
     var html = "<p>" + esc(message) + "</p>";
     if (retryable) {
       html +=
-        '<button type="button" class="btn btn-ghost catalog-retry" id="catalogRetry">Try again</button>';
+        '<button type="button" class="btn btn-ghost catalog-retry" id="catalogRetry">' +
+        esc(t("products.retry")) +
+        "</button>";
     }
     catalogStatus.innerHTML = html;
     var btn = $("#catalogRetry");
@@ -565,8 +584,12 @@
   function priceHtml(p) {
     if (hasPaintedOption(p)) {
       return (
-        '<span class="price">From ' +
-        esc(money(Math.min(unitPrice(p, "raw"), unitPrice(p, "painted")))) +
+        '<span class="price">' +
+        esc(
+          t("card.from", {
+            price: money(Math.min(unitPrice(p, "raw"), unitPrice(p, "painted"))),
+          })
+        ) +
         "</span>"
       );
     }
@@ -595,14 +618,14 @@
     if (!grid) return;
     if (liveMode && !catalogReady && !catalogError) {
       grid.innerHTML = "";
-      showCatalogStatus("loading", "Loading the collection…", false);
+      showCatalogStatus("loading", t("products.loading"), false);
       return;
     }
     if (liveMode && catalogError) {
       grid.innerHTML = "";
       showCatalogStatus(
         "error",
-        catalogError + " The shop catalog could not be loaded.",
+        catalogError + " " + t("products.loadError"),
         true
       );
       return;
@@ -612,8 +635,8 @@
       showCatalogStatus(
         "empty",
         liveMode
-          ? "No products are published yet. Check back soon, or ask the shop owner to publish items in admin."
-          : "No products to show.",
+          ? t("products.emptyLive")
+          : t("products.empty"),
         false
       );
       return;
@@ -621,7 +644,7 @@
     var list = visibleProducts();
     if (!list.length) {
       grid.innerHTML = "";
-      showCatalogStatus("empty", "No pieces in this category right now.", false);
+      showCatalogStatus("empty", t("products.emptyCategory"), false);
       return;
     }
     showCatalogStatus(null);
@@ -637,7 +660,7 @@
               "</span>"
             : "";
         var soldBadge = sold
-          ? '<span class="card-sold" aria-hidden="true">Sold out</span>'
+          ? '<span class="card-sold" aria-hidden="true">' + esc(t("card.soldOut")) + "</span>"
           : "";
         var lowStock = "";
         if (
@@ -648,23 +671,27 @@
           Number(p.quantity) <= 3
         ) {
           lowStock =
-            '<span class="card-low-stock">Only ' +
-            esc(String(p.quantity)) +
-            " left</span>";
+            '<span class="card-low-stock">' +
+            esc(t("card.onlyLeft", { n: p.quantity })) +
+            "</span>";
         }
         var addBtn = sold
-          ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">Unavailable</button>'
+          ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">' +
+            esc(t("card.unavailable")) +
+            "</button>"
           : '<button class="add" type="button" data-add="' +
             escAttr(p.id) +
-            '">Add</button>';
+            '">' +
+            esc(t("card.add")) +
+            "</button>";
         return (
           '<article class="card' +
           (sold ? " card--sold-out" : "") +
           (p.featured ? " card--featured" : "") +
           '" data-id="' +
           escAttr(p.id) +
-          '" tabindex="0" role="button" aria-label="Quick view: ' +
-          escAttr(p.name) +
+          '" tabindex="0" role="button" aria-label="' +
+          escAttr(t("card.quickViewOf", { name: p.name })) +
           '">' +
           '<div class="card-img">' +
           tag +
@@ -676,14 +703,16 @@
           '" alt="' +
           escAttr(p.alt || p.name) +
           '" loading="lazy" />' +
-          '<div class="card-quick">Quick view</div>' +
+          '<div class="card-quick">' +
+          esc(t("card.quickView")) +
+          "</div>" +
           "</div>" +
           '<div class="card-body">' +
           "<h3>" +
           esc(p.name) +
           "</h3>" +
           (p.itemNo
-            ? '<span class="card-item">Item #' + esc(p.itemNo) + "</span>"
+            ? '<span class="card-item">' + esc(t("card.itemNo", { n: p.itemNo })) + "</span>"
             : "") +
           lowStock +
           (String(p.desc || "").trim()
@@ -739,8 +768,8 @@
     opts = opts || {};
     var url = opts.url || storefrontShareUrl();
     var title = opts.title || document.title;
-    var text = opts.text || "Take a look at S&R Concrete Crafts.";
-    var copiedLabel = opts.copiedLabel || "Shop link copied";
+    var text = opts.text || t("share.lookStore");
+    var copiedLabel = opts.copiedLabel || t("share.copiedShop");
     var status = $("#shareStatus");
     var manual = $("#shareManual");
     var input = $("#shareUrl");
@@ -749,11 +778,11 @@
     if (navigator.share) {
       try {
         await navigator.share({ title: title, text: text, url: url });
-        if (status) status.textContent = "Share options opened.";
+        if (status) status.textContent = t("share.opened");
         return;
       } catch (err) {
         if (err && err.name === "AbortError") {
-          if (status) status.textContent = "Share canceled.";
+          if (status) status.textContent = t("share.canceled");
           return;
         }
       }
@@ -775,15 +804,15 @@
       manual.hidden = false;
       input.focus();
       input.select();
-      if (status) status.textContent = "Copy the selected shop link.";
+      if (status) status.textContent = t("share.copySelected");
     }
   }
 
   function shareStorefront() {
     return shareLink({
       url: storefrontShareUrl(),
-      text: "Take a look at S&R Concrete Crafts.",
-      copiedLabel: "Shop link copied",
+      text: t("share.lookStore"),
+      copiedLabel: t("share.copiedShop"),
     });
   }
 
@@ -792,8 +821,8 @@
     return shareLink({
       url: productShareUrl(product),
       title: product.name || document.title,
-      text: "Take a look at " + (product.name || "this piece") + " from S&R Concrete Crafts.",
-      copiedLabel: "Piece link copied",
+      text: t("share.lookPiece", { name: product.name || "this piece" }),
+      copiedLabel: t("share.copiedPiece"),
     });
   }
 
@@ -888,15 +917,15 @@
     finish = normalizeFinish(finish);
     var p = findProduct(id);
     if (!p) {
-      toast("That item is no longer available.");
+      toast(t("toast.unavailable"));
       return;
     }
     if (!canPurchase(p)) {
-      toast("That item is sold out.");
+      toast(t("toast.soldOut"));
       return;
     }
     if (finish === "painted" && !hasPaintedOption(p)) {
-      toast("Painted finish isn’t available for that item.");
+      toast(t("toast.noPainted"));
       return;
     }
     var max = maxQtyFor(p);
@@ -911,8 +940,8 @@
     if (nextQty > lineMax) {
       toast(
         p.trackInventory
-          ? "Only " + max + " available."
-          : "Quantity limit reached."
+          ? t("toast.onlyAvailable", { n: max })
+          : t("toast.qtyLimit")
       );
       nextQty = lineMax;
     }
@@ -921,9 +950,9 @@
     else cart.push({ id: id, finish: finish, qty: nextQty });
     updateCart(true);
     toast(
-      p.name +
-        (hasPaintedOption(p) ? " — " + finishLabel(finish) : "") +
-        " added to cart"
+      hasPaintedOption(p)
+        ? t("toast.addedFinish", { name: p.name, finish: finishLabel(finish) })
+        : t("toast.added", { name: p.name })
     );
   }
 
@@ -935,7 +964,7 @@
     var p = findProduct(line.id);
     if (!p || !canPurchase(p)) {
       removeFromCart(key);
-      toast("Removed an unavailable item from your cart.");
+      toast(t("toast.removedUnavailable"));
       return;
     }
     var max = maxQtyFor(p);
@@ -997,10 +1026,14 @@
             '<div class="cart-line cart-line--missing" data-key="' +
             escAttr(missingKey) +
             '">' +
-            "<p>Item no longer available</p>" +
+            "<p>" +
+            esc(t("cart.missing")) +
+            "</p>" +
             '<button class="cart-line-remove" data-remove="' +
             escAttr(missingKey) +
-            '">Remove</button>' +
+            '">' +
+            esc(t("cart.remove")) +
+            "</button>" +
             "</div>"
           );
         }
@@ -1030,17 +1063,23 @@
           '<div class="cart-line-qty">' +
           '<button type="button" data-dec="' +
           escAttr(key) +
-          '" aria-label="Decrease">−</button>' +
+          '" aria-label="' +
+          escAttr(t("cart.decrease")) +
+          '">−</button>' +
           "<span>" +
           esc(String(l.qty)) +
           "</span>" +
           '<button type="button" data-inc="' +
           escAttr(key) +
-          '" aria-label="Increase">+</button>' +
+          '" aria-label="' +
+          escAttr(t("cart.increase")) +
+          '">+</button>' +
           "</div>" +
           '<button type="button" class="cart-line-remove" data-remove="' +
           escAttr(key) +
-          '">Remove</button>' +
+          '">' +
+          esc(t("cart.remove")) +
+          "</button>" +
           "</div>" +
           '<span class="line-total">' +
           esc(money(price * l.qty)) +
@@ -1080,7 +1119,7 @@
     closeNav();
     modalProduct = findProduct(id);
     if (!modalProduct) {
-      toast("That item is no longer available.");
+      toast(t("toast.unavailable"));
       return;
     }
     modalReturnFocus = document.activeElement;
@@ -1127,15 +1166,15 @@
     const tagEl = $("#modalTag");
     tagEl.textContent =
       modalProduct.tag ||
-      (modalProduct.soldOut ? "Sold out" : "Hand-cast");
+      (modalProduct.soldOut ? t("card.soldOut") : t("modal.handCast"));
     $("#modalQty").textContent = modalQty;
     var addBtn = $("#modalAdd");
     if (!canPurchase(modalProduct)) {
       addBtn.disabled = true;
-      addBtn.textContent = "Unavailable";
+      addBtn.textContent = t("card.unavailable");
     } else {
       addBtn.disabled = false;
-      addBtn.textContent = "Add to Cart";
+      addBtn.textContent = t("modal.add");
     }
     var shareBtn = $("#modalShare");
     if (shareBtn) shareBtn.hidden = false;
@@ -1179,7 +1218,7 @@
       updateCart();
       return true;
     } catch (err) {
-      toast("Couldn’t refresh prices before checkout. Please try again.");
+      toast(t("toast.refreshFail"));
       return false;
     }
   }
@@ -1189,7 +1228,7 @@
     if (!btn) return;
     var enabled = stripeCheckoutEnabled();
     var env = window.__SR_ENV__ || {};
-    btn.textContent = enabled ? "Checkout" : "Checkout (demo)";
+    btn.textContent = enabled ? t("cart.checkout") : t("cart.checkoutDemo");
     btn.setAttribute("data-use-stripe-checkout", enabled ? "true" : "false");
     btn.setAttribute(
       "data-sr-build-commit",
@@ -1197,9 +1236,7 @@
     );
     var note = $("#cartCheckoutNote");
     if (note) {
-      note.textContent = enabled
-        ? "Secure checkout · You’ll finish payment on Stripe’s page"
-        : "Demo checkout only · No real payment is processed";
+      note.textContent = enabled ? t("cart.noteStripe") : t("cart.noteDemo");
     }
   }
 
@@ -1208,12 +1245,12 @@
   async function startStripeCheckout() {
     if (stripeCheckoutBusy) return;
     if (cart.length === 0) {
-      toast("Your cart is empty");
+      toast(t("toast.emptyCart"));
       return;
     }
     if (!liveMode) {
       toast(
-        "Real checkout needs the live catalog. Demo checkout is still available when Stripe is off."
+        t("toast.needLive")
       );
       return;
     }
@@ -1222,7 +1259,7 @@
     if (!ok) return;
     reconcileCart(true);
     if (cart.length === 0) {
-      toast("Your cart no longer has available items.");
+      toast(t("toast.cartGone"));
       updateCart();
       return;
     }
@@ -1236,7 +1273,7 @@
       .filter(Boolean);
 
     if (!items.length) {
-      toast("Your cart no longer has available items.");
+      toast(t("toast.cartGone"));
       return;
     }
 
@@ -1245,7 +1282,7 @@
     var prevLabel = btn ? btn.textContent : "";
     if (btn) {
       btn.disabled = true;
-      btn.textContent = "Starting checkout…";
+      btn.textContent = t("cart.starting");
     }
 
     try {
@@ -1265,32 +1302,28 @@
         // Client only gates on USE_STRIPE_CHECKOUT (see stripeCheckoutEnabled).
         // Never read or act on STRIPE_ALLOW_LIVE here — that is server-only.
         if (data && data.code === "STRIPE_NOT_CONFIGURED") {
-          toast(
-            "Stripe isn’t configured on the server yet — opening demo checkout."
-          );
+          toast(t("toast.stripeMissing"));
           await openDemoCheckout();
           return;
         }
         if (data && data.code === "STRIPE_LIVE_BLOCKED") {
-          toast(
-            "Checkout couldn’t start — the server isn’t ready for live payments yet. Please try again shortly."
-          );
+          toast(t("toast.stripeBlocked"));
           return;
         }
         toast(
-          (data && data.error) || "Couldn’t start checkout. Please try again."
+          (data && data.error) || t("toast.checkoutFail")
         );
         return;
       }
 
       window.location.href = data.url;
     } catch (err) {
-      toast("Couldn’t reach checkout. Please try again.");
+      toast(t("toast.checkoutReach"));
     } finally {
       stripeCheckoutBusy = false;
       if (btn) {
         btn.disabled = false;
-        btn.textContent = prevLabel || "Checkout";
+        btn.textContent = prevLabel || t("cart.checkout");
       }
     }
   }
@@ -1300,7 +1333,7 @@
     if (!ok) return;
     reconcileCart(true);
     if (cart.length === 0) {
-      toast("Your cart no longer has available items.");
+      toast(t("toast.cartGone"));
       updateCart();
       return;
     }
@@ -1316,7 +1349,7 @@
 
   async function openCheckout() {
     if (cart.length === 0) {
-      toast("Your cart is empty");
+      toast(t("toast.emptyCart"));
       return;
     }
 
@@ -1355,16 +1388,16 @@
           verifiedCheckoutReturn = true;
           cart = [];
           updateCart();
-          toast("Payment received — thank you!");
+          toast(t("toast.paid"));
         } else {
-          toast("Payment couldn’t be verified yet. Your cart was kept.");
+          toast(t("toast.verifyFail"));
         }
       } else if (status === "cancel") {
-        toast("Checkout canceled. Your cart is still here.");
+        toast(t("toast.canceled"));
       }
     } catch (e) {
       if (status === "success") {
-        toast("Payment couldn’t be verified yet. Your cart was kept.");
+        toast(t("toast.verifyFail"));
       }
     } finally {
       if (status && params) {
@@ -1408,8 +1441,8 @@
           esc(p.name) +
           "</div>" +
           finish +
-          '<div class="s-qty">Qty ' +
-          esc(String(l.qty)) +
+          '<div class="s-qty">' +
+          esc(t("checkout.qty", { n: l.qty })) +
           "</div></div>" +
           '<div class="s-price">' +
           esc(money(unitPrice(p, l.finish) * l.qty)) +
@@ -1420,7 +1453,7 @@
       .join("");
 
     $("#sumSubtotal").textContent = money(subtotal);
-    $("#sumShipping").textContent = shipping === 0 ? "Free" : money(shipping);
+    $("#sumShipping").textContent = shipping === 0 ? t("checkout.free") : money(shipping);
     $("#sumTotal").textContent = money(total);
     $("#checkoutPayAmt").textContent = money(total);
   }
@@ -1431,10 +1464,9 @@
     $("#orderNum").textContent = "DEMO-ONLY";
     var successTitle = $("#checkoutSuccess h2");
     var successCopy = $("#checkoutSuccess p");
-    if (successTitle) successTitle.textContent = "Demo checkout only";
+    if (successTitle) successTitle.textContent = t("checkout.successTitle");
     if (successCopy) {
-      successCopy.textContent =
-        "No order was placed and no payment was processed. Real ordering isn’t connected yet — this walkthrough is for layout only.";
+      successCopy.textContent = t("checkout.successCopyDone");
     }
     $("#checkoutForm").style.display = "none";
     $(".checkout-summary").style.display = "none";
@@ -1513,7 +1545,7 @@
       if (!modalProduct) return;
       var max = maxQtyFor(modalProduct);
       if (modalQty >= max) {
-        toast(modalProduct.trackInventory ? "Only " + max + " available." : "Quantity limit reached.");
+        toast(modalProduct.trackInventory ? t("toast.onlyAvailable", { n: max }) : t("toast.qtyLimit"));
         return;
       }
       modalQty += 1;
@@ -1599,7 +1631,7 @@
     catalogError = null;
     catalogReady = false;
     if (isRetry) renderProducts();
-    showCatalogStatus("loading", "Loading the collection…", false);
+    showCatalogStatus("loading", t("products.loading"), false);
     try {
       products = await Cat.fetchStorefrontProducts();
       try {
@@ -1618,7 +1650,7 @@
       products = [];
       storefrontCategories = [];
       catalogReady = false;
-      catalogError = (err && err.message) || "Catalog request failed.";
+      catalogError = (err && err.message) || t("products.catalogFailed");
       // Never fall back to demo products when live mode is on.
       renderProducts();
       updateCart();
@@ -1655,6 +1687,9 @@
           : null;
       storeSettings = await SRStoreSettings.fetchStoreSettings(client);
       SRStoreSettings.applyToDocument(storeSettings);
+      if (window.SRStorefrontI18n && SRStorefrontI18n.applyStatic) {
+        SRStorefrontI18n.applyStatic();
+      }
     } catch (err) {
       storeSettings =
         typeof SRStoreSettings !== "undefined"
@@ -1676,6 +1711,43 @@
         show_social_links: true,
       }
     );
+  }
+
+  function refreshTranslatedUi() {
+    if (storeSettings && typeof SRStoreSettings !== "undefined") {
+      SRStoreSettings.applyToDocument(storeSettings);
+    }
+    if (window.SRStorefrontI18n && SRStorefrontI18n.applyStatic) {
+      SRStorefrontI18n.applyStatic();
+    }
+    if (navToggle) {
+      navToggle.setAttribute(
+        "aria-label",
+        document.body.classList.contains("nav-open") ? t("nav.closeMenu") : t("nav.openMenu")
+      );
+    }
+    renderProducts();
+    updateCart();
+    syncCheckoutButtonLabel();
+    if (modalProduct && modalOverlay.classList.contains("open")) {
+      var keepQty = modalQty;
+      var keepFinish = modalFinish;
+      openModal(modalProduct.id);
+      modalQty = keepQty;
+      modalFinish = keepFinish;
+      $("#modalQty").textContent = modalQty;
+      if (hasPaintedOption(modalProduct)) {
+        document.querySelectorAll('input[name="modalFinish"]').forEach(function (input) {
+          input.checked = input.value === keepFinish;
+        });
+        $("#modalPrice").textContent = money(unitPrice(modalProduct, keepFinish));
+      }
+    }
+    if (isCheckoutOpen()) renderCheckoutSummary();
+  }
+
+  if (window.SRStorefrontI18n && SRStorefrontI18n.onChange) {
+    SRStorefrontI18n.onChange(refreshTranslatedUi);
   }
 
   async function init() {

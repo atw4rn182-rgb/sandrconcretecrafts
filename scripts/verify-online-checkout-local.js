@@ -30,6 +30,6 @@ assert.match(webhook, /stripe\.retrieveCheckoutSessionLineItems/);
 assert.match(webhook, /adminDb\.upsertOrderWithItems/);
 assert.match(app, /verified = response\.ok && result && result\.verified === true/);
 assert.match(app, /if \(verified\) \{[\s\S]*?cart = \[\]/);
-assert.match(app, /Payment couldn’t be verified yet\. Your cart was kept\./);
+assert.match(app, /toast\.verifyFail/);
 
 console.log("hosted Checkout source, trusted pricing, webhook, and cart regression: ok");

@@ -50,7 +50,7 @@
   <link rel="stylesheet" href="/css/seasonal-decor.css?v=local" />
 </head>
 <body>
-  <a class="skip-link" href="#products">Skip to collection</a>
+  <a class="skip-link" href="#products" data-i18n="nav.skip">Skip to collection</a>
 
   <div class="store-announcement" id="storeAnnouncement" hidden data-style="neutral" role="status">
     <div class="container">
@@ -66,7 +66,7 @@
         <img class="brand-logo" src="assets/sandrlogo.jpg" alt="" width="48" height="48" />
         <span class="brand-text">
           <span class="brand-name" data-settings-business-name>S&amp;R Concrete Crafts</span>
-          <span class="brand-tag">Handmade in <span data-settings-location-short>Milan, NM</span></span>
+          <span class="brand-tag"><span data-i18n="brand.handmadeIn">Handmade in</span> <span data-settings-location-short>Milan, NM</span></span>
         </span>
       </a>
 
@@ -77,6 +77,7 @@
         aria-expanded="false"
         aria-controls="primaryNav"
         aria-label="Open menu"
+        data-i18n-attr="aria-label:nav.openMenu"
       >
         <span class="nav-toggle-bar" aria-hidden="true"></span>
         <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -85,19 +86,26 @@
 
       <div class="nav-panel" id="primaryNav" aria-hidden="true">
         <ul class="nav-links">
-          <li><a href="#top">Home</a></li>
-          <li><a href="#products">Shop</a></li>
-          <li><a href="#about">About</a></li>
+          <li><a href="#top" data-i18n="nav.home">Home</a></li>
+          <li><a href="#products" data-i18n="nav.shop">Shop</a></li>
+          <li><a href="#about" data-i18n="nav.about">About</a></li>
         </ul>
       </div>
 
-      <button class="cart-btn" id="cartOpen" aria-label="Open cart">
+      <div class="header-actions">
+        <div class="lang-toggle" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+          <button type="button" data-lang-btn="en" aria-pressed="true">English</button>
+          <span class="lang-sep" aria-hidden="true">|</span>
+          <button type="button" data-lang-btn="es" aria-pressed="false">Español</button>
+        </div>
+      <button class="cart-btn" id="cartOpen" aria-label="Open cart" data-i18n-attr="aria-label:nav.openCart">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" />
           <path d="M2.5 3h2.2l2.1 11.4a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21.5 7H6" />
         </svg>
         <span class="cart-count" id="cartCount">0</span>
       </button>
+      </div>
     </nav>
   </header>
 
@@ -120,16 +128,16 @@
     <div class="container hero-inner">
       <div class="hero-copy">
         <p class="hero-brand">S&amp;R Concrete Crafts</p>
-        <h1 id="heroTitle">Handcrafted concrete for home &amp; garden</h1>
-        <p class="hero-lead">Beautifully imperfect pieces, made with care in Milan, New Mexico.</p>
+        <h1 id="heroTitle" data-i18n="hero.title">Handcrafted concrete for home &amp; garden</h1>
+        <p class="hero-lead" data-i18n="hero.lead">Beautifully imperfect pieces, made with care in Milan, New Mexico.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#products">Shop the Collection</a>
-          <button class="store-share" id="storeShare" type="button" aria-describedby="shareStatus">
+          <a class="btn btn-primary" href="#products" data-i18n="hero.shop">Shop the Collection</a>
+          <button class="store-share" id="storeShare" type="button" aria-describedby="shareStatus" data-i18n="hero.share">
             Share our shop
           </button>
         </div>
         <div class="share-manual" id="shareManual" hidden>
-          <label for="shareUrl">Select and copy this shop link</label>
+          <label for="shareUrl" data-i18n="share.copyLabel">Select and copy this shop link</label>
           <input id="shareUrl" type="text" readonly />
         </div>
         <span class="sr-only" id="shareStatus" role="status" aria-live="polite"></span>
@@ -151,13 +159,13 @@
   <section id="products" class="products">
     <div class="container">
       <div class="section-head">
-        <p class="section-eyebrow">The Collection</p>
-        <h2>Cast in concrete</h2>
-        <p class="section-lead">Browse the live shop. Tap any piece for a closer look.</p>
+        <p class="section-eyebrow" data-i18n="products.eyebrow">The Collection</p>
+        <h2 data-i18n="products.title">Cast in concrete</h2>
+        <p class="section-lead" data-i18n="products.lead">Browse the live shop. Tap any piece for a closer look.</p>
       </div>
 
       <div class="collection-filters" id="collectionFilters" hidden>
-        <p class="filters-label" id="filtersLabel">Filter by category</p>
+        <p class="filters-label" id="filtersLabel" data-i18n="products.filter">Filter by category</p>
         <div class="filter-chips" id="filterChips" role="group" aria-labelledby="filtersLabel"></div>
       </div>
 
@@ -167,7 +175,7 @@
   </section>
 
   <!-- Story strip -->
-  <section class="story-strip" aria-label="Our story">
+  <section class="story-strip" aria-label="Our story" data-i18n-attr="aria-label:story.label">
     <div class="container">
       <div class="story-strip-inner">
         <svg class="story-ico" viewBox="0 0 48 32" aria-hidden="true" focusable="false">
@@ -175,8 +183,8 @@
           <circle cx="30" cy="10" r="2.2" fill="currentColor"/>
         </svg>
         <div class="story-strip-copy">
-          <p class="story-eyebrow">Painted or raw</p>
-          <p>Choose finished painted pieces, or raw concrete you can leave natural or paint yourself — indoors or outdoors.</p>
+          <p class="story-eyebrow" data-i18n="story.eyebrow">Painted or raw</p>
+          <p data-i18n="story.copy">Choose finished painted pieces, or raw concrete you can leave natural or paint yourself — indoors or outdoors.</p>
         </div>
         <svg class="story-ico story-ico--bird" viewBox="0 0 64 32" aria-hidden="true" focusable="false">
           <path fill="currentColor" d="M18 14c4-5 10-7 16-5 3 1 5 4 5 7l8-2 1 2-10 2c-2 4-7 6-12 5-6 0-10-4-8-9zM14 18c-5 1-10 5-13 10l2 1c4-4 8-6 12-7z"/>
@@ -195,23 +203,17 @@
         <div class="about-plaster"></div>
       </div>
       <div class="about-copy">
-        <p class="section-eyebrow">About <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
-        <h2>Raw material, made warm</h2>
+        <p class="section-eyebrow"><span data-i18n="about.eyebrow">About</span> <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
+        <h2 data-i18n="about.title">Raw material, made warm</h2>
         <p class="about-lead" data-settings-description>Handmade concrete pieces cast in small batches in Milan, New Mexico.</p>
-        <p>S&amp;R Concrete Crafts creates handmade concrete pieces in Milan, New Mexico.
-          We cast planters, decor, seasonal pieces, and Southwestern-inspired designs one
-          small batch at a time. Choose from painted, finished pieces or raw concrete designs
-          you can leave natural or paint yourself. Raw concrete pieces can be used indoors or
-          outdoors, giving you the freedom to customize them to fit your own style. Custom
-          orders are welcome. We’re at the Farmer’s Market every Saturday, and we offer local
-          delivery and meetups for customers in the local area.</p>
-        <p class="about-aside">It’s not your grandma’s ceramics.</p>
+        <p data-i18n="about.body">S&amp;R Concrete Crafts creates handmade concrete pieces in Milan, New Mexico. We cast planters, decor, seasonal pieces, and Southwestern-inspired designs one small batch at a time. Choose from painted, finished pieces or raw concrete designs you can leave natural or paint yourself. Raw concrete pieces can be used indoors or outdoors, giving you the freedom to customize them to fit your own style. Custom orders are welcome. We’re at the Farmer’s Market every Saturday, and we offer local delivery and meetups for customers in the local area.</p>
+        <p class="about-aside" data-i18n="about.aside">It’s not your grandma’s ceramics.</p>
       </div>
     </div>
   </section>
 
   <!-- Trust row -->
-  <section class="trust-row" aria-label="Why shop with us">
+  <section class="trust-row" aria-label="Why shop with us" data-i18n-attr="aria-label:trust.label">
     <div class="trust-desert" aria-hidden="true">
       <svg class="trust-mesas" viewBox="0 0 1440 280" preserveAspectRatio="none" focusable="false">
         <path fill="rgba(160,74,40,0.18)" d="M0 280V140c160-50 300-80 460-60 140 18 220 70 360 65 160-6 250-70 400-60 120 8 160 40 220 55v140H0z"/>
@@ -233,7 +235,7 @@
               </g>
             </svg>
           </span>
-          <span>Based in <span data-settings-location-short>Milan, NM</span></span>
+          <span><span data-i18n="trust.based">Based in</span> <span data-settings-location-short>Milan, NM</span></span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
@@ -243,7 +245,7 @@
               <path fill="currentColor" d="M24 30.5c-1.2 0-2 .7-2 1.6 0 1.6 2 3.4 2 3.4s2-1.8 2-3.4c0-.9-.8-1.6-2-1.6z"/>
             </svg>
           </span>
-          <span>Handcrafted in Small Batches</span>
+          <span data-i18n="trust.batches">Handcrafted in Small Batches</span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
@@ -252,7 +254,7 @@
               <path fill="none" stroke="currentColor" stroke-width="1.8" d="M18 24l4.5 4.5L31 20"/>
             </svg>
           </span>
-          <span>Durable Concrete Made to Last</span>
+          <span data-i18n="trust.durable">Durable Concrete Made to Last</span>
         </li>
         <li>
           <span class="trust-ico" aria-hidden="true">
@@ -262,7 +264,7 @@
               <path fill="none" stroke="currentColor" stroke-width="1.8" d="M16 38h16"/>
             </svg>
           </span>
-          <span>Local Roots, Thoughtful Goods</span>
+          <span data-i18n="trust.local">Local Roots, Thoughtful Goods</span>
         </li>
       </ul>
     </div>
@@ -280,7 +282,7 @@
     <div class="container footer-inner">
       <div class="footer-brand-block">
         <span class="footer-brand" data-settings-business-name>S&amp;R Concrete Crafts</span>
-        <p class="footer-note">Hand-cast in <span data-settings-location>Milan, New Mexico</span> · © 2026 <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
+        <p class="footer-note"><span data-i18n="footer.handCastIn">Hand-cast in</span> <span data-settings-location>Milan, New Mexico</span> · © 2026 <span data-settings-business-name>S&amp;R Concrete Crafts</span></p>
         <p class="footer-fulfillment" id="footerFulfillment" hidden></p>
         <div class="footer-contact" id="footerContact" hidden>
           <a id="footerEmail" hidden></a>
@@ -288,7 +290,7 @@
         </div>
         <div class="footer-social" id="footerSocial" hidden aria-label="Social links"></div>
         <p class="footer-review" id="footerReview" hidden>
-          <a id="footerReviewLink" target="_blank" rel="noopener noreferrer">Leave a Google review</a>
+          <a id="footerReviewLink" target="_blank" rel="noopener noreferrer" data-i18n="footer.review">Leave a Google review</a>
         </p>
       </div>
     </div>
@@ -297,36 +299,36 @@
   <!-- ===== Quick View Modal ===== -->
   <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <button class="modal-close" id="modalClose" aria-label="Close quick view">&times;</button>
+      <button class="modal-close" id="modalClose" aria-label="Close quick view" data-i18n-attr="aria-label:modal.close">&times;</button>
       <div class="modal-media"><img id="modalImg" src="" alt="" /></div>
       <div class="modal-body">
         <span class="modal-tag" id="modalTag"></span>
         <h3 id="modalTitle"></h3>
         <p class="modal-price" id="modalPrice"></p>
         <fieldset class="finish-choice" id="modalFinishChoice" hidden>
-          <legend>Choose a finish</legend>
+          <legend data-i18n="modal.chooseFinish">Choose a finish</legend>
           <label>
             <input type="radio" name="modalFinish" value="raw" checked />
-            <span>Raw Concrete</span>
+            <span data-i18n="finish.raw">Raw Concrete</span>
             <strong id="modalRawPrice"></strong>
           </label>
           <label>
             <input type="radio" name="modalFinish" value="painted" />
-            <span>Painted</span>
+            <span data-i18n="finish.painted">Painted</span>
             <strong id="modalPaintedPrice"></strong>
           </label>
         </fieldset>
         <p class="modal-desc" id="modalDesc"></p>
         <div class="modal-qty">
-          <span>Qty</span>
+          <span data-i18n="modal.qty">Qty</span>
           <div class="qty-control">
-            <button type="button" id="modalMinus" aria-label="Decrease quantity">−</button>
+            <button type="button" id="modalMinus" aria-label="Decrease quantity" data-i18n-attr="aria-label:modal.decrease">−</button>
             <span id="modalQty">1</span>
-            <button type="button" id="modalPlus" aria-label="Increase quantity">+</button>
+            <button type="button" id="modalPlus" aria-label="Increase quantity" data-i18n-attr="aria-label:modal.increase">+</button>
           </div>
         </div>
         <button type="button" class="btn btn-primary modal-add" id="modalAdd">Add to Cart</button>
-        <button type="button" class="btn btn-ghost modal-share" id="modalShare">Share this piece</button>
+        <button type="button" class="btn btn-ghost modal-share" id="modalShare" data-i18n="modal.share">Share this piece</button>
       </div>
     </div>
   </div>
@@ -335,17 +337,17 @@
   <div class="cart-backdrop" id="cartBackdrop"></div>
   <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
     <div class="cart-head">
-      <h3>Your Cart</h3>
-      <button type="button" class="cart-close" id="cartClose" aria-label="Close cart">&times;</button>
+      <h3 data-i18n="cart.title">Your Cart</h3>
+      <button type="button" class="cart-close" id="cartClose" aria-label="Close cart" data-i18n-attr="aria-label:nav.closeCart">&times;</button>
     </div>
     <div class="cart-items" id="cartItems"><!-- injected --></div>
     <div class="cart-empty" id="cartEmpty">
-      <p>Your cart is feeling light.</p>
-      <span>Add a hand-cast piece to get started.</span>
+      <p data-i18n="cart.emptyTitle">Your cart is feeling light.</p>
+      <span data-i18n="cart.emptyHint">Add a hand-cast piece to get started.</span>
     </div>
     <div class="cart-foot" id="cartFoot">
       <p class="cart-fulfillment-note" id="cartFulfillmentNote" hidden></p>
-      <div class="cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
+      <div class="cart-total"><span data-i18n="cart.total">Total</span><span id="cartTotal">$0.00</span></div>
       <button type="button" class="btn btn-primary cart-checkout" id="cartCheckout">Checkout</button>
       <p class="cart-note" id="cartCheckoutNote">Secure checkout · You’ll finish payment on Stripe’s page</p>
     </div>
@@ -354,41 +356,41 @@
   <!-- ===== Checkout Overlay ===== -->
   <div class="checkout" id="checkout" aria-hidden="true">
     <div class="checkout-inner">
-      <button type="button" class="checkout-close" id="checkoutClose" aria-label="Close checkout">&times;</button>
+      <button type="button" class="checkout-close" id="checkoutClose" aria-label="Close checkout" data-i18n-attr="aria-label:checkout.close">&times;</button>
       <div class="checkout-grid">
         <form class="checkout-form" id="checkoutForm">
-          <h2>Checkout (demo)</h2>
-          <p class="checkout-sub">No payment is processed and no real order is placed. Stock is not reserved. Real ordering is not connected yet.</p>
+          <h2 data-i18n="checkout.title">Checkout (demo)</h2>
+          <p class="checkout-sub" data-i18n="checkout.sub">No payment is processed and no real order is placed. Stock is not reserved. Real ordering is not connected yet.</p>
           <fieldset>
-            <legend>Contact</legend>
-            <label>Full name<input type="text" required autocomplete="name" placeholder="Your name" /></label>
-            <label>Email<input type="email" required autocomplete="email" placeholder="you@example.com" /></label>
+            <legend data-i18n="checkout.contact">Contact</legend>
+            <label><span data-i18n="checkout.name">Full name</span><input type="text" required autocomplete="name" placeholder="Your name" data-i18n-attr="placeholder:checkout.namePh" /></label>
+            <label><span data-i18n="checkout.email">Email</span><input type="email" required autocomplete="email" placeholder="you@example.com" data-i18n-attr="placeholder:checkout.emailPh" /></label>
           </fieldset>
           <fieldset>
-            <legend>Shipping</legend>
-            <label>Address<input type="text" required autocomplete="street-address" placeholder="Street address" /></label>
+            <legend data-i18n="checkout.shipping">Shipping</legend>
+            <label><span data-i18n="checkout.address">Address</span><input type="text" required autocomplete="street-address" placeholder="Street address" data-i18n-attr="placeholder:checkout.addressPh" /></label>
             <div class="form-row">
-              <label>City<input type="text" required autocomplete="address-level2" placeholder="City" /></label>
-              <label>ZIP<input type="text" required autocomplete="postal-code" placeholder="ZIP" /></label>
+              <label><span data-i18n="checkout.city">City</span><input type="text" required autocomplete="address-level2" placeholder="City" data-i18n-attr="placeholder:checkout.city" /></label>
+              <label><span data-i18n="checkout.zip">ZIP</span><input type="text" required autocomplete="postal-code" placeholder="ZIP" data-i18n-attr="placeholder:checkout.zip" /></label>
             </div>
           </fieldset>
           <fieldset>
-            <legend>Payment (demo fields)</legend>
-            <label>Card number<input type="text" inputmode="numeric" required placeholder="•••• •••• •••• ••••" autocomplete="off" /></label>
+            <legend data-i18n="checkout.payment">Payment (demo fields)</legend>
+            <label><span data-i18n="checkout.card">Card number</span><input type="text" inputmode="numeric" required placeholder="•••• •••• •••• ••••" autocomplete="off" /></label>
             <div class="form-row">
-              <label>Expiry<input type="text" required placeholder="MM/YY" autocomplete="off" /></label>
-              <label>CVC<input type="text" required placeholder="CVC" autocomplete="off" /></label>
+              <label><span data-i18n="checkout.expiry">Expiry</span><input type="text" required placeholder="MM/YY" autocomplete="off" /></label>
+              <label><span data-i18n="checkout.cvc">CVC</span><input type="text" required placeholder="CVC" autocomplete="off" /></label>
             </div>
           </fieldset>
-          <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay">Continue demo · <span id="checkoutPayAmt"></span></button>
+          <button type="submit" class="btn btn-primary checkout-pay" id="checkoutPay"><span data-i18n="checkout.continue">Continue demo ·</span> <span id="checkoutPayAmt"></span></button>
         </form>
         <aside class="checkout-summary">
-          <h3>Order summary</h3>
+          <h3 data-i18n="checkout.summary">Order summary</h3>
           <div class="summary-items" id="summaryItems"></div>
-          <div class="summary-line"><span>Subtotal</span><span id="sumSubtotal">$0.00</span></div>
-          <div class="summary-line"><span>Shipping</span><span id="sumShipping">$0.00</span></div>
-          <div class="summary-line summary-total"><span>Total</span><span id="sumTotal">$0.00</span></div>
-          <p class="checkout-demo-note">This is a layout walkthrough only.</p>
+          <div class="summary-line"><span data-i18n="checkout.subtotal">Subtotal</span><span id="sumSubtotal">$0.00</span></div>
+          <div class="summary-line"><span data-i18n="checkout.shippingLine">Shipping</span><span id="sumShipping">$0.00</span></div>
+          <div class="summary-line summary-total"><span data-i18n="checkout.total">Total</span><span id="sumTotal">$0.00</span></div>
+          <p class="checkout-demo-note" data-i18n="checkout.demoNote">This is a layout walkthrough only.</p>
         </aside>
       </div>
 
@@ -396,9 +398,10 @@
         <div class="success-check" aria-hidden="true">
           <svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="3"/><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M15 27l8 8 15-16"/></svg>
         </div>
-        <h2>Demo checkout only</h2>
-        <p>No order was placed (<strong id="orderNum">DEMO-ONLY</strong>). Payment and inventory are not connected yet.</p>
-        <button type="button" class="btn btn-primary" id="successDone">Keep shopping</button>
+        <h2 data-i18n="checkout.successTitle">Demo checkout only</h2>
+        <p data-i18n="checkout.successCopy">No order was placed (DEMO-ONLY). Payment and inventory are not connected yet.</p>
+        <strong id="orderNum" class="sr-only">DEMO-ONLY</strong>
+        <button type="button" class="btn btn-primary" id="successDone" data-i18n="checkout.keepShopping">Keep shopping</button>
       </div>
     </div>
   </div>
@@ -406,12 +409,12 @@
   <!-- Toast -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <aside class="review-banner" id="reviewBanner" hidden aria-label="Leave a Google review">
-    <button class="review-banner-close" id="reviewBannerClose" type="button" aria-label="Dismiss review invitation">&times;</button>
+  <aside class="review-banner" id="reviewBanner" hidden aria-label="Leave a Google review" data-i18n-attr="aria-label:review.label">
+    <button class="review-banner-close" id="reviewBannerClose" type="button" aria-label="Dismiss review invitation" data-i18n-attr="aria-label:review.dismiss">&times;</button>
     <a class="review-banner-link" id="reviewBannerLink" target="_blank" rel="noopener noreferrer">
-      <img src="/assets/review-banner-approved.png" alt="Leave a review. Click here. Your support means everything." width="1024" height="426" />
+      <img src="/assets/review-banner-approved.png" alt="Leave a review. Click here. Your support means everything." width="1024" height="426" data-i18n-attr="alt:review.bannerAlt" />
     </a>
-    <a class="review-feedback" id="reviewFeedback" hidden>Share private feedback</a>
+    <a class="review-feedback" id="reviewFeedback" hidden data-i18n="review.feedback">Share private feedback</a>
   </aside>
 
   <script src="/js/env.js?v=local" onerror="window.__SR_ENV_LOAD_ERROR__=true"></script>
@@ -419,6 +422,7 @@
   <script src="/js/supabase-client.js?v=local"></script>
   <script src="/js/appearance.js?v=local"></script>
   <script src="/js/store-settings.js?v=local"></script>
+  <script src="/js/i18n.js?v=local"></script>
   <script src="/js/storefront-catalog.js?v=local"></script>
   <script src="/app.js?v=local"></script>
 </body>

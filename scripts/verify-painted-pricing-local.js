@@ -142,7 +142,7 @@ const orders = read("admin/orders.js");
 
 assert(app.includes('lineKey(id, finish)'), "cart has product+finish identity");
 assert(app.includes('finish: l.finish'), "checkout payload carries finish");
-assert(app.includes('From '), "dual-price cards use restrained From pricing");
+assert(app.includes('card.from'), "dual-price cards use restrained From pricing");
 assert(editor.includes('id="painted_price"'), "admin has optional painted price");
 assert(editor.includes("Leave Painted Price blank"), "admin helper text present");
 assert(checkout.includes("catalog.assertPurchasable"), "server validates catalog data");

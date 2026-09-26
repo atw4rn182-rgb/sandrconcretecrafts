@@ -49,4 +49,31 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.review-bann
 assert.match(css, /\.review-banner-link img[\s\S]*drop-shadow/);
 assert.match(css, /\.review-banner-link \{[\s\S]*overflow:\s*visible/);
 
+var i18n = read("js/i18n.js");
+assert.match(html, /data-lang-btn="en"/);
+assert.match(html, /data-lang-btn="es"/);
+assert.match(html, /js\/i18n\.js/);
+assert.match(html, /class="lang-toggle"/);
+assert.doesNotMatch(html, /translate\.google|goog-te-banner|Google Translate/i);
+assert.match(i18n, /sr-storefront-lang/);
+assert.match(i18n, /Agregar al carrito/);
+assert.match(i18n, /card\.soldOut/);
+assert.doesNotMatch(i18n, /admin\//);
+assert.match(app, /SRStorefrontI18n/);
+assert.match(app, /esc\(p\.name\)/);
+assert.match(app, /esc\(shortDesc\(p\.desc\)\)/);
+assert.doesNotMatch(app, /t\(\"p\.name\"\)|t\(p\.name\)/);
+
+var adminFiles = [
+  "admin/index.html",
+  "admin/login.html",
+  "admin/products.html",
+  "admin/payments.html",
+  "admin/settings.html",
+];
+adminFiles.forEach(function (rel) {
+  var text = read(rel);
+  assert.doesNotMatch(text, /lang-toggle|i18n\.js|data-lang-btn/, rel + " stays English-only");
+});
+
 console.log("sharing fallbacks, review config, motion, scroll, and dismissal: ok");

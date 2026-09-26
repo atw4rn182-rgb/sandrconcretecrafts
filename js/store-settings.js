@@ -299,6 +299,13 @@
     });
   }
 
+  function ui(key, fallback) {
+    if (typeof SRStorefrontI18n !== "undefined" && SRStorefrontI18n.t) {
+      return SRStorefrontI18n.t(key);
+    }
+    return fallback;
+  }
+
   function setText(el, value) {
     if (!el) return;
     el.textContent = value == null ? "" : String(value);
@@ -413,7 +420,7 @@
           "mailto:" +
           s.contact.email +
           "?subject=" +
-          encodeURIComponent("Private feedback for " + s.business.name);
+          encodeURIComponent(ui("review.feedbackSubject", "Private feedback for {name}").replace("{name}", s.business.name));
       } else {
         feedbackLink.hidden = true;
         feedbackLink.removeAttribute("href");
@@ -456,7 +463,7 @@
       if (s.fulfillment.shipping_enabled && s.fulfillment.shipping_note) {
         parts.push(s.fulfillment.shipping_note);
       } else if (s.fulfillment.shipping_enabled) {
-        parts.push("Shipping available");
+        parts.push(ui("cart.fulfillmentShipping", "Shipping available"));
       }
       if (parts.length) {
         fulfill.hidden = false;
@@ -471,13 +478,13 @@
     if (cartFulfill) {
       var cartParts = [];
       if (s.fulfillment.pickup_enabled) {
-        cartParts.push(s.fulfillment.pickup_label || "Local Pickup");
+        cartParts.push(s.fulfillment.pickup_label || ui("cart.fulfillmentPickup", "Local Pickup"));
       }
       if (s.fulfillment.shipping_enabled) {
         cartParts.push(
           s.fulfillment.shipping_note
             ? s.fulfillment.shipping_note
-            : "Shipping available"
+            : ui("cart.fulfillmentShipping", "Shipping available")
         );
       }
       if (cartParts.length) {
