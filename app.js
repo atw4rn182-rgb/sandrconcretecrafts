@@ -1690,6 +1690,7 @@
       if (window.SRStorefrontI18n && SRStorefrontI18n.applyStatic) {
         SRStorefrontI18n.applyStatic();
       }
+      syncCheckoutButtonLabel();
     } catch (err) {
       storeSettings =
         typeof SRStoreSettings !== "undefined"
@@ -1766,6 +1767,7 @@
       updateCart();
       openSharedProduct();
     }
+    syncCheckoutButtonLabel();
   }
 
   init();

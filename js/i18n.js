@@ -308,6 +308,9 @@
     }
   }
 
+  // Resolve the saved language immediately so t() is correct before DOMContentLoaded.
+  lang = readStored();
+
   function interpolate(text, vars) {
     if (!vars) return text;
     return String(text).replace(/\{(\w+)\}/g, function (_, key) {

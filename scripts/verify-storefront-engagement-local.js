@@ -56,12 +56,14 @@ assert.match(html, /js\/i18n\.js/);
 assert.match(html, /class="lang-toggle"/);
 assert.doesNotMatch(html, /translate\.google|goog-te-banner|Google Translate/i);
 assert.match(i18n, /sr-storefront-lang/);
+assert.match(i18n, /lang = readStored\(\)/);
 assert.match(i18n, /Agregar al carrito/);
 assert.match(i18n, /card\.soldOut/);
 assert.doesNotMatch(i18n, /admin\//);
 assert.match(app, /SRStorefrontI18n/);
 assert.match(app, /esc\(p\.name\)/);
 assert.match(app, /esc\(shortDesc\(p\.desc\)\)/);
+assert.match(app, /openSharedProduct\(\);\s*\n\s*\}\s*\n\s*syncCheckoutButtonLabel\(\);/);
 assert.doesNotMatch(app, /t\(\"p\.name\"\)|t\(p\.name\)/);
 
 var adminFiles = [
