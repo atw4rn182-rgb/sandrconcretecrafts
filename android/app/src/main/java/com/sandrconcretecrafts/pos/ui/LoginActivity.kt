@@ -114,7 +114,7 @@ class LoginActivity : AppCompatActivity() {
         val location = TerminalPermissions.evaluate(
             this,
             false,
-            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
         )
         binding.diagnostics.visibility = View.VISIBLE
         binding.diagnostics.text = TerminalPermissions.safeDiagnostics(this, location)

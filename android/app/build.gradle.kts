@@ -23,8 +23,8 @@ android {
         applicationId = "com.sandrconcretecrafts.pos"
         minSdk = 33
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.1.6-test"
+        versionCode = 8
+        versionName = "0.1.7-test"
         buildConfigField(
             "String",
             "API_BASE_URL",
@@ -37,7 +37,7 @@ android {
             "SIMULATED_READER",
             (localProps.getProperty("SR_SIMULATED_READER") ?: "true").equals("true", ignoreCase = true).toString()
         )
-        buildConfigField("String", "BUILD_ID", "\"p37-setup\"")
+        buildConfigField("String", "BUILD_ID", "\"p38-stripe-loc\"")
     }
 
     buildFeatures {

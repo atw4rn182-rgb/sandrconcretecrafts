@@ -23,7 +23,7 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySetupBinding
     private lateinit var setupStore: SetupStore
     private lateinit var session: SessionStore
-    private var requestedFineThisSession = false
+    private var requestedLocationThisSession = false
     private var terminalStarted = false
     private var terminalPhase = SetupGate.TerminalPhase.IDLE
     private var terminalError = ""
@@ -33,7 +33,7 @@ class SetupActivity : AppCompatActivity() {
     private val permission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        requestedFineThisSession = true
+        requestedLocationThisSession = true
         render()
     }
 
@@ -65,8 +65,8 @@ class SetupActivity : AppCompatActivity() {
     private fun currentView(): SetupGate.View {
         val location = TerminalPermissions.evaluate(
             this,
-            requestedFineThisSession,
-            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+            requestedLocationThisSession,
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
         )
         return SetupGate.evaluate(
             SetupGate.Input(
@@ -78,8 +78,8 @@ class SetupActivity : AppCompatActivity() {
                 fineGranted = location.fineGranted,
                 coarseGranted = location.coarseGranted,
                 servicesOn = location.servicesOn,
-                alreadyRequestedFine = requestedFineThisSession,
-                rationaleFine = location.rationaleFine,
+                alreadyRequestedLocation = requestedLocationThisSession,
+                rationaleLocation = location.rationaleLocation,
                 signedIn = !session.accessToken.isNullOrBlank(),
                 terminal = terminalPhase,
                 terminalError = terminalError
@@ -121,7 +121,7 @@ class SetupActivity : AppCompatActivity() {
                 setupStore.welcomeSeen = true
                 render()
             }
-            SetupGate.Action.REQUEST_FINE_LOCATION -> {
+            SetupGate.Action.REQUEST_LOCATION -> {
                 permission.launch(TerminalPermissions.locationRequestPermissions)
             }
             SetupGate.Action.OPEN_APP_SETTINGS -> openAppSettings()
@@ -232,8 +232,8 @@ class SetupActivity : AppCompatActivity() {
         }
         val location = TerminalPermissions.evaluate(
             this,
-            requestedFineThisSession,
-            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+            requestedLocationThisSession,
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
         )
         val extra = listOf(
             "BLOCKED STAGE: ${view.stage}",
@@ -267,8 +267,8 @@ class SetupActivity : AppCompatActivity() {
                     fineGranted = location.fineGranted,
                     coarseGranted = location.coarseGranted,
                     servicesOn = location.servicesOn,
-                    alreadyRequestedFine = location.alreadyRequested,
-                    rationaleFine = location.rationaleFine,
+                    alreadyRequestedLocation = location.alreadyRequested,
+                    rationaleLocation = location.rationaleLocation,
                     signedIn = true,
                     terminal = SetupGate.TerminalPhase.IDLE
                 )

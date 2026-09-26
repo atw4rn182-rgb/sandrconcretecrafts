@@ -4,7 +4,7 @@ import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 
 /**
  * Pure Tap-to-Pay first-launch / repair state machine.
- * Branding can stay S&R; the gate itself is reusable for other staff POS apps.
+ * Location uses Stripe Terminal 5.8.1 rules: Coarse OR Fine is enough.
  */
 object SetupGate {
     const val MIN_SDK = 33
@@ -14,8 +14,7 @@ object SetupGate {
         ANDROID_UNSUPPORTED,
         NFC_UNAVAILABLE,
         NFC_OFF,
-        LOCATION_PRECISE,
-        LOCATION_APPROXIMATE,
+        LOCATION_PERMISSION,
         LOCATION_SETTINGS,
         LOCATION_SERVICES,
         SIGN_IN,
@@ -29,7 +28,7 @@ object SetupGate {
     enum class Action {
         NONE,
         MARK_WELCOME,
-        REQUEST_FINE_LOCATION,
+        REQUEST_LOCATION,
         OPEN_APP_SETTINGS,
         OPEN_LOCATION_SERVICES,
         OPEN_NFC_SETTINGS,
@@ -62,7 +61,7 @@ object SetupGate {
                 Screen.WELCOME -> "WELCOME"
                 Screen.ANDROID_UNSUPPORTED -> "ANDROID_VERSION"
                 Screen.NFC_UNAVAILABLE, Screen.NFC_OFF -> "NFC"
-                Screen.LOCATION_PRECISE, Screen.LOCATION_APPROXIMATE, Screen.LOCATION_SETTINGS -> "PERMISSIONS"
+                Screen.LOCATION_PERMISSION, Screen.LOCATION_SETTINGS -> "PERMISSIONS"
                 Screen.LOCATION_SERVICES -> "LOCATION_SERVICES"
                 Screen.SIGN_IN -> "SIGN_IN"
                 Screen.TERMINAL_CONNECT, Screen.TERMINAL_FAILED -> "TERMINAL_INIT"
@@ -83,26 +82,30 @@ object SetupGate {
         val fineGranted: Boolean,
         val coarseGranted: Boolean,
         val servicesOn: Boolean,
-        val alreadyRequestedFine: Boolean,
-        val rationaleFine: Boolean,
+        val alreadyRequestedLocation: Boolean,
+        val rationaleLocation: Boolean,
         val signedIn: Boolean,
         val terminal: TerminalPhase,
         val terminalError: String = ""
     )
 
+    fun locationGranted(fineGranted: Boolean, coarseGranted: Boolean): Boolean {
+        return coarseGranted || fineGranted
+    }
+
     fun locationBlock(
         fineGranted: Boolean,
         coarseGranted: Boolean,
         servicesOn: Boolean,
-        alreadyRequestedFine: Boolean,
-        rationaleFine: Boolean
+        alreadyRequested: Boolean,
+        rationaleLocation: Boolean
     ): TerminalPermissions.Block {
+        val granted = locationGranted(fineGranted, coarseGranted)
         return when {
-            fineGranted && !servicesOn -> TerminalPermissions.Block.LOCATION_SERVICES_DISABLED
-            fineGranted -> TerminalPermissions.Block.NONE
-            coarseGranted -> TerminalPermissions.Block.FINE_DENIED_COARSE_GRANTED
-            alreadyRequestedFine && !rationaleFine -> TerminalPermissions.Block.FINE_DENIED_SETTINGS_REQUIRED
-            else -> TerminalPermissions.Block.FINE_DENIED
+            granted && !servicesOn -> TerminalPermissions.Block.LOCATION_SERVICES_DISABLED
+            granted -> TerminalPermissions.Block.NONE
+            alreadyRequested && !rationaleLocation -> TerminalPermissions.Block.LOCATION_SETTINGS_REQUIRED
+            else -> TerminalPermissions.Block.LOCATION_DENIED
         }
     }
 
@@ -111,17 +114,22 @@ object SetupGate {
         nfcAvailable: Boolean,
         nfcEnabled: Boolean,
         fineGranted: Boolean,
+        coarseGranted: Boolean,
         servicesOn: Boolean,
         minSdk: Int = MIN_SDK
     ): Boolean {
-        return sdkInt >= minSdk && nfcAvailable && nfcEnabled && fineGranted && servicesOn
+        return sdkInt >= minSdk &&
+            nfcAvailable &&
+            nfcEnabled &&
+            locationGranted(fineGranted, coarseGranted) &&
+            servicesOn
     }
 
     fun evaluate(input: Input): View {
         val androidOk = input.sdkInt >= input.minSdk
-        val locationOk = input.fineGranted && input.servicesOn
+        val granted = locationGranted(input.fineGranted, input.coarseGranted)
         val nfcOn = input.nfcAvailable && input.nfcEnabled
-        val checks = checklist(androidOk, input.nfcAvailable, nfcOn, input.fineGranted, input.servicesOn, input.terminal)
+        val checks = checklist(androidOk, input.nfcAvailable, nfcOn, granted, input.servicesOn, input.terminal)
         if (!input.welcomeSeen) {
             return View(
                 Screen.WELCOME,
@@ -166,40 +174,28 @@ object SetupGate {
                 false
             )
         }
-        val loc = locationBlock(
-            input.fineGranted,
-            input.coarseGranted,
-            input.servicesOn,
-            input.alreadyRequestedFine,
-            input.rationaleFine
-        )
-        when (loc) {
-            TerminalPermissions.Block.FINE_DENIED -> return View(
-                Screen.LOCATION_PRECISE,
-                "Allow Precise Location",
-                "Tap to Pay needs Precise Location permission to securely initialize contactless payments.\n\nIf Android asks, choose Precise, not Approximate.",
-                "ALLOW PRECISE LOCATION",
-                Action.REQUEST_FINE_LOCATION,
+        when (
+            locationBlock(
+                input.fineGranted,
+                input.coarseGranted,
+                input.servicesOn,
+                input.alreadyRequestedLocation,
+                input.rationaleLocation
+            )
+        ) {
+            TerminalPermissions.Block.LOCATION_DENIED -> return View(
+                Screen.LOCATION_PERMISSION,
+                "Allow Location",
+                "Tap to Pay needs Location permission to securely initialize contactless payments. Approximate Location is enough.",
+                "ALLOW LOCATION",
+                Action.REQUEST_LOCATION,
                 checks,
                 false
             )
-            TerminalPermissions.Block.FINE_DENIED_COARSE_GRANTED -> return View(
-                Screen.LOCATION_APPROXIMATE,
-                "Precise Location is required",
-                "Location is currently set to Approximate. Tap to Pay needs Precise Location.",
-                "FIX LOCATION",
-                if (input.alreadyRequestedFine && !input.rationaleFine) {
-                    Action.OPEN_APP_SETTINGS
-                } else {
-                    Action.REQUEST_FINE_LOCATION
-                },
-                checks,
-                false
-            )
-            TerminalPermissions.Block.FINE_DENIED_SETTINGS_REQUIRED -> return View(
+            TerminalPermissions.Block.LOCATION_SETTINGS_REQUIRED -> return View(
                 Screen.LOCATION_SETTINGS,
                 "Open Android Settings",
-                "Precise Location needs to be enabled in Android Settings.",
+                "Location needs to be enabled in Android Settings.",
                 "OPEN SETTINGS",
                 Action.OPEN_APP_SETTINGS,
                 checks,
@@ -298,7 +294,7 @@ object SetupGate {
         androidOk: Boolean,
         nfcAvailable: Boolean,
         nfcOn: Boolean,
-        fineGranted: Boolean,
+        locationGranted: Boolean,
         servicesOn: Boolean,
         terminal: TerminalPhase
     ): List<CheckItem> {
@@ -306,7 +302,7 @@ object SetupGate {
             CheckItem("Compatible Android version", androidOk),
             CheckItem("NFC available", nfcAvailable),
             CheckItem("NFC turned on", nfcOn),
-            CheckItem("Precise Location allowed", fineGranted),
+            CheckItem("Location allowed", locationGranted),
             CheckItem("Location Services on", servicesOn),
             CheckItem("Connecting Tap to Pay", terminal == TerminalPhase.READY || terminal == TerminalPhase.CONNECTING)
         )

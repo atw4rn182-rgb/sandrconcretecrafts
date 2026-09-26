@@ -66,7 +66,7 @@ class CollectActivity : AppCompatActivity() {
         return TerminalPermissions.evaluate(
             this,
             false,
-            shouldShowRequestPermissionRationale(TerminalPermissions.finePermission)
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
         )
     }
 

@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 7/);
-assert.match(gradleApp, /versionName = "0\.1\.6-test"/);
+assert.match(gradleApp, /versionCode = 8/);
+assert.match(gradleApp, /versionName = "0\.1\.7-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
 
@@ -114,7 +114,8 @@ assert.match(permissions, /ACCESS_FINE_LOCATION/);
 assert.match(permissions, /BLUETOOTH_CONNECT/);
 assert.match(permissions, /checkSelfPermission/);
 assert.match(permissions, /fun evaluate\(/);
-assert.match(permissions, /FINE_DENIED_COARSE_GRANTED/);
+assert.match(permissions, /locationGranted|coarseGranted \|\| fineGranted/);
+assert.match(permissions, /STRIPE_SDK_VERSION/);
 assert.match(permissions, /LOCATION_SERVICES_DISABLED/);
 assert.doesNotMatch(permissions, /client_secret|sk_live_|whsec_/);
 assert.doesNotMatch(permissions, /Location permission is required for Stripe Terminal/);

@@ -113,7 +113,7 @@ class TerminalController(
                     terminalStatus = TerminalStatus.Failed
                     lastErrorCode = "TERMINAL_MODE_MISMATCH"
                     lastSafeError =
-                        "Stage: connection-token\nTERMINAL_MODE_MISMATCH\nThis TEST APK is simulated only. The Terminal backend is LIVE. Online Checkout was not changed. Stop and use a TEST Terminal key/location/webhook for simulation."
+                        "SOURCE: APP TERMINAL MODE GATE\nStage: connection-token\nTERMINAL_MODE_MISMATCH\nThis TEST APK is simulated only. The Terminal backend is LIVE. Online Checkout was not changed. Stop and use a TEST Terminal key/location/webhook for simulation."
                     onError(lastSafeError ?: "Terminal mode mismatch.")
                     return@execute
                 }
@@ -122,9 +122,13 @@ class TerminalController(
             } catch (error: Exception) {
                 connecting = false
                 terminalStatus = TerminalStatus.Failed
-                lastSafeError = sanitize(error.message ?: "Tap to Pay SDK did not start.")
-                lastErrorCode = lastErrorCode ?: "INIT_FAILED"
-                onError(formatError(lastStage, lastErrorCode, lastSafeError))
+                if (error is TerminalException) {
+                    onError(formatStripeError(lastStage, error))
+                } else {
+                    lastSafeError = sanitize(error.message ?: "Tap to Pay SDK did not start.")
+                    lastErrorCode = lastErrorCode ?: "INIT_FAILED"
+                    onError(formatStripeError(lastStage, lastErrorCode, lastSafeError))
+                }
             }
         }
     }
@@ -376,20 +380,36 @@ class TerminalController(
     }
 
     private fun friendly(error: TerminalException): String {
-        val code = error.errorCode.toString().substringAfterLast('.')
-        lastErrorCode = code.ifBlank { "TERMINAL_EXCEPTION" }
+        return formatStripeError(lastStage, error)
+    }
+
+    private fun formatStripeError(stage: String, error: TerminalException): String {
+        val code = error.errorCode.toString().substringAfterLast('.').ifBlank { "TERMINAL_EXCEPTION" }
         val message = sanitize(
             error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
         )
-        return formatError(lastStage, lastErrorCode, message)
+        return formatStripeError(stage, code, message)
+    }
+
+    private fun formatStripeError(stage: String, code: String?, message: String?): String {
+        lastErrorCode = code
+        lastSafeError = message
+        val blocked = if (stage == "terminal-init" || stage == "permission-check") {
+            "TERMINAL_INIT"
+        } else {
+            stage
+        }
+        return listOfNotNull(
+            "SOURCE: STRIPE SDK",
+            "BLOCKED STAGE: $blocked",
+            "Stripe error code: ${code ?: "unknown"}",
+            "Stripe error message: ${message ?: "Tap to Pay couldn’t finish."}",
+            "Stripe SDK version: ${TerminalPermissions.STRIPE_SDK_VERSION}"
+        ).joinToString("\n")
     }
 
     private fun formatError(stage: String, code: String?, message: String?): String {
-        return listOfNotNull(
-            "Stage: $stage",
-            code?.takeIf { it.isNotBlank() },
-            message?.takeIf { it.isNotBlank() }
-        ).joinToString("\n")
+        return formatStripeError(stage, code, message)
     }
 
     private fun sanitize(raw: String): String {
