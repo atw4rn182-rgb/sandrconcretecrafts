@@ -11,14 +11,14 @@ import com.sandrconcretecrafts.pos.BuildConfig
 
 /**
  * Single authoritative Location check for Stripe Terminal 5.8.1.
- * Stripe 5.8.0+ accepts ACCESS_COARSE_LOCATION; Fine is optional GPS.
- * Nearby Devices is diagnostic-only for Tap to Pay.
+ * SATISFIED when Coarse OR Fine is granted. Fine is not required.
  */
 object TerminalPermissions {
     const val STRIPE_SDK_VERSION = "5.8.1"
 
     val finePermission = Manifest.permission.ACCESS_FINE_LOCATION
     val coarsePermission = Manifest.permission.ACCESS_COARSE_LOCATION
+    val phonePermission = Manifest.permission.READ_PHONE_STATE
 
     val locationRequestPermissions = arrayOf(coarsePermission)
 
@@ -40,15 +40,18 @@ object TerminalPermissions {
         val fineCompat: Int,
         val fineNative: Int,
         val coarseCompat: Int,
+        val coarseNative: Int,
+        val phoneCompat: Int,
         val rationaleLocation: Boolean,
         val servicesOn: Boolean,
         val alreadyRequested: Boolean
     ) {
         val fineGranted: Boolean
-            get() = fineCompat == PackageManager.PERMISSION_GRANTED &&
+            get() = fineCompat == PackageManager.PERMISSION_GRANTED ||
                 fineNative == PackageManager.PERMISSION_GRANTED
         val coarseGranted: Boolean
-            get() = coarseCompat == PackageManager.PERMISSION_GRANTED
+            get() = coarseCompat == PackageManager.PERMISSION_GRANTED ||
+                coarseNative == PackageManager.PERMISSION_GRANTED
         val locationGranted: Boolean
             get() = coarseGranted || fineGranted
         val locationLevel: LocationLevel
@@ -61,6 +64,8 @@ object TerminalPermissions {
             get() = locationGranted
         val readyForTerminal: Boolean
             get() = locationGranted && servicesOn
+        val gateResult: String
+            get() = if (requirementSatisfied) "SATISFIED" else "DENIED"
         val block: Block
             get() = when {
                 locationGranted && !servicesOn -> Block.LOCATION_SERVICES_DISABLED
@@ -81,6 +86,12 @@ object TerminalPermissions {
                 Block.LOCATION_SETTINGS_REQUIRED -> "LOCATION_SETTINGS_REQUIRED"
                 Block.LOCATION_SERVICES_DISABLED -> "LOCATION_SERVICES_DISABLED"
             }
+        val source: String
+            get() = when (block) {
+                Block.NONE -> ErrorSource.ANDROID_PERMISSION_CHECK
+                Block.LOCATION_SERVICES_DISABLED -> ErrorSource.ANDROID_PERMISSION_CHECK
+                else -> ErrorSource.APP_SETUP_GATE
+            }
     }
 
     fun rawResult(value: Int): String {
@@ -100,10 +111,32 @@ object TerminalPermissions {
             fineCompat = ContextCompat.checkSelfPermission(context, finePermission),
             fineNative = context.checkSelfPermission(finePermission),
             coarseCompat = ContextCompat.checkSelfPermission(context, coarsePermission),
+            coarseNative = context.checkSelfPermission(coarsePermission),
+            phoneCompat = ContextCompat.checkSelfPermission(context, phonePermission),
             rationaleLocation = rationaleLocation,
             servicesOn = locationServicesOn(context),
             alreadyRequested = alreadyRequested
         )
+    }
+
+    fun evaluateAndTrace(
+        context: Context,
+        alreadyRequested: Boolean,
+        rationaleLocation: Boolean,
+        caller: String
+    ): LocationState {
+        EventTrace.add("APP_LOCATION_GATE_ENTERED caller=$caller")
+        val state = evaluate(context, alreadyRequested, rationaleLocation)
+        EventTrace.add("COARSE_PERMISSION=${if (state.coarseGranted) "GRANTED" else "DENIED"}")
+        EventTrace.add("FINE_PERMISSION=${if (state.fineGranted) "GRANTED" else "DENIED"}")
+        EventTrace.add("LOCATION_REQUIREMENT=${if (state.requirementSatisfied) "SATISFIED" else "NOT SATISFIED"}")
+        EventTrace.add("LOCATION_LEVEL=${state.locationLevel.name}")
+        EventTrace.add("LOCATION_SERVICES=${if (state.servicesOn) "ON" else "OFF"}")
+        EventTrace.add("APP_LOCATION_GATE_RESULT=${state.gateResult}")
+        if (state.block != Block.NONE) {
+            EventTrace.add("UI_ERROR_SOURCE=${state.source}")
+        }
+        return state
     }
 
     fun locationServicesOn(context: Context): Boolean {
@@ -123,11 +156,11 @@ object TerminalPermissions {
         return when (state.block) {
             Block.NONE -> ""
             Block.LOCATION_DENIED ->
-                "Tap to Pay needs Location permission. Approximate Location is enough."
+                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nTap to Pay needs Location permission. Approximate Location is enough."
             Block.LOCATION_SETTINGS_REQUIRED ->
-                "Location needs to be enabled in Android Settings."
+                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nLocation needs to be enabled in Android Settings."
             Block.LOCATION_SERVICES_DISABLED ->
-                "Turn on Location services to use Tap to Pay. The app permission is already granted."
+                "SOURCE: ${ErrorSource.ANDROID_PERMISSION_CHECK}\nTurn on Location services to use Tap to Pay. The app permission is already granted."
         }
     }
 
@@ -140,22 +173,12 @@ object TerminalPermissions {
     }
 
     fun buildBanner(): String {
-        return "TEST BUILD ${BuildConfig.VERSION_NAME}  code ${BuildConfig.VERSION_CODE}  ${BuildConfig.BUILD_ID}"
+        return "TEST BUILD ${BuildConfig.VERSION_NAME}\nCODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}"
     }
 
     fun safeDiagnostics(context: Context, state: LocationState, extra: String = ""): String {
         if (!BuildConfig.SIMULATED_READER) return ""
         val nfc = nfcAvailable(context)
-        val androidState = when {
-            state.locationGranted -> "GRANTED"
-            state.block == Block.LOCATION_SETTINGS_REQUIRED -> "DENIED_DONT_ASK_AGAIN / settings-required"
-            else -> "DENIED"
-        }
-        val source = if (state.block == Block.NONE) {
-            "SOURCE: APP PERMISSION GATE — SATISFIED"
-        } else {
-            "SOURCE: APP PERMISSION GATE"
-        }
         val lines = mutableListOf(
             buildBanner(),
             "Build type: ${if (BuildConfig.DEBUG) "debug" else "release"}",
@@ -164,22 +187,24 @@ object TerminalPermissions {
             "Package: ${context.packageName}",
             "SDK_INT: ${Build.VERSION.SDK_INT}",
             "Target SDK: ${context.applicationInfo.targetSdkVersion}",
-            source,
+            "SOURCE: ${state.source}",
             "BLOCKED STAGE: ${state.stage}",
             "REASON: ${state.reason}",
-            "Location requirement result: ${if (state.requirementSatisfied) "SATISFIED" else "NOT SATISFIED"}",
+            "APP_LOCATION_GATE_RESULT: ${state.gateResult}",
+            "Location requirement: ${if (state.requirementSatisfied) "SATISFIED" else "NOT SATISFIED"}",
             "Location permission: ${if (state.locationGranted) "GRANTED" else "DENIED"}",
-            "Location permission level: ${state.locationLevel.name}",
-            "Fine raw ContextCompat: ${rawResult(state.fineCompat)}",
-            "Fine raw context.checkSelfPermission: ${rawResult(state.fineNative)}",
-            "Coarse raw ContextCompat: ${rawResult(state.coarseCompat)}",
-            "shouldShowRequestPermissionRationale(LOCATION): ${state.rationaleLocation}",
-            "Location services enabled: ${state.servicesOn}",
-            "Android permission state: $androidState",
-            "Nearby / Bluetooth Scan: ${rawResult(ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN))} / not required",
-            "Bluetooth Connect: ${rawResult(ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT))} / not required",
-            "NFC: ${if (nfc) "available" else "unavailable"}",
-            "NFC enabled: ${if (!nfc) "n/a" else if (nfcEnabled(context)) "yes" else "no"}"
+            "Location level: ${state.locationLevel.name}",
+            "ACCESS_COARSE_LOCATION ContextCompat: ${rawResult(state.coarseCompat)}",
+            "ACCESS_COARSE_LOCATION native: ${rawResult(state.coarseNative)}",
+            "ACCESS_FINE_LOCATION ContextCompat: ${rawResult(state.fineCompat)}",
+            "ACCESS_FINE_LOCATION native: ${rawResult(state.fineNative)}",
+            "Location services: ${if (state.servicesOn) "ON" else "OFF"}",
+            "NFC: ${if (nfc) "AVAILABLE" else "UNAVAILABLE"}",
+            "NFC enabled: ${if (!nfc) "n/a" else if (nfcEnabled(context)) "ENABLED" else "DISABLED"}",
+            "Nearby / Bluetooth Scan: ${rawResult(ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN))} / diagnostic only",
+            "Bluetooth Connect: ${rawResult(ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT))} / diagnostic only",
+            "Phone / READ_PHONE_STATE: ${rawResult(state.phoneCompat)} / not requested; diagnostic only",
+            EventTrace.render()
         )
         if (extra.isNotBlank()) lines.add(extra)
         return lines.joinToString("\n")

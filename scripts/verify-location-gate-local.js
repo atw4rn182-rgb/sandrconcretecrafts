@@ -64,17 +64,24 @@ var collect = fs.readFileSync(
 assert.match(permissions, /fun evaluate\(/);
 assert.match(permissions, /locationGranted/);
 assert.match(permissions, /coarseGranted \|\| fineGranted/);
+assert.match(permissions, /coarseNative/);
+assert.match(permissions, /APP_LOCATION_GATE_RESULT/);
+assert.match(permissions, /evaluateAndTrace/);
 assert.match(permissions, /LOCATION_SERVICES_DISABLED/);
 assert.match(permissions, /LOCATION_SETTINGS_REQUIRED/);
 assert.match(permissions, /STRIPE_SDK_VERSION = "5\.8\.1"/);
-assert.match(permissions, /Location requirement result/);
-assert.match(permissions, /Location permission level/);
-assert.match(permissions, /SOURCE: APP PERMISSION GATE/);
+assert.match(permissions, /Location requirement/);
+assert.match(permissions, /Location level/);
+assert.match(permissions, /APP_SETUP_GATE|ANDROID_PERMISSION_CHECK/);
+assert.match(permissions, /READ_PHONE_STATE/);
+assert.match(permissions, /diagnostic only/);
 assert.doesNotMatch(permissions, /FINE_DENIED_COARSE_GRANTED/);
 assert.doesNotMatch(permissions, /Precise Location is required/);
 assert.doesNotMatch(permissions, /Location permission is required for Stripe Terminal/);
 
-assert.match(collect, /TerminalPermissions\.evaluate/);
+assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
+assert.match(collect, /needsDeviceRepair/);
+assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);
@@ -99,8 +106,10 @@ var controller = fs.readFileSync(
   "utf8"
 );
 assert.match(controller, /TERMINAL_MODE_MISMATCH/);
-assert.match(controller, /SOURCE: STRIPE SDK/);
-assert.match(controller, /SOURCE: APP TERMINAL MODE GATE/);
+assert.match(controller, /SOURCE: \$\{ErrorSource\.STRIPE_SDK\}|STRIPE_SDK/);
+assert.match(controller, /TERMINAL_MODE_GATE/);
+assert.match(controller, /TERMINAL_INIT_START/);
+assert.match(controller, /DISCOVERY_START/);
 assert.match(controller, /Stripe error code/);
 assert.match(controller, /Stripe SDK version/);
 

@@ -53,7 +53,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
             UiState.Working(
                 amountLabel,
                 "Preparing Tap to Pay",
-                "Checking permissions, then starting Stripe Terminal."
+                "SOURCE: ANDROID_PERMISSION_CHECK\nLocation gate already evaluated. Starting Stripe Terminal."
             )
         )
         if (!PublicConfig.isConfigured()) {

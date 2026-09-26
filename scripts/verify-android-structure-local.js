@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 8/);
-assert.match(gradleApp, /versionName = "0\.1\.7-test"/);
+assert.match(gradleApp, /versionCode = 9/);
+assert.match(gradleApp, /versionName = "0\.1\.8-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
 
@@ -90,9 +90,12 @@ assert.doesNotMatch(viewModel, /type"\) == "custom"/);
 var collect = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
 );
-assert.match(collect, /TerminalPermissions\.evaluate/);
+assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
+assert.match(collect, /needsDeviceRepair/);
+assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);
+assert.match(collect, /STALE_UI_CLEARED/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.match(collect, /takePayment/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);
@@ -101,6 +104,17 @@ assert.doesNotMatch(collect, /granted\.values\.all/);
 
 var setup = read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/SetupActivity.kt");
 assert.match(setup, /SetupGate\.evaluate/);
+assert.match(setup, /evaluateAndTrace/);
+assert.match(setup, /needsDeviceRepair/);
+assert.match(read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/LoginActivity.kt"), /evaluateAndTrace/);
+assert.match(read("android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/EventTrace.kt"), /APP_SETUP_GATE/);
+assert.match(controller, /TERMINAL_INIT_START/);
+assert.match(controller, /CONNECTION_TOKEN_REQUEST_START/);
+assert.match(controller, /DISCOVERY_START/);
+assert.match(controller, /READER_CONNECT_START/);
+assert.match(controller, /SOURCE: \$\{ErrorSource\.STRIPE_SDK\}|SOURCE: STRIPE_SDK/);
+assert.doesNotMatch(setup, /READ_PHONE_STATE/);
+assert.doesNotMatch(collect, /READ_PHONE_STATE/);
 assert.match(setup, /ACTION_APPLICATION_DETAILS_SETTINGS/);
 assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);
 assert.match(setup, /ACTION_NFC_SETTINGS/);

@@ -12,7 +12,7 @@ import com.sandrconcretecrafts.pos.R
 import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.databinding.ActivityCollectBinding
-import com.sandrconcretecrafts.pos.setup.SetupStore
+import com.sandrconcretecrafts.pos.terminal.EventTrace
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 import java.net.URLDecoder
 
@@ -20,13 +20,15 @@ class CollectActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCollectBinding
     private val viewModel: CollectViewModel by viewModels()
     private var startedCollect = false
-    private var showDiagnostics = false
+    private var showDiagnostics = BuildConfig.SIMULATED_READER
     private var sentToSetup = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCollectBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EventTrace.add("APP_OPEN path=deep-link-or-collect")
+        EventTrace.add("BUILD_VERIFIED code=${BuildConfig.VERSION_CODE} id=${BuildConfig.BUILD_ID}")
         binding.diagnosticsToggle.setOnClickListener {
             showDiagnostics = !showDiagnostics
             refreshDiagnostics()
@@ -50,8 +52,17 @@ class CollectActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshDiagnostics()
+        if (needsRepair()) {
+            sendToSetup()
+            return
+        }
+        val failed = viewModel.state.value as? CollectViewModel.UiState.Failed
+        if (failed != null && failed.canRetry && currentState().readyForTerminal) {
+            EventTrace.add("STALE_UI_CLEARED reason=location-satisfied")
+            viewModel.retry()
+            return
+        }
         if (!startedCollect) continueIfReady()
-        else if (needsRepair()) sendToSetup()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -63,18 +74,16 @@ class CollectActivity : AppCompatActivity() {
     }
 
     private fun currentState(): TerminalPermissions.LocationState {
-        return TerminalPermissions.evaluate(
+        return TerminalPermissions.evaluateAndTrace(
             this,
             false,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
+            "CollectActivity"
         )
     }
 
     private fun needsRepair(): Boolean {
-        val setup = SetupStore(this)
-        return SetupActivity.needsWizard(
-            setup.welcomeSeen,
-            setup.completedOnce,
+        return SetupActivity.needsDeviceRepair(
             currentState(),
             TerminalPermissions.nfcAvailable(this),
             TerminalPermissions.nfcEnabled(this)

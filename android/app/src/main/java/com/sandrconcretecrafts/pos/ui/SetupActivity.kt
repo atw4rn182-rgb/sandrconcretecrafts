@@ -16,6 +16,7 @@ import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.databinding.ActivitySetupBinding
 import com.sandrconcretecrafts.pos.setup.SetupGate
 import com.sandrconcretecrafts.pos.setup.SetupStore
+import com.sandrconcretecrafts.pos.terminal.EventTrace
 import com.sandrconcretecrafts.pos.terminal.TerminalController
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 
@@ -27,7 +28,7 @@ class SetupActivity : AppCompatActivity() {
     private var terminalStarted = false
     private var terminalPhase = SetupGate.TerminalPhase.IDLE
     private var terminalError = ""
-    private var showDiagnostics = false
+    private var showDiagnostics = BuildConfig.SIMULATED_READER
     private var leaving = false
     private var terminal: TerminalController? = null
     private val permission = registerForActivityResult(
@@ -43,6 +44,8 @@ class SetupActivity : AppCompatActivity() {
         setContentView(binding.root)
         setupStore = SetupStore(this)
         session = SessionStore(this)
+        EventTrace.add("APP_OPEN path=launcher")
+        EventTrace.add("BUILD_VERIFIED code=${BuildConfig.VERSION_CODE} id=${BuildConfig.BUILD_ID}")
         binding.diagnosticsToggle.setOnClickListener {
             showDiagnostics = !showDiagnostics
             refreshDiagnostics(currentView())
@@ -63,10 +66,11 @@ class SetupActivity : AppCompatActivity() {
     }
 
     private fun currentView(): SetupGate.View {
-        val location = TerminalPermissions.evaluate(
+        val location = TerminalPermissions.evaluateAndTrace(
             this,
             requestedLocationThisSession,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
+            "SetupActivity"
         )
         return SetupGate.evaluate(
             SetupGate.Input(
@@ -248,6 +252,22 @@ class SetupActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_FROM_SETUP = "from_setup"
+
+        fun needsDeviceRepair(
+            location: TerminalPermissions.LocationState,
+            nfcAvailable: Boolean,
+            nfcEnabled: Boolean,
+            sdkInt: Int = Build.VERSION.SDK_INT
+        ): Boolean {
+            return !SetupGate.deviceReady(
+                sdkInt,
+                nfcAvailable,
+                nfcEnabled,
+                location.fineGranted,
+                location.coarseGranted,
+                location.servicesOn
+            )
+        }
 
         fun needsWizard(
             welcomeSeen: Boolean,

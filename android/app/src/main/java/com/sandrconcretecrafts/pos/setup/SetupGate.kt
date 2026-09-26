@@ -186,7 +186,7 @@ object SetupGate {
             TerminalPermissions.Block.LOCATION_DENIED -> return View(
                 Screen.LOCATION_PERMISSION,
                 "Allow Location",
-                "Tap to Pay needs Location permission to securely initialize contactless payments. Approximate Location is enough.",
+                "SOURCE: APP_SETUP_GATE\nTap to Pay needs Location permission. Approximate Location is enough.",
                 "ALLOW LOCATION",
                 Action.REQUEST_LOCATION,
                 checks,
@@ -195,7 +195,7 @@ object SetupGate {
             TerminalPermissions.Block.LOCATION_SETTINGS_REQUIRED -> return View(
                 Screen.LOCATION_SETTINGS,
                 "Open Android Settings",
-                "Location needs to be enabled in Android Settings.",
+                "SOURCE: APP_SETUP_GATE\nLocation needs to be enabled in Android Settings.",
                 "OPEN SETTINGS",
                 Action.OPEN_APP_SETTINGS,
                 checks,
@@ -204,7 +204,7 @@ object SetupGate {
             TerminalPermissions.Block.LOCATION_SERVICES_DISABLED -> return View(
                 Screen.LOCATION_SERVICES,
                 "Turn on Location Services",
-                "Turn on Location Services to continue.",
+                "SOURCE: ANDROID_PERMISSION_CHECK\nTurn on Location Services to continue. Location permission is already granted.",
                 "TURN ON LOCATION",
                 Action.OPEN_LOCATION_SERVICES,
                 checks,

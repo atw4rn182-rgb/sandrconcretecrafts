@@ -165,6 +165,7 @@ assert.doesNotMatch(gate, /LOCATION_APPROXIMATE/);
 assert.doesNotMatch(gate, /BLUETOOTH_SCAN|Nearby Devices/);
 
 assert.match(setup, /SetupGate\.evaluate/);
+assert.match(setup, /evaluateAndTrace/);
 assert.match(setup, /RequestMultiplePermissions/);
 assert.match(setup, /ACTION_NFC_SETTINGS/);
 assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);
@@ -173,7 +174,8 @@ assert.match(setup, /requestedLocationThisSession/);
 assert.match(setup, /test_diagnostics|TEST Diagnostics/);
 assert.doesNotMatch(setup, /permission\.launch\(missing\)/);
 
-assert.match(collect, /TerminalPermissions\.evaluate/);
+assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
+assert.match(collect, /needsDeviceRepair/);
 assert.match(collect, /SetupActivity/);
 assert.match(collect, /override fun onResume/);
 assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);

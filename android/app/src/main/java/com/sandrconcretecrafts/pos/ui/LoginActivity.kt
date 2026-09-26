@@ -11,19 +11,20 @@ import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.databinding.ActivityLoginBinding
-import com.sandrconcretecrafts.pos.setup.SetupStore
+import com.sandrconcretecrafts.pos.terminal.EventTrace
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
 import java.util.concurrent.Executors
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private val io = Executors.newSingleThreadExecutor()
-    private var showDiagnostics = false
+    private var showDiagnostics = BuildConfig.SIMULATED_READER
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EventTrace.add("APP_OPEN path=login")
         binding.diagnosticsToggle.setOnClickListener {
             showDiagnostics = !showDiagnostics
             refreshDiagnostics()
@@ -61,11 +62,13 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun continueAfterAuth() {
-        val setup = SetupStore(this)
-        val location = TerminalPermissions.evaluate(this, false, false)
-        if (SetupActivity.needsWizard(
-                setup.welcomeSeen,
-                setup.completedOnce,
+        val location = TerminalPermissions.evaluateAndTrace(
+            this,
+            false,
+            false,
+            "LoginActivity"
+        )
+        if (SetupActivity.needsDeviceRepair(
                 location,
                 TerminalPermissions.nfcAvailable(this),
                 TerminalPermissions.nfcEnabled(this)

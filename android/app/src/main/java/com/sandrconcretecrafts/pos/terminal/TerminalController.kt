@@ -84,6 +84,7 @@ class TerminalController(
                 terminalStatus = TerminalStatus.Initialized
                 connectionStatus = ConnectionPhase.Connected
                 discoveryStatus = DiscoveryStatus.ReaderFound
+                EventTrace.add("READER_CONNECT_SUCCESS already_connected=true")
                 onPhase("Reader already connected")
                 onReady()
                 return
@@ -99,21 +100,27 @@ class TerminalController(
             try {
                 lastStage = "terminal-init"
                 terminalStatus = TerminalStatus.Initializing
+                EventTrace.add("TERMINAL_INIT_START")
                 notifyPhase("Initializing Stripe Terminal")
                 initialize()
                 terminalStatus = TerminalStatus.Initialized
+                EventTrace.add("TERMINAL_INIT_SUCCESS")
                 notifyPhase("Stripe Terminal initialized")
                 lastStage = "connection-token"
+                EventTrace.add("CONNECTION_TOKEN_REQUEST_START")
                 notifyPhase("Requesting connection token")
                 val session = api.refreshTerminalSession()
                 backendLivemode = session.livemode
                 tokenStatus = TokenStatus.Received
+                EventTrace.add("CONNECTION_TOKEN_SUCCESS backend=${if (session.livemode == true) "LIVE" else if (session.livemode == false) "TEST" else "unknown"}")
                 if (useSimulatedReader() && session.livemode == true) {
                     connecting = false
                     terminalStatus = TerminalStatus.Failed
                     lastErrorCode = "TERMINAL_MODE_MISMATCH"
+                    EventTrace.add("TERMINAL_MODE_MISMATCH backend=LIVE")
+                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.TERMINAL_MODE_GATE}")
                     lastSafeError =
-                        "SOURCE: APP TERMINAL MODE GATE\nStage: connection-token\nTERMINAL_MODE_MISMATCH\nThis TEST APK is simulated only. The Terminal backend is LIVE. Online Checkout was not changed. Stop and use a TEST Terminal key/location/webhook for simulation."
+                        "SOURCE: ${ErrorSource.TERMINAL_MODE_GATE}\nStage: connection-token\nTERMINAL_MODE_MISMATCH\nThis TEST APK is simulated only. The Terminal backend is LIVE. Online Checkout was not changed. Stop and use a TEST Terminal key/location/webhook for simulation."
                     onError(lastSafeError ?: "Terminal mode mismatch.")
                     return@execute
                 }
@@ -122,6 +129,11 @@ class TerminalController(
             } catch (error: Exception) {
                 connecting = false
                 terminalStatus = TerminalStatus.Failed
+                if (lastStage == "connection-token") {
+                    EventTrace.add("CONNECTION_TOKEN_ERROR")
+                } else {
+                    EventTrace.add("TERMINAL_INIT_ERROR class=${error.javaClass.simpleName}")
+                }
                 if (error is TerminalException) {
                     onError(formatStripeError(lastStage, error))
                 } else {
@@ -261,6 +273,7 @@ class TerminalController(
         }
         lastStage = "reader-discovery"
         discoveryStatus = DiscoveryStatus.Starting
+        EventTrace.add("DISCOVERY_START method=TapToPayDiscoveryConfiguration simulated=${useSimulatedReader()}")
         notifyPhase("Starting simulated reader discovery")
         val config = DiscoveryConfiguration.TapToPayDiscoveryConfiguration(
             isSimulated = useSimulatedReader()
@@ -271,6 +284,7 @@ class TerminalController(
             config,
             object : DiscoveryListener {
                 override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
+                    EventTrace.add("DISCOVERY_SUCCESS reader_count=${readers.size}")
                     val reader = readers.firstOrNull() ?: return
                     if (!readerClaimed.compareAndSet(false, true)) return
                     discoveryStatus = DiscoveryStatus.ReaderFound
@@ -286,6 +300,8 @@ class TerminalController(
                     discoverCancelable = null
                     discoveryStatus = DiscoveryStatus.Failed
                     lastStage = "reader-discovery"
+                    EventTrace.add("DISCOVERY_ERROR code=${e.errorCode}")
+                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK}")
                     lastSafeError = friendly(e)
                     onError(lastSafeError ?: friendly(e))
                 }
@@ -301,6 +317,7 @@ class TerminalController(
     ) {
         lastStage = "reader-connection"
         connectionStatus = ConnectionPhase.Connecting
+        EventTrace.add("READER_CONNECT_START")
         notifyPhase("Connecting simulated reader")
         val config = ConnectionConfiguration.TapToPayConnectionConfiguration(
             locationId,
@@ -315,6 +332,7 @@ class TerminalController(
                     connecting = false
                     discoverCancelable = null
                     connectionStatus = ConnectionPhase.Connected
+                    EventTrace.add("READER_CONNECT_SUCCESS")
                     notifyPhase("Simulated reader connected")
                     onReady()
                 }
@@ -324,6 +342,8 @@ class TerminalController(
                     readerClaimed.set(false)
                     connectionStatus = ConnectionPhase.Failed
                     lastStage = "reader-connection"
+                    EventTrace.add("READER_CONNECT_ERROR code=${e.errorCode}")
+                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK}")
                     lastSafeError = friendly(e)
                     onError(lastSafeError ?: friendly(e))
                 }
@@ -394,16 +414,21 @@ class TerminalController(
     private fun formatStripeError(stage: String, code: String?, message: String?): String {
         lastErrorCode = code
         lastSafeError = message
-        val blocked = if (stage == "terminal-init" || stage == "permission-check") {
-            "TERMINAL_INIT"
-        } else {
-            stage
+        val blocked = when (stage) {
+            "terminal-init", "permission-check" -> "TERMINAL_INIT"
+            "connection-token" -> "SERVER_CONNECTION_TOKEN"
+            "reader-discovery" -> "READER_DISCOVERY"
+            "reader-connection" -> "READER_CONNECTION"
+            else -> stage
         }
+        EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK} stage=$blocked")
         return listOfNotNull(
-            "SOURCE: STRIPE SDK",
+            "SOURCE: ${ErrorSource.STRIPE_SDK}",
+            "STAGE_SOURCE: $blocked",
             "BLOCKED STAGE: $blocked",
             "Stripe error code: ${code ?: "unknown"}",
             "Stripe error message: ${message ?: "Tap to Pay couldn’t finish."}",
+            "Stripe exception class: TerminalException",
             "Stripe SDK version: ${TerminalPermissions.STRIPE_SDK_VERSION}"
         ).joinToString("\n")
     }
