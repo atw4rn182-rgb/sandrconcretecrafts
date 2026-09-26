@@ -37,8 +37,8 @@ assert.match(manifest, /cleartextTrafficPermitted="false"|usesCleartextTraffic="
 
 var gradleApp = read("android/app/build.gradle.kts");
 assert.match(gradleApp, /minSdk = 33/);
-assert.match(gradleApp, /versionCode = 9/);
-assert.match(gradleApp, /versionName = "0\.1\.8-test"/);
+assert.match(gradleApp, /versionCode = 10/);
+assert.match(gradleApp, /versionName = "0\.1\.9-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
 
@@ -90,12 +90,15 @@ assert.doesNotMatch(viewModel, /type"\) == "custom"/);
 var collect = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/ui/CollectActivity.kt"
 );
+assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
 assert.match(collect, /needsDeviceRepair/);
 assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);
 assert.match(collect, /STALE_UI_CLEARED/);
+assert.match(collect, /COLLECT CODE/);
+assert.match(collect, /HANDOFF_PAYLOAD/);
 assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
 assert.match(collect, /takePayment/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);

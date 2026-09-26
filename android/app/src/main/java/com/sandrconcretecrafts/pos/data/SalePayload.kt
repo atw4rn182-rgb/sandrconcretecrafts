@@ -4,19 +4,26 @@ import org.json.JSONObject
 
 /**
  * Reads the authoritative Pay Center total from the secure handoff JSON.
- * Does not re-sum line items. Does not read secrets.
+ * Does not re-sum line items. Does not invent $0.00 for a missing total.
  */
 object SalePayload {
     fun amountCents(sale: JSONObject?): Int? {
         if (sale == null || !sale.has("amount_total_cents") || sale.isNull("amount_total_cents")) {
             return null
         }
-        val cents = sale.optInt("amount_total_cents", 0)
-        return if (cents >= 1) cents else null
+        val raw = sale.opt("amount_total_cents")
+        val cents = when (raw) {
+            is Int -> raw
+            is Long -> raw.toInt()
+            is Number -> raw.toInt()
+            is String -> raw.toIntOrNull()
+            else -> null
+        }
+        return if (cents != null && cents >= 1) cents else null
     }
 
     fun amountLabel(sale: JSONObject?): String {
-        val cents = amountCents(sale) ?: return "$0.00"
+        val cents = amountCents(sale) ?: return "—"
         return money(cents)
     }
 
@@ -26,7 +33,7 @@ object SalePayload {
     }
 
     fun money(cents: Int): String {
-        val safe = if (cents < 0) 0 else cents
-        return "$" + String.format("%.2f", safe / 100.0)
+        if (cents < 1) return "—"
+        return "$" + String.format("%.2f", cents / 100.0)
     }
 }

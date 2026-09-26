@@ -15,6 +15,31 @@
         android:padding="24dp">
 
         <TextView
+            android:id="@+id/collectBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/turquoise"
+            android:gravity="center"
+            android:padding="10dp"
+            android:text="@string/collect_test_banner"
+            android:textColor="@color/cream"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/handoffPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:gravity="start"
+            android:padding="8dp"
+            android:textColor="@color/brown"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/diagnosticsToggle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -45,7 +70,7 @@
             android:autoSizeTextType="uniform"
             android:gravity="center"
             android:maxLines="1"
-            android:text="$0.00"
+            android:text="—"
             android:textColor="@color/purple"
             android:textStyle="bold" />
 

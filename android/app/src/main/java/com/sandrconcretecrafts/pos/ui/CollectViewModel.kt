@@ -9,6 +9,7 @@ import com.sandrconcretecrafts.pos.data.SalePayload
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.sandrconcretecrafts.pos.terminal.TerminalController
+
 import org.json.JSONObject
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -53,7 +54,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
             UiState.Working(
                 amountLabel,
                 "Preparing Tap to Pay",
-                "SOURCE: ANDROID_PERMISSION_CHECK\nLocation gate already evaluated. Starting Stripe Terminal."
+                "SOURCE: ANDROID_PERMISSION_CHECK\nValid handoff. Location requirement already evaluated. Starting Stripe Terminal."
             )
         )
         if (!PublicConfig.isConfigured()) {
@@ -211,6 +212,10 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
 
     fun safeTerminalDiagnostics(): String {
         return terminal.safeDiagnostics()
+    }
+
+    fun terminalInitReached(): Boolean {
+        return terminal.terminalStatus != TerminalController.TerminalStatus.Idle
     }
 
     private fun withDiagnostics(message: String): String {

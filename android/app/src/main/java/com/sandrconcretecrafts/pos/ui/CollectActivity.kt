@@ -9,19 +9,23 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.sandrconcretecrafts.pos.BuildConfig
 import com.sandrconcretecrafts.pos.R
+import com.sandrconcretecrafts.pos.data.CollectPayloadParser
 import com.sandrconcretecrafts.pos.data.PublicConfig
+import com.sandrconcretecrafts.pos.data.SalePayload
 import com.sandrconcretecrafts.pos.data.SessionStore
 import com.sandrconcretecrafts.pos.databinding.ActivityCollectBinding
+import com.sandrconcretecrafts.pos.terminal.ErrorSource
 import com.sandrconcretecrafts.pos.terminal.EventTrace
 import com.sandrconcretecrafts.pos.terminal.TerminalPermissions
-import java.net.URLDecoder
 
 class CollectActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCollectBinding
     private val viewModel: CollectViewModel by viewModels()
     private var startedCollect = false
-    private var showDiagnostics = BuildConfig.SIMULATED_READER
     private var sentToSetup = false
+    private var parsed: CollectPayloadParser.Result? = null
+    private var locationEvaluated = false
+    private var lastLocation: TerminalPermissions.LocationState? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,10 +33,9 @@ class CollectActivity : AppCompatActivity() {
         setContentView(binding.root)
         EventTrace.add("APP_OPEN path=deep-link-or-collect")
         EventTrace.add("BUILD_VERIFIED code=${BuildConfig.VERSION_CODE} id=${BuildConfig.BUILD_ID}")
-        binding.diagnosticsToggle.setOnClickListener {
-            showDiagnostics = !showDiagnostics
-            refreshDiagnostics()
-        }
+        paintCollectIdentity()
+        parsed = CollectPayloadParser.parse(intent)
+        paintHandoffPanel(parsed)
 
         if (SessionStore(this).accessToken.isNullOrBlank()) {
             startActivity(Intent(this, LoginActivity::class.java).apply {
@@ -51,13 +54,18 @@ class CollectActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        refreshDiagnostics()
+        paintHandoffPanel(parsed)
+        val current = parsed
+        if (current is CollectPayloadParser.Result.Error) {
+            showPayloadFailure(current)
+            return
+        }
         if (needsRepair()) {
             sendToSetup()
             return
         }
         val failed = viewModel.state.value as? CollectViewModel.UiState.Failed
-        if (failed != null && failed.canRetry && currentState().readyForTerminal) {
+        if (failed != null && failed.canRetry && lastLocation?.readyForTerminal == true) {
             EventTrace.add("STALE_UI_CLEARED reason=location-satisfied")
             viewModel.retry()
             return
@@ -70,37 +78,73 @@ class CollectActivity : AppCompatActivity() {
         setIntent(intent)
         startedCollect = false
         sentToSetup = false
+        locationEvaluated = false
+        parsed = CollectPayloadParser.parse(intent)
+        paintHandoffPanel(parsed)
         continueIfReady()
     }
 
-    private fun currentState(): TerminalPermissions.LocationState {
-        return TerminalPermissions.evaluateAndTrace(
-            this,
-            false,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
-            "CollectActivity"
-        )
-    }
-
-    private fun needsRepair(): Boolean {
-        return SetupActivity.needsDeviceRepair(
-            currentState(),
-            TerminalPermissions.nfcAvailable(this),
-            TerminalPermissions.nfcEnabled(this)
-        )
+    private fun paintCollectIdentity() {
+        if (!BuildConfig.SIMULATED_READER) {
+            binding.collectBanner.visibility = View.GONE
+            return
+        }
+        binding.collectBanner.visibility = View.VISIBLE
+        binding.collectBanner.text =
+            "TEST BUILD ${BuildConfig.VERSION_NAME}\nCODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}\nCOLLECT CODE ${BuildConfig.VERSION_CODE}\n${BuildConfig.BUILD_ID}"
     }
 
     private fun continueIfReady() {
-        val state = currentState()
-        refreshDiagnostics(state)
+        val current = parsed ?: CollectPayloadParser.parse(intent).also { parsed = it }
+        paintHandoffPanel(current)
+        if (current is CollectPayloadParser.Result.Error) {
+            showPayloadFailure(current)
+            return
+        }
+        val ok = current as CollectPayloadParser.Result.Ok
+        binding.amount.text = SalePayload.money(ok.amountCents)
         if (needsRepair()) {
             sendToSetup()
             return
         }
         if (!startedCollect) {
             startedCollect = true
-            startFromIntent()
+            viewModel.start(ok.sale.toString())
         }
+    }
+
+    private fun showPayloadFailure(error: CollectPayloadParser.Result.Error) {
+        startedCollect = true
+        binding.amount.text = "—"
+        binding.status.text = "Tap to Pay didn’t get the sale"
+        binding.detail.text = error.userMessage
+        binding.busy.visibility = View.GONE
+        binding.takePayment.visibility = View.GONE
+        binding.cancel.visibility = View.GONE
+        binding.backToPos.visibility = View.VISIBLE
+        binding.openSettings.visibility = View.GONE
+        paintHandoffPanel(error)
+    }
+
+    private fun evaluateLocation(): TerminalPermissions.LocationState {
+        locationEvaluated = true
+        val state = TerminalPermissions.evaluateAndTrace(
+            this,
+            false,
+            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
+            "CollectActivity"
+        )
+        lastLocation = state
+        return state
+    }
+
+    private fun needsRepair(): Boolean {
+        if (parsed !is CollectPayloadParser.Result.Ok) return false
+        return SetupActivity.needsDeviceRepair(
+            evaluateLocation(),
+            TerminalPermissions.nfcAvailable(this),
+            TerminalPermissions.nfcEnabled(this)
+        )
     }
 
     private fun sendToSetup() {
@@ -109,24 +153,8 @@ class CollectActivity : AppCompatActivity() {
         startActivity(Intent(this, SetupActivity::class.java).apply {
             data = intent.data
             intent.extras?.let { putExtras(it) }
-            payloadFrom(intent)?.let { putExtra("p", it) }
         })
         finish()
-    }
-
-    private fun startFromIntent() {
-        val payload = payloadFrom(intent)
-        if (payload.isNullOrBlank()) {
-            binding.status.text = "Open Take Payment"
-            binding.detail.text = "Open Take Payment from S&R Payments on this phone."
-            binding.busy.visibility = View.GONE
-            binding.takePayment.visibility = View.GONE
-            binding.cancel.visibility = View.GONE
-            binding.backToPos.visibility = View.VISIBLE
-            refreshDiagnostics()
-            return
-        }
-        viewModel.start(payload)
     }
 
     private fun render(state: CollectViewModel.UiState) {
@@ -193,31 +221,48 @@ class CollectActivity : AppCompatActivity() {
             }
             CollectViewModel.UiState.Cancelled -> openPayments("tap=cancel")
         }
-        refreshDiagnostics()
+        paintHandoffPanel(parsed)
     }
 
-    private fun refreshDiagnostics(state: TerminalPermissions.LocationState = currentState()) {
+    private fun paintHandoffPanel(result: CollectPayloadParser.Result?) {
         if (!BuildConfig.SIMULATED_READER) {
+            binding.handoffPanel.visibility = View.GONE
             binding.diagnosticsToggle.visibility = View.GONE
             binding.diagnostics.visibility = View.GONE
             return
         }
-        binding.diagnosticsToggle.visibility = View.VISIBLE
-        binding.diagnosticsToggle.text = if (showDiagnostics) {
-            getString(R.string.hide_test_diagnostics)
-        } else {
-            getString(R.string.test_diagnostics)
+        val location = lastLocation
+        val ok = result as? CollectPayloadParser.Result.Ok
+        val error = result as? CollectPayloadParser.Result.Error
+        val source = when {
+            error != null -> ErrorSource.HANDOFF_PAYLOAD
+            location != null && location.block != TerminalPermissions.Block.NONE -> location.source
+            else -> ErrorSource.ANDROID_PERMISSION_CHECK
         }
-        if (!showDiagnostics) {
-            binding.diagnostics.visibility = View.GONE
-            return
-        }
-        binding.diagnostics.visibility = View.VISIBLE
-        binding.diagnostics.text = TerminalPermissions.safeDiagnostics(
-            this,
-            state,
+        val lines = listOf(
+            "TEST BUILD ${BuildConfig.VERSION_NAME}",
+            "CODE ${BuildConfig.VERSION_CODE}",
+            BuildConfig.BUILD_ID,
+            "SCREEN: CollectActivity",
+            "SOURCE: $source",
+            "HANDOFF VERSION: ${ok?.version ?: error?.versionReceived ?: "absent"}",
+            "PAYLOAD PRESENT: ${if (ok != null || error?.payloadPresent == true) "YES" else "NO"}",
+            "AMOUNT FIELD PRESENT: ${if (ok != null || error?.amountFieldPresent == true) "YES" else "NO"}",
+            "AMOUNT_TOTAL_CENTS: ${ok?.amountCents?.toString() ?: error?.amountValue ?: "INVALID"}",
+            "DISPLAY TOTAL: ${ok?.let { SalePayload.money(it.amountCents) } ?: "—"}",
+            "COARSE: ${location?.let { if (it.coarseGranted) "GRANTED" else "DENIED" } ?: "NOT EVALUATED"}",
+            "FINE: ${location?.let { if (it.fineGranted) "GRANTED" else "DENIED" } ?: "NOT EVALUATED"}",
+            "LOCATION REQUIREMENT: ${location?.let { if (it.requirementSatisfied) "SATISFIED" else "NOT SATISFIED" } ?: "NOT EVALUATED"}",
+            "LOCATION SERVICES: ${location?.let { if (it.servicesOn) "ON" else "OFF" } ?: "NOT EVALUATED"}",
+            "TERMINAL INIT REACHED: ${if (viewModel.terminalInitReached()) "YES" else "NO"}",
+            "LAST EVENT:",
+            EventTrace.render(),
             viewModel.safeTerminalDiagnostics()
         )
+        binding.handoffPanel.visibility = View.VISIBLE
+        binding.handoffPanel.text = lines.filter { it.isNotBlank() }.joinToString("\n")
+        binding.diagnosticsToggle.visibility = View.GONE
+        binding.diagnostics.visibility = View.GONE
     }
 
     private fun openPayments(query: String?) {
@@ -229,11 +274,10 @@ class CollectActivity : AppCompatActivity() {
 
     companion object {
         fun payloadFrom(intent: Intent?): String? {
-            val extra = intent?.getStringExtra("p") ?: intent?.getStringExtra("payload")
-            if (!extra.isNullOrBlank()) return extra
-            val data = intent?.data ?: return null
-            val raw = data.getQueryParameter("p") ?: data.getQueryParameter("payload") ?: return null
-            return URLDecoder.decode(raw, Charsets.UTF_8.name())
+            return when (val parsed = CollectPayloadParser.parse(intent, false)) {
+                is CollectPayloadParser.Result.Ok -> parsed.sale.toString()
+                is CollectPayloadParser.Result.Error -> null
+            }
         }
     }
 }

@@ -211,6 +211,7 @@
             <div class="pos-totals-grand"><dt>TOTAL</dt><dd id="posGrandTotal">$0.00</dd></div>
           </dl>
           <p class="payment-form-error" id="tapError" hidden role="alert" tabindex="-1"></p>
+          <pre class="pos-handoff-diag" id="tapHandoffDiag" hidden></pre>
           <p class="tap-charge-source" id="tapChargeSource" aria-live="polite">Enter amounts or select website products. Only one total is charged.</p>
           <p class="pos-total-banner" id="posTotalBanner">TOTAL: $0.00</p>
           <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">TAKE PAYMENT — Native App Required</button>
@@ -255,6 +256,7 @@
   <script src="/js/store-settings.js"></script>
   <script src="/admin/catalog-api.js"></script>
   <script src="/admin/pos-totals.js"></script>
+  <script src="/admin/tap-handoff.js"></script>
   <script src="/admin/payments.js"></script>
 </body>
 </html>

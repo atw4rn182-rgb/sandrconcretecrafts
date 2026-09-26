@@ -1042,10 +1042,7 @@
     setError("posAppError", "");
     var fallback =
       "https://www.sandrconcretecrafts.com/admin/payments.html?app=missing";
-    var intentUrl =
-      "intent://collect#Intent;scheme=sandrpos;package=com.sandrconcretecrafts.pos;S.browser_fallback_url=" +
-      encodeURIComponent(fallback) +
-      ";end";
+    var intentUrl = window.SRTapHandoff.buildOpenAppIntent(fallback);
     var timer = window.setTimeout(function () {
       setError(
         "posAppError",
@@ -1197,16 +1194,34 @@
     }
   }
 
+  function showHandoffDiag(sale, quote) {
+    var box = byId("tapHandoffDiag");
+    if (!box) return;
+    box.hidden = false;
+    box.textContent = [
+      "ADMIN PAYMENT HANDOFF",
+      "HANDOFF BUILD",
+      "calculated_total_cents=" + quote.total,
+      "handoff_total_cents=" + sale.amount_total_cents,
+      "amount_total_cents=" + sale.amount_total_cents,
+      "handoff_version=" + (window.SRTapHandoff && window.SRTapHandoff.HANDOFF_VERSION),
+      "payload_version=" + sale.handoff_version,
+      "handoff_target=sandrpos://collect extras S.p + i.amount_total_cents",
+      "Sending to Tap to Pay: " + (window.SRTapHandoff ? window.SRTapHandoff.money(sale.amount_total_cents) : ""),
+    ].join("\n");
+  }
+
   function openNativeCollect(sale) {
-    var encoded = encodeURIComponent(JSON.stringify(sale));
-    var intentUrl =
-      "intent://collect?p=" +
-      encoded +
-      "#Intent;scheme=sandrpos;package=com.sandrconcretecrafts.pos;S.browser_fallback_url=" +
-      encodeURIComponent(
-        "https://www.sandrconcretecrafts.com/admin/payments.html?tap=missing"
-      ) +
-      ";end";
+    if (!window.SRTapHandoff) {
+      tapSubmitting = false;
+      updateTakePaymentButton();
+      setError("tapError", "Tap to Pay handoff script did not load. Refresh Payments and try again.");
+      return;
+    }
+    var intentUrl = window.SRTapHandoff.buildCollectIntent(
+      sale,
+      "https://www.sandrconcretecrafts.com/admin/payments.html?tap=missing"
+    );
     var fallback = window.setTimeout(function () {
       tapSubmitting = false;
       updateTakePaymentButton();
@@ -1251,6 +1266,8 @@
       return;
     }
     var sale = tapSalePayload();
+    sale = window.SRTapHandoff ? window.SRTapHandoff.prepareSale(sale) : sale;
+    showHandoffDiag(sale, quote);
     if (sale.amount_total_cents !== quote.total) {
       setError("tapError", "The total changed. Review the sale and try again.");
       return;

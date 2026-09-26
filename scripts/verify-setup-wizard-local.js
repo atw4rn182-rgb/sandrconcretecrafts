@@ -174,6 +174,7 @@ assert.match(setup, /requestedLocationThisSession/);
 assert.match(setup, /test_diagnostics|TEST Diagnostics/);
 assert.doesNotMatch(setup, /permission\.launch\(missing\)/);
 
+assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
 assert.match(collect, /needsDeviceRepair/);
 assert.match(collect, /SetupActivity/);

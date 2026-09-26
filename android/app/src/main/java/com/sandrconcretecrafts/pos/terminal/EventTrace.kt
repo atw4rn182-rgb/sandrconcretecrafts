@@ -45,6 +45,7 @@ object EventTrace {
 }
 
 object ErrorSource {
+    const val HANDOFF_PAYLOAD = "HANDOFF_PAYLOAD"
     const val APP_SETUP_GATE = "APP_SETUP_GATE"
     const val ANDROID_PERMISSION_CHECK = "ANDROID_PERMISSION_CHECK"
     const val TERMINAL_INITIALIZATION = "TERMINAL_INITIALIZATION"

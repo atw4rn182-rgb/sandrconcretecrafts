@@ -79,6 +79,7 @@ assert.doesNotMatch(permissions, /FINE_DENIED_COARSE_GRANTED/);
 assert.doesNotMatch(permissions, /Precise Location is required/);
 assert.doesNotMatch(permissions, /Location permission is required for Stripe Terminal/);
 
+assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
 assert.match(collect, /needsDeviceRepair/);
 assert.doesNotMatch(collect, /needsWizard\(/);
@@ -119,6 +120,7 @@ var sale = fs.readFileSync(
 );
 assert.match(sale, /amount_total_cents/);
 assert.doesNotMatch(sale, /unit_amount_cents/);
+assert.doesNotMatch(sale, /return "\$0\.00"/);
 
 assert.doesNotMatch(
   fs.readFileSync(path.join(root, "api/admin/cash-sales.js"), "utf8"),
