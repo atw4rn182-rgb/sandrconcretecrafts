@@ -25,6 +25,10 @@ assert.strictEqual(liveManifest.simulated, false);
 assert.strictEqual(liveManifest.channel, "production");
 assert.match(liveManifest.label, /Production — Real Tap to Pay/);
 assert.doesNotMatch(liveManifest.filename, /TEST/);
+assert.strictEqual(liveManifest.versionCode, 12);
+assert.strictEqual(liveManifest.versionName, "1.0.0");
+assert.strictEqual(liveManifest.buildId, "p4-production");
+assert.strictEqual(liveManifest.simulated, false);
 
 process.env.SR_POS_APP_CHANNEL = "nope";
 assert.strictEqual(posApp.currentManifest().channel, "test");

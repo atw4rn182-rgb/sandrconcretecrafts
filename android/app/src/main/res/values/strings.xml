@@ -12,9 +12,15 @@
     <string name="back_to_pos">Back to S&amp;R Payments</string>
     <string name="open_settings">Open Settings</string>
     <string name="open_location_settings">Open Location Settings</string>
-    <string name="tap_ready_title">Tap to Pay Ready</string>
-    <string name="tap_ready_copy">TEST — Simulated payments only. The amount above is the same total from Admin Pay.</string>
+    <string name="tap_ready_title">READY — TAP CARD</string>
+    <string name="tap_ready_copy">Hold the card or phone to this Pixel until it finishes.</string>
+    <string name="tap_ready_copy_test">TEST — Simulated payments only. The amount above is the same total from Admin Pay. Collection does not start until you tap Take Payment.</string>
     <string name="take_payment">Take Payment</string>
+    <string name="tap_card">TAP CARD</string>
+    <string name="payment_approved">PAYMENT APPROVED</string>
+    <string name="payment_failed">PAYMENT FAILED</string>
+    <string name="support_info">Support Info</string>
+    <string name="hide_support_info">Hide Support Info</string>
     <string name="config_missing">Add the public Supabase URL and anon key to android/local.properties. Never add secret keys.</string>
     <string name="setup_eyebrow">S&amp;R Concrete Crafts</string>
     <string name="setup_welcome_title">S&amp;R TAP TO PAY</string>

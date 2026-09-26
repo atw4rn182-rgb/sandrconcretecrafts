@@ -26,6 +26,7 @@ class CollectActivity : AppCompatActivity() {
     private var parsed: CollectPayloadParser.Result? = null
     private var locationEvaluated = false
     private var lastLocation: TerminalPermissions.LocationState? = null
+    private var showSupport = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +50,10 @@ class CollectActivity : AppCompatActivity() {
         viewModel.state.observe(this) { render(it) }
         binding.cancel.setOnClickListener { viewModel.cancel() }
         binding.backToPos.setOnClickListener { openPayments(null) }
+        binding.diagnosticsToggle.setOnClickListener {
+            showSupport = !showSupport
+            paintHandoffPanel(parsed)
+        }
         continueIfReady()
     }
 
@@ -178,7 +183,11 @@ class CollectActivity : AppCompatActivity() {
                 binding.amount.text = state.amountLabel
                 binding.status.textSize = 28f
                 binding.status.text = getString(R.string.tap_ready_title)
-                binding.detail.text = getString(R.string.tap_ready_copy)
+                binding.detail.text = if (BuildConfig.SIMULATED_READER) {
+                    getString(R.string.tap_ready_copy_test)
+                } else {
+                    getString(R.string.tap_ready_copy)
+                }
                 binding.busy.visibility = View.GONE
                 binding.takePayment.visibility = View.VISIBLE
                 binding.takePayment.isEnabled = true
@@ -192,7 +201,7 @@ class CollectActivity : AppCompatActivity() {
             is CollectViewModel.UiState.Success -> {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 binding.amount.text = state.amountLabel
-                binding.status.text = "Payment received"
+                binding.status.text = getString(R.string.payment_approved)
                 binding.detail.text = "The sale is recorded. You can send a receipt from Payments."
                 binding.busy.visibility = View.GONE
                 binding.takePayment.visibility = View.GONE
@@ -206,14 +215,18 @@ class CollectActivity : AppCompatActivity() {
             is CollectViewModel.UiState.Failed -> {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 binding.amount.text = state.amountLabel
-                binding.status.text = "Tap to Pay didn’t finish"
-                binding.detail.text = state.message
+                binding.status.text = getString(R.string.payment_failed)
+                binding.detail.text = if (BuildConfig.SIMULATED_READER) {
+                    state.message
+                } else {
+                    "The card was not charged. You can try again."
+                }
                 binding.busy.visibility = View.GONE
                 binding.takePayment.visibility = View.GONE
                 binding.cancel.visibility = View.VISIBLE
                 binding.backToPos.visibility = View.VISIBLE
                 binding.openSettings.visibility = View.GONE
-                binding.cancel.text = if (state.canRetry) "Try again" else getString(R.string.cancel)
+                binding.cancel.text = if (state.canRetry) "Try Again" else getString(R.string.cancel)
                 binding.cancel.setOnClickListener {
                     if (state.canRetry) viewModel.retry() else viewModel.cancel()
                 }
@@ -225,13 +238,24 @@ class CollectActivity : AppCompatActivity() {
     }
 
     private fun paintHandoffPanel(result: CollectPayloadParser.Result?) {
-        if (!BuildConfig.SIMULATED_READER) {
+        val location = lastLocation
+        binding.diagnosticsToggle.visibility = View.VISIBLE
+        binding.diagnosticsToggle.text = if (showSupport) {
+            getString(R.string.hide_support_info)
+        } else {
+            getString(R.string.support_info)
+        }
+        if (!showSupport) {
             binding.handoffPanel.visibility = View.GONE
-            binding.diagnosticsToggle.visibility = View.GONE
             binding.diagnostics.visibility = View.GONE
             return
         }
-        val location = lastLocation
+        if (!BuildConfig.SIMULATED_READER) {
+            binding.handoffPanel.visibility = View.GONE
+            binding.diagnostics.visibility = View.VISIBLE
+            binding.diagnostics.text = productionSupportInfo(location)
+            return
+        }
         val ok = result as? CollectPayloadParser.Result.Ok
         val error = result as? CollectPayloadParser.Result.Error
         val amounts = ok?.amounts ?: error?.amounts
@@ -263,8 +287,22 @@ class CollectActivity : AppCompatActivity() {
         )
         binding.handoffPanel.visibility = View.VISIBLE
         binding.handoffPanel.text = lines.filter { it.isNotBlank() }.joinToString("\n")
-        binding.diagnosticsToggle.visibility = View.GONE
         binding.diagnostics.visibility = View.GONE
+    }
+
+    private fun productionSupportInfo(location: TerminalPermissions.LocationState?): String {
+        val nfc = TerminalPermissions.nfcAvailable(this)
+        return listOf(
+            "App version: ${BuildConfig.VERSION_NAME}",
+            "Build ID: ${BuildConfig.BUILD_ID}",
+            "Terminal SDK: ${TerminalPermissions.STRIPE_SDK_VERSION}",
+            viewModel.safeTerminalDiagnostics(),
+            "NFC: ${if (nfc) "AVAILABLE" else "UNAVAILABLE"}",
+            "NFC enabled: ${if (!nfc) "n/a" else if (TerminalPermissions.nfcEnabled(this)) "ENABLED" else "DISABLED"}",
+            "Location permission: ${location?.let { if (it.requirementSatisfied) "SATISFIED" else "NOT SATISFIED" } ?: "NOT EVALUATED"}",
+            "Location level: ${location?.locationLevel?.name ?: "NOT EVALUATED"}",
+            "Location Services: ${location?.let { if (it.servicesOn) "ON" else "OFF" } ?: "NOT EVALUATED"}"
+        ).filter { it.isNotBlank() }.joinToString("\n")
     }
 
     private fun openPayments(query: String?) {

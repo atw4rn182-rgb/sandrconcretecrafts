@@ -11,6 +11,12 @@ SR_API_BASE_URL=https://www.sandrconcretecrafts.com
 SR_SUPABASE_URL=
 SR_SUPABASE_ANON_KEY=
 
-# Keep true for compile/install verification. Set false only on the one real
-# $1 Tap-to-Pay test rebuild. Never commit a false value.
-SR_SIMULATED_READER=true
+# Debug/TEST builds always use SIMULATED_READER=true.
+# Release/PRODUCTION builds always use SIMULATED_READER=false.
+# Do not override those values from this file.
+
+# Optional local release signing. Never commit these values or the keystore.
+# SR_RELEASE_STORE_FILE=
+# SR_RELEASE_STORE_PASSWORD=
+# SR_RELEASE_KEY_ALIAS=
+# SR_RELEASE_KEY_PASSWORD=

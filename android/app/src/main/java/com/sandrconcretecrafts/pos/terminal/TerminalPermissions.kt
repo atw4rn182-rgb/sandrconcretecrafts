@@ -177,7 +177,6 @@ object TerminalPermissions {
     }
 
     fun safeDiagnostics(context: Context, state: LocationState, extra: String = ""): String {
-        if (!BuildConfig.SIMULATED_READER) return ""
         val nfc = nfcAvailable(context)
         val lines = mutableListOf(
             buildBanner(),

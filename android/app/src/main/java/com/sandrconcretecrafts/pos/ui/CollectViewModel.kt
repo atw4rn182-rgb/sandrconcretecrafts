@@ -34,6 +34,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
     val state: LiveData<UiState> = _state
 
     private var sale: JSONObject? = null
+    private var lastFailure: String = ""
 
     fun start(saleJson: String) {
         sale = JSONObject(saleJson)
@@ -53,8 +54,12 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
         _state.postValue(
             UiState.Working(
                 amountLabel,
-                "Preparing Tap to Pay",
-                "SOURCE: ANDROID_PERMISSION_CHECK\nValid handoff. Location requirement already evaluated. Starting Stripe Terminal."
+                if (PublicConfig.simulatedReader) "Preparing Tap to Pay" else "INITIALIZING TAP TO PAY",
+                if (PublicConfig.simulatedReader) {
+                    "SOURCE: ANDROID_PERMISSION_CHECK\nValid handoff. Location requirement already evaluated. Starting Stripe Terminal."
+                } else {
+                    "Preparing this phone to take a card payment."
+                }
             )
         )
         if (!PublicConfig.isConfigured()) {
@@ -73,7 +78,11 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                 _state.postValue(
                     UiState.Working(
                         amountLabel,
-                        "Initializing Stripe Terminal",
+                        if (PublicConfig.simulatedReader) {
+                            "Initializing Stripe Terminal"
+                        } else {
+                            "INITIALIZING TAP TO PAY"
+                        },
                         if (PublicConfig.simulatedReader) {
                             "TEST — Simulated Reader. Preparing the reader, not charging yet."
                         } else {
@@ -97,7 +106,14 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                     },
                     onReady = {
                         _state.postValue(
-                            UiState.Ready(amountLabel, SalePayload.takePaymentLabel(sale))
+                            UiState.Ready(
+                                amountLabel,
+                                if (PublicConfig.simulatedReader) {
+                                    SalePayload.takePaymentLabel(sale)
+                                } else {
+                                    "TAP CARD"
+                                }
+                            )
                         )
                     },
                     onError = { message ->
@@ -134,7 +150,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
         _state.postValue(
             UiState.Working(
                 amountLabel,
-                "Creating payment",
+                if (PublicConfig.simulatedReader) "Creating payment" else "PROCESSING...",
                 if (PublicConfig.simulatedReader) {
                     "TEST — Simulated payment. No real card will be charged."
                 } else {
@@ -159,7 +175,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
                 _state.postValue(
                     UiState.Working(
                         amountLabel,
-                        if (PublicConfig.simulatedReader) "Simulated tap in progress" else "Ask the customer to tap",
+                        if (PublicConfig.simulatedReader) "Simulated tap in progress" else "PROCESSING...",
                         if (PublicConfig.simulatedReader) {
                             "TEST — Simulated Reader. Completing a test payment for $amountLabel."
                         } else {
@@ -211,7 +227,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun safeTerminalDiagnostics(): String {
-        return terminal.safeDiagnostics()
+        return listOf(terminal.safeDiagnostics(), lastFailure).filter { it.isNotBlank() }.joinToString("\n")
     }
 
     fun terminalInitReached(): Boolean {
@@ -219,6 +235,7 @@ class CollectViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun withDiagnostics(message: String): String {
+        lastFailure = message
         if (!PublicConfig.simulatedReader) return message
         val extra = terminal.safeDiagnostics()
         return if (extra.isBlank()) message else message + "\n\n" + extra

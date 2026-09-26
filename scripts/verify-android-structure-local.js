@@ -41,6 +41,14 @@ assert.match(gradleApp, /versionCode = 11/);
 assert.match(gradleApp, /versionName = "0\.1\.10-test"/);
 assert.match(gradleApp, /SIMULATED_READER/);
 assert.match(gradleApp, /BUILD_ID/);
+assert.match(gradleApp, /buildConfigField\("boolean", "SIMULATED_READER", "true"\)/);
+assert.match(gradleApp, /buildConfigField\("boolean", "SIMULATED_READER", "false"\)/);
+assert.match(gradleApp, /p4-production/);
+assert.match(gradleApp, /versionCode\.set\(12\)/);
+assert.match(gradleApp, /versionName\.set\("1\.0\.0"\)/);
+assert.match(gradleApp, /PRODUCTION_SIGNING_NOT_CONFIGURED/);
+assert.match(gradleApp, /assertReleaseSigning/);
+assert.doesNotMatch(gradleApp, /SR_SIMULATED_READER/);
 
 var tokenProvider = read(
   "android/app/src/main/java/com/sandrconcretecrafts/pos/terminal/SrConnectionTokenProvider.kt"
@@ -73,7 +81,10 @@ assert.match(controller, /processPaymentIntent/);
 assert.match(controller, /safeDiagnostics/);
 assert.match(controller, /refreshTerminalSession|refreshTerminalLocation|awaitLocationId/);
 assert.match(controller, /isSimulated = useSimulatedReader/);
+assert.match(controller, /supportsReadersOfType/);
+assert.match(controller, /SIMULATED_READER_FORBIDDEN|!useSimulatedReader\(\) && config\.isSimulated/);
 assert.match(controller, /TERMINAL_MODE_MISMATCH/);
+assert.match(controller, /session\.livemode == false/);
 assert.match(controller, /Stage:/);
 assert.doesNotMatch(controller, /tml_/);
 
@@ -83,6 +94,7 @@ var viewModel = read(
 assert.match(viewModel, /UiState\.Ready/);
 assert.match(viewModel, /terminal\.connect/);
 assert.match(viewModel, /createPaymentIntent/);
+assert.doesNotMatch(viewModel, /onReady = \{[\s\S]{0,160}takePayment\(/);
 assert.match(viewModel, /SalePayload\.amountCents/);
 assert.doesNotMatch(viewModel, /collectExisting/);
 assert.doesNotMatch(viewModel, /type"\) == "custom"/);
@@ -100,7 +112,8 @@ assert.match(collect, /STALE_UI_CLEARED/);
 assert.match(collect, /COLLECT SCREEN/);
 assert.match(read("android/app/src/main/java/com/sandrconcretecrafts/pos/data/CollectPayloadParser.kt"), /LEGACY_HANDOFF/);
 assert.match(collect, /HANDOFF_PAYLOAD/);
-assert.match(collect, /tap_ready_title|Tap to Pay Ready/);
+assert.match(collect, /tap_ready_title|READY — TAP CARD/);
+assert.match(collect, /support_info|Support Info/);
 assert.match(collect, /takePayment/);
 assert.doesNotMatch(collect, /missingRuntimePermissions/);
 assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);

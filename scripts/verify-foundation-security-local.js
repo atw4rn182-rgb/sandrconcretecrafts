@@ -14,6 +14,7 @@ var migration = read("supabase/migrations/20260916000001_in_person_sales.sql");
 var cashRoute = read("api/admin/cash-sales.js");
 var terminalRoute = read("api/admin/terminal/payment-intent.js");
 var tokenRoute = read("api/admin/terminal/connection-token.js");
+var statusRoute = read("api/admin/terminal/status.js");
 var receiptRoute = read("api/admin/send-receipt.js");
 var posAppRoute = read("api/admin/pos-app.js");
 var posAppFileRoute = read("api/admin/pos-app-file.js");
@@ -36,7 +37,7 @@ assert.match(migration, /revoke all on function public\.record_in_person_sale[\s
 assert.match(migration, /grant execute on function public\.record_cash_sales_batch[\s\S]*to service_role/i);
 assert.doesNotMatch(migration, /create policy[\s\S]{0,160}for insert/i);
 
-[cashRoute, terminalRoute, tokenRoute, receiptRoute, posAppRoute, deleteRoute].forEach(function (route) {
+[cashRoute, terminalRoute, tokenRoute, statusRoute, receiptRoute, posAppRoute, deleteRoute].forEach(function (route) {
   assert.match(route, /auth\.requireActiveAdmin\(req\)/);
 });
 assert.match(posTotalsMigration, /p_discount_milli integer default 0/);
@@ -65,6 +66,11 @@ assert.match(db, /createSignedStorageUrl/);
 assert.match(tokenRoute, /location_id:\s*cfg\.locationId/);
 assert.match(tokenRoute, /livemode:/);
 assert.doesNotMatch(tokenRoute, /tml_/);
+assert.match(statusRoute, /retrieveTerminalLocation/);
+assert.match(statusRoute, /LIVE_TERMINAL_LOCATION_MISSING|locationStatus|CONFIRMED/);
+assert.doesNotMatch(statusRoute, /client_secret|secret:\s/);
+assert.match(read("api/_lib/terminal-mode.js"), /function compatible/);
+assert.match(terminalRoute, /compatible\(simulated, cfg\.mode\)/);
 assert.match(terminalRoute, /TERMINAL_MODE_MISMATCH/);
 assert.doesNotMatch(read("api/stripe-webhook.js"), /STRIPE_TERMINAL_SECRET_KEY/);
 assert.doesNotMatch(read("api/create-checkout-session.js"), /sandrpos|STRIPE_TERMINAL_SECRET_KEY/);

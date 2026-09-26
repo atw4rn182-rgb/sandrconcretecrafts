@@ -13,5 +13,9 @@ assert.strictEqual(mode.fromStripeToken({ livemode: true }, "sk_test_placeholder
 assert.strictEqual(mode.fromStripeToken({}, "sk_test_placeholder"), "test");
 assert.strictEqual(mode.livemodeFlag({ livemode: false }, "sk_test_placeholder"), false);
 assert.strictEqual(mode.livemodeFlag({ livemode: true }, "sk_test_placeholder"), true);
+assert.strictEqual(mode.compatible(true, "test"), true);
+assert.strictEqual(mode.compatible(false, "live"), true);
+assert.strictEqual(mode.compatible(true, "live"), false);
+assert.strictEqual(mode.compatible(false, "test"), false);
 
 console.log("terminal mode classification: ok");

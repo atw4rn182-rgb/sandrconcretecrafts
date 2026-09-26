@@ -28,7 +28,7 @@ class SetupActivity : AppCompatActivity() {
     private var terminalStarted = false
     private var terminalPhase = SetupGate.TerminalPhase.IDLE
     private var terminalError = ""
-    private var showDiagnostics = BuildConfig.SIMULATED_READER
+    private var showDiagnostics = false
     private var leaving = false
     private var terminal: TerminalController? = null
     private val permission = registerForActivityResult(
@@ -252,16 +252,11 @@ class SetupActivity : AppCompatActivity() {
     }
 
     private fun refreshDiagnostics(view: SetupGate.View) {
-        if (!BuildConfig.SIMULATED_READER) {
-            binding.diagnosticsToggle.visibility = View.GONE
-            binding.diagnostics.visibility = View.GONE
-            return
-        }
         binding.diagnosticsToggle.visibility = View.VISIBLE
         binding.diagnosticsToggle.text = if (showDiagnostics) {
-            getString(R.string.hide_test_diagnostics)
+            getString(R.string.hide_support_info)
         } else {
-            getString(R.string.test_diagnostics)
+            getString(R.string.support_info)
         }
         if (!showDiagnostics) {
             binding.diagnostics.visibility = View.GONE

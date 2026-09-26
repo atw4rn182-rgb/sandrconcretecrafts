@@ -5,6 +5,13 @@ var tapTotal = require("./tap-total");
 
 assert.strictEqual(
   tapTotal.assertClientTotalMatchesOrder(
+    { amount_total_cents: 100 },
+    { amount_total: 100 }
+  ),
+  100
+);
+assert.strictEqual(
+  tapTotal.assertClientTotalMatchesOrder(
     { amount_total_cents: 2233 },
     { amount_total: 2233 }
   ),

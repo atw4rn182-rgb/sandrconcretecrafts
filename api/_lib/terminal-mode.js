@@ -21,8 +21,16 @@ function livemodeFlag(token, secret) {
   return fromStripeToken(token, secret) === "live";
 }
 
+function compatible(simulated, backend) {
+  if (backend !== "live" && backend !== "test") return false;
+  if (simulated === true && backend === "live") return false;
+  if (simulated === false && backend === "test") return false;
+  return true;
+}
+
 module.exports = {
   fromSecret: fromSecret,
   fromStripeToken: fromStripeToken,
   livemodeFlag: livemodeFlag,
+  compatible: compatible,
 };

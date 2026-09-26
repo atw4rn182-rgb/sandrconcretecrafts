@@ -28,9 +28,12 @@ module.exports = async function handler(req, res) {
     var admin = await auth.requireActiveAdmin(req);
     var cfg = stripe.terminalConfig();
     var body = api.readJsonBody(req);
-    if (body && body.simulated === true && cfg.mode === "live") {
+    var simulated = body && body.simulated === true;
+    if (!stripe.terminalMode.compatible(simulated, cfg.mode)) {
       var mismatch = new Error(
-        "This TEST app can only simulate payments against a TEST Terminal backend. Online Checkout was not changed."
+        simulated
+          ? "This TEST app can only simulate payments against a TEST Terminal backend. Online Checkout was not changed."
+          : "This production app requires a LIVE Terminal backend. Online Checkout was not changed."
       );
       mismatch.code = "TERMINAL_MODE_MISMATCH";
       mismatch.status = 409;

@@ -18,6 +18,7 @@ import com.stripe.stripeterminal.external.models.CollectPaymentIntentConfigurati
 import com.stripe.stripeterminal.external.models.ConfirmPaymentIntentConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionStatus
+import com.stripe.stripeterminal.external.models.DeviceType
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.PaymentIntent
 import com.stripe.stripeterminal.external.models.PaymentStatus
@@ -101,14 +102,14 @@ class TerminalController(
                 lastStage = "terminal-init"
                 terminalStatus = TerminalStatus.Initializing
                 EventTrace.add("TERMINAL_INIT_START")
-                notifyPhase("Initializing Stripe Terminal")
+                notifyPhase(phaseCopy("Initializing Stripe Terminal", "INITIALIZING TAP TO PAY"))
                 initialize()
                 terminalStatus = TerminalStatus.Initialized
                 EventTrace.add("TERMINAL_INIT_SUCCESS")
-                notifyPhase("Stripe Terminal initialized")
+                notifyPhase(phaseCopy("Stripe Terminal initialized", "INITIALIZING TAP TO PAY"))
                 lastStage = "connection-token"
                 EventTrace.add("CONNECTION_TOKEN_REQUEST_START")
-                notifyPhase("Requesting connection token")
+                notifyPhase(phaseCopy("Requesting connection token", "CONNECTING"))
                 val session = api.refreshTerminalSession()
                 backendLivemode = session.livemode
                 tokenStatus = TokenStatus.Received
@@ -124,6 +125,20 @@ class TerminalController(
                     onError(lastSafeError ?: "Terminal mode mismatch.")
                     return@execute
                 }
+                if (!useSimulatedReader() && session.livemode == false) {
+                    connecting = false
+                    terminalStatus = TerminalStatus.Failed
+                    lastErrorCode = "TERMINAL_MODE_MISMATCH"
+                    EventTrace.add("TERMINAL_MODE_MISMATCH backend=TEST")
+                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.TERMINAL_MODE_GATE}")
+                    lastSafeError =
+                        "SOURCE: ${ErrorSource.TERMINAL_MODE_GATE}\nStage: connection-token\nTERMINAL_MODE_MISMATCH\nThis production app requires a LIVE Terminal backend. The backend is TEST. Online Checkout was not changed."
+                    onError(lastSafeError ?: "Terminal mode mismatch.")
+                    return@execute
+                }
+                lastStage = "device-support"
+                notifyPhase(phaseCopy("Checking Tap to Pay support", "CONNECTING"))
+                assertTapToPaySupported()
                 lastStage = "reader-discovery"
                 main.post { startDiscovery(session.locationId, onReady, onError) }
             } catch (error: Exception) {
@@ -274,12 +289,19 @@ class TerminalController(
         lastStage = "reader-discovery"
         discoveryStatus = DiscoveryStatus.Starting
         EventTrace.add("DISCOVERY_START method=TapToPayDiscoveryConfiguration simulated=${useSimulatedReader()}")
-        notifyPhase("Starting simulated reader discovery")
+        notifyPhase(phaseCopy("Starting simulated reader discovery", "CONNECTING"))
         val config = DiscoveryConfiguration.TapToPayDiscoveryConfiguration(
             isSimulated = useSimulatedReader()
         )
+        if (!useSimulatedReader() && config.isSimulated) {
+            connecting = false
+            discoveryStatus = DiscoveryStatus.Failed
+            lastErrorCode = "SIMULATED_READER_FORBIDDEN"
+            onError("SOURCE: ANDROID_PERMISSION_CHECK\nBLOCKED STAGE: READER_DISCOVERY\nProduction cannot use a simulated reader.")
+            return
+        }
         discoveryStatus = DiscoveryStatus.Searching
-        notifyPhase("Searching for simulated Tap to Pay reader")
+        notifyPhase(phaseCopy("Searching for simulated Tap to Pay reader", "CONNECTING"))
         discoverCancelable = Terminal.getInstance().discoverReaders(
             config,
             object : DiscoveryListener {
@@ -288,7 +310,7 @@ class TerminalController(
                     val reader = readers.firstOrNull() ?: return
                     if (!readerClaimed.compareAndSet(false, true)) return
                     discoveryStatus = DiscoveryStatus.ReaderFound
-                    notifyPhase("Simulated reader found")
+                    notifyPhase(phaseCopy("Simulated reader found", "CONNECTING"))
                     connectReader(reader, locationId, onReady, onError)
                 }
             },
@@ -318,7 +340,7 @@ class TerminalController(
         lastStage = "reader-connection"
         connectionStatus = ConnectionPhase.Connecting
         EventTrace.add("READER_CONNECT_START")
-        notifyPhase("Connecting simulated reader")
+        notifyPhase(phaseCopy("Connecting simulated reader", "CONNECTING"))
         val config = ConnectionConfiguration.TapToPayConnectionConfiguration(
             locationId,
             true,
@@ -333,7 +355,7 @@ class TerminalController(
                     discoverCancelable = null
                     connectionStatus = ConnectionPhase.Connected
                     EventTrace.add("READER_CONNECT_SUCCESS")
-                    notifyPhase("Simulated reader connected")
+                    notifyPhase(phaseCopy("Simulated reader connected", "READY"))
                     onReady()
                 }
 
@@ -355,17 +377,48 @@ class TerminalController(
         return PublicConfig.simulatedReader
     }
 
+    private fun phaseCopy(test: String, production: String): String {
+        return if (useSimulatedReader()) test else production
+    }
+
+    private fun assertTapToPaySupported() {
+        val config = DiscoveryConfiguration.TapToPayDiscoveryConfiguration(
+            isSimulated = useSimulatedReader()
+        )
+        val result = Terminal.getInstance().supportsReadersOfType(
+            DeviceType.TAP_TO_PAY_DEVICE,
+            config
+        )
+        if (result.isSupported) {
+            EventTrace.add("DEVICE_SUPPORT=SUPPORTED")
+            return
+        }
+        EventTrace.add("DEVICE_SUPPORT=UNSUPPORTED")
+        val error = result.error
+        if (error != null) throw error
+        throw IllegalStateException("This phone is not supported for Tap to Pay.")
+    }
+
     fun safeDiagnostics(): String {
         return listOf(
             "Stage: $lastStage",
             "Terminal initialized: ${if (terminalStatus == TerminalStatus.Initialized) "yes" else "no"}",
-            "Terminal backend: ${backendLabel()}",
-            "Connection token: ${label(tokenStatus)}",
+            "BACKEND: ${backendLabel()}",
+            "CONNECTION TOKEN: ${connectionTokenLabel()}",
             "Reader discovery: ${label(discoveryStatus)}",
             "Reader connection: ${label(connectionStatus)}",
             lastErrorCode?.let { "Last error code: $it" },
             lastSafeError?.let { "Last error: $it" }
         ).filterNotNull().joinToString("\n")
+    }
+
+    private fun connectionTokenLabel(): String {
+        return when (tokenStatus) {
+            TokenStatus.Received -> "SUCCESS"
+            TokenStatus.Failed -> "FAILED"
+            TokenStatus.Requested -> "REQUESTED"
+            TokenStatus.Idle -> "IDLE"
+        }
     }
 
     private fun notifyPhase(message: String) {

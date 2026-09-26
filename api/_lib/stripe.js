@@ -353,11 +353,58 @@ async function stripeFormRequest(path, params, idempotencyKey, secretOverride) {
   return body;
 }
 
+async function stripeGetRequest(path, secretOverride) {
+  var secret = secretOverride || stripeSecretKey();
+  var res = await fetch("https://api.stripe.com/v1/" + path, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + secret,
+    },
+  });
+  var body = await res.json().catch(function () {
+    return null;
+  });
+  if (!res.ok) {
+    var err = new Error(
+      (body && body.error && body.error.message) || "Stripe request failed."
+    );
+    err.code = "STRIPE_API_ERROR";
+    err.status = res.status;
+    throw err;
+  }
+  return body;
+}
+
 async function createTerminalConnectionToken() {
   var cfg = terminalConfig();
   var params = new URLSearchParams();
   appendForm(params, "location", cfg.locationId);
   return stripeFormRequest("terminal/connection_tokens", params, null, cfg.secret);
+}
+
+async function retrieveTerminalLocation() {
+  var cfg = terminalConfig();
+  try {
+    return await stripeGetRequest(
+      "terminal/locations/" + encodeURIComponent(cfg.locationId),
+      cfg.secret
+    );
+  } catch (err) {
+    if (err && err.status === 404) {
+      var missing = new Error(
+        cfg.mode === "live"
+          ? "LIVE_TERMINAL_LOCATION_MISSING"
+          : "TERMINAL_LOCATION_MISSING"
+      );
+      missing.code =
+        cfg.mode === "live"
+          ? "LIVE_TERMINAL_LOCATION_MISSING"
+          : "TERMINAL_LOCATION_MISSING";
+      missing.status = 503;
+      throw missing;
+    }
+    throw err;
+  }
 }
 
 async function createTerminalPaymentIntent(input) {
@@ -474,6 +521,7 @@ module.exports = {
   retrieveCheckoutSession: retrieveCheckoutSession,
   retrieveCheckoutSessionLineItems: retrieveCheckoutSessionLineItems,
   createTerminalConnectionToken: createTerminalConnectionToken,
+  retrieveTerminalLocation: retrieveTerminalLocation,
   createTerminalPaymentIntent: createTerminalPaymentIntent,
   terminalConfig: terminalConfig,
   terminalMode: terminalMode,

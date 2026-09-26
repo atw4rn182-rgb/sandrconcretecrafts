@@ -73,9 +73,7 @@ class SrApi(private val session: SessionStore) {
     fun createPaymentIntent(sale: JSONObject): PaymentSession {
         requireActiveAdmin()
         val payload = JSONObject(sale.toString())
-        if (PublicConfig.simulatedReader) {
-            payload.put("simulated", true)
-        }
+        payload.put("simulated", PublicConfig.simulatedReader)
         val json = postJson(
             "${PublicConfig.apiBaseUrl}/api/admin/terminal/payment-intent",
             payload,

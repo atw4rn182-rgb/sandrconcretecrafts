@@ -173,7 +173,7 @@ assert.match(setup, /ACTION_NFC_SETTINGS/);
 assert.match(setup, /ACTION_LOCATION_SOURCE_SETTINGS/);
 assert.match(setup, /override fun onResume/);
 assert.match(setup, /requestedLocationThisSession/);
-assert.match(setup, /test_diagnostics|TEST Diagnostics/);
+assert.match(setup, /support_info|test_diagnostics|Support Info/);
 assert.doesNotMatch(setup, /permission\.launch\(missing\)/);
 
 assert.match(collect, /CollectPayloadParser\.parse/);

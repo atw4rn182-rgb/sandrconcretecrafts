@@ -25,7 +25,9 @@ var CHANNELS = {
     simulated: false,
     label: "Production — Real Tap to Pay",
     filename: "S-and-R-Tap-to-Pay.apk",
-    versionName: "0.1.0",
+    versionName: "1.0.0",
+    versionCode: 12,
+    buildId: "p4-production",
   },
 };
 
