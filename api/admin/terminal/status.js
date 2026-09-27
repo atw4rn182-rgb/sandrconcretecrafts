@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
   }
   try {
     await auth.requireActiveAdmin(req);
-    var webhookConfigured = !!stripe.env("STRIPE_TERMINAL_WEBHOOK_SECRET");
+    var webhookConfigured = !!stripe.terminalWebhookSecret();
     var checkoutConfigured = !!stripe.env("STRIPE_WEBHOOK_SECRET");
     var cfg;
     try {
@@ -35,7 +35,8 @@ module.exports = async function handler(req, res) {
     }
     var location = await stripe.retrieveTerminalLocation();
     var locationLive = !!(location && location.livemode === true);
-    var backend = cfg.mode === "live" ? "LIVE" : "TEST";
+    var backend =
+      cfg.mode === "live" ? "LIVE" : cfg.mode === "test" ? "TEST" : "UNKNOWN";
     var locationStatus = "MISSING";
     if (location && location.id) {
       if (cfg.mode === "live" && locationLive) locationStatus = "CONFIRMED";

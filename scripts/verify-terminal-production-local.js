@@ -112,7 +112,8 @@ assert.doesNotMatch(viewModel, /onReady = \{[\s\S]{0,200}terminal\.collect\(/);
 assert.match(collect, /takePayment\.setOnClickListener \{ viewModel\.takePayment\(\) \}/);
 
 // O / P. Terminal webhook signature + idempotency
-assert.match(webhook, /STRIPE_TERMINAL_WEBHOOK_SECRET/);
+assert.match(webhook, /terminalWebhookSecret|STRIPE_TERMINAL_WEBHOOK_SECRET/);
+assert.match(read("api/_lib/stripe.js"), /resolveTerminalApiSecret/);
 assert.match(webhook, /stripe\.constructEvent/);
 assert.match(webhook, /confirmTapToPayPayment/);
 assert.doesNotMatch(webhook, /STRIPE_WEBHOOK_SECRET/);

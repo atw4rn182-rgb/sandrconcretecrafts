@@ -16,7 +16,7 @@ function codeOf(err) {
 }
 
 (async function main() {
-  gate("webhook", stripe.env("STRIPE_TERMINAL_WEBHOOK_SECRET") ? "CONFIGURED" : "MISSING");
+  gate("webhook", stripe.terminalWebhookSecret() ? "CONFIGURED" : "MISSING");
 
   var cfg;
   try {

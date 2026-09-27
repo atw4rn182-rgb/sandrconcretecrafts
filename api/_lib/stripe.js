@@ -296,7 +296,18 @@ async function retrieveCheckoutSessionLineItems(sessionId) {
 }
 
 function terminalSecretKey() {
-  return env("STRIPE_TERMINAL_SECRET_KEY") || stripeSecretKey();
+  return terminalMode.resolveTerminalApiSecret(
+    env("STRIPE_TERMINAL_SECRET_KEY"),
+    env("STRIPE_TERMINAL_WEBHOOK_SECRET"),
+    stripeSecretKey()
+  );
+}
+
+function terminalWebhookSecret() {
+  return terminalMode.resolveTerminalWebhookSecret(
+    env("STRIPE_TERMINAL_WEBHOOK_SECRET"),
+    env("STRIPE_TERMINAL_SECRET_KEY")
+  );
 }
 
 function terminalConfig() {
@@ -524,6 +535,7 @@ module.exports = {
   retrieveTerminalLocation: retrieveTerminalLocation,
   createTerminalPaymentIntent: createTerminalPaymentIntent,
   terminalConfig: terminalConfig,
+  terminalWebhookSecret: terminalWebhookSecret,
   terminalMode: terminalMode,
   constructEvent: constructEvent,
   readRawBody: readRawBody,

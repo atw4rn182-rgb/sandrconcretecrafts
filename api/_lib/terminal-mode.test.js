@@ -18,4 +18,24 @@ assert.strictEqual(mode.compatible(false, "live"), true);
 assert.strictEqual(mode.compatible(true, "live"), false);
 assert.strictEqual(mode.compatible(false, "test"), false);
 
+assert.strictEqual(mode.isApiSecret("sk_live_placeholder"), true);
+assert.strictEqual(mode.isWebhookSecret("whsec_placeholder"), true);
+assert.strictEqual(mode.isApiSecret("whsec_placeholder"), false);
+assert.strictEqual(
+  mode.resolveTerminalApiSecret("whsec_misfiled", "", "sk_live_checkout"),
+  "sk_live_checkout"
+);
+assert.strictEqual(
+  mode.resolveTerminalApiSecret("whsec_misfiled", "sk_live_swapped", "sk_live_checkout"),
+  "sk_live_swapped"
+);
+assert.strictEqual(
+  mode.resolveTerminalWebhookSecret("", "whsec_misfiled"),
+  "whsec_misfiled"
+);
+assert.strictEqual(
+  mode.resolveTerminalWebhookSecret("whsec_correct", "sk_live_dedicated"),
+  "whsec_correct"
+);
+
 console.log("terminal mode classification: ok");

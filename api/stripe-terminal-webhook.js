@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
     api.sendJson(res, 405, { error: "Method not allowed." });
     return;
   }
-  var secret = stripe.env("STRIPE_TERMINAL_WEBHOOK_SECRET");
+  var secret = stripe.terminalWebhookSecret();
   if (!secret) {
     api.sendJson(res, 503, { error: "Terminal webhook is not configured." });
     return;
