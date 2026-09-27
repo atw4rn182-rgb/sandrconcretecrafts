@@ -3,7 +3,7 @@
   "private": true,
   "description": "S&R Concrete Crafts static storefront + admin",
   "scripts": {
-    "build": "node scripts/write-public-env.js",
+    "build": "node scripts/classify-terminal-live.js && node scripts/write-public-env.js",
     "verify:step4": "node scripts/verify-step4-local.js",
     "verify:dashboard": "node scripts/verify-dashboard-local.js",
     "verify:inline-category": "node scripts/verify-inline-category-local.js",
