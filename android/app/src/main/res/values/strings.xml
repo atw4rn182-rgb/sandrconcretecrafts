@@ -27,7 +27,7 @@
     <string name="setup_welcome_body">Let\'s get Tap to Pay ready.\n\nWe\'ll check the few settings needed to accept contactless payments on this phone.</string>
     <string name="setup_get_started">GET STARTED</string>
     <string name="setup_progress_title">Setting up Tap to Pay</string>
-    <string name="collect_test_banner">COLLECT SCREEN\nCODE 11\np311-physical</string>
+    <string name="collect_test_banner">COLLECT SCREEN\nTEST BUILD</string>
     <string name="test_diagnostics">TEST Diagnostics</string>
     <string name="hide_test_diagnostics">Hide TEST Diagnostics</string>
 </resources>

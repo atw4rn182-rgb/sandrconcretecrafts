@@ -64,6 +64,8 @@ var collect = fs.readFileSync(
 assert.match(permissions, /fun evaluate\(/);
 assert.match(permissions, /locationGranted/);
 assert.match(permissions, /coarseGranted \|\| fineGranted/);
+assert.match(permissions, /locationRequestPermissions = arrayOf\(coarsePermission, finePermission\)/);
+assert.match(permissions, /shouldShowLocationRationale/);
 assert.match(permissions, /coarseNative/);
 assert.match(permissions, /APP_LOCATION_GATE_RESULT/);
 assert.match(permissions, /evaluateAndTrace/);
@@ -81,7 +83,8 @@ assert.doesNotMatch(permissions, /Location permission is required for Stripe Ter
 
 assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
-assert.match(collect, /needsDeviceRepair/);
+assert.match(collect, /needsNonLocationRepair|needsDeviceRepair/);
+assert.match(collect, /showLocationBlock/);
 assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);

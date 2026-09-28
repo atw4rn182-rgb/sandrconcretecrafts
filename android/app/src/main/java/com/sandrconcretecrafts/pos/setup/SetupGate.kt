@@ -186,7 +186,7 @@ object SetupGate {
             TerminalPermissions.Block.LOCATION_DENIED -> return View(
                 Screen.LOCATION_PERMISSION,
                 "Allow Location",
-                "SOURCE: APP_SETUP_GATE\nTap to Pay needs Location permission. Approximate Location is enough.",
+                "SOURCE: APP_SETUP_GATE\nTap to Pay needs Location permission. Approximate or Precise is enough.",
                 "ALLOW LOCATION",
                 Action.REQUEST_LOCATION,
                 checks,
@@ -195,7 +195,7 @@ object SetupGate {
             TerminalPermissions.Block.LOCATION_SETTINGS_REQUIRED -> return View(
                 Screen.LOCATION_SETTINGS,
                 "Open Android Settings",
-                "SOURCE: APP_SETUP_GATE\nLocation needs to be enabled in Android Settings.",
+                "SOURCE: APP_SETUP_GATE\nLocation was denied. Open Settings → Apps → S&R Tap to Pay → Permissions → Location and choose Allow. Approximate is enough.",
                 "OPEN SETTINGS",
                 Action.OPEN_APP_SETTINGS,
                 checks,

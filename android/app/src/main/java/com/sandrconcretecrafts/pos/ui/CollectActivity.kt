@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.sandrconcretecrafts.pos.BuildConfig
@@ -27,6 +28,23 @@ class CollectActivity : AppCompatActivity() {
     private var locationEvaluated = false
     private var lastLocation: TerminalPermissions.LocationState? = null
     private var showSupport = false
+    private var requestedLocationThisSession = false
+    private var autoRequestedLocation = false
+    private val locationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        requestedLocationThisSession = true
+        EventTrace.add(
+            "LOCATION_PERMISSION_RESULT coarse=${grants[TerminalPermissions.coarsePermission]} fine=${grants[TerminalPermissions.finePermission]}"
+        )
+        val state = evaluateLocation()
+        if (state.readyForTerminal) {
+            startedCollect = false
+            continueIfReady()
+        } else {
+            showLocationBlock(state)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,12 +83,17 @@ class CollectActivity : AppCompatActivity() {
             showPayloadFailure(current)
             return
         }
-        if (needsRepair()) {
+        if (needsNonLocationRepair()) {
             sendToSetup()
             return
         }
+        val location = evaluateLocation()
+        if (!location.readyForTerminal) {
+            showLocationBlock(location)
+            return
+        }
         val failed = viewModel.state.value as? CollectViewModel.UiState.Failed
-        if (failed != null && failed.canRetry && lastLocation?.readyForTerminal == true) {
+        if (failed != null && failed.canRetry && location.readyForTerminal) {
             EventTrace.add("STALE_UI_CLEARED reason=location-satisfied")
             viewModel.retry()
             return
@@ -84,6 +107,8 @@ class CollectActivity : AppCompatActivity() {
         startedCollect = false
         sentToSetup = false
         locationEvaluated = false
+        autoRequestedLocation = false
+        requestedLocationThisSession = false
         parsed = CollectPayloadParser.parse(intent)
         paintHandoffPanel(parsed)
         continueIfReady()
@@ -108,8 +133,17 @@ class CollectActivity : AppCompatActivity() {
         }
         val ok = current as CollectPayloadParser.Result.Ok
         binding.amount.text = SalePayload.money(ok.amountCents)
-        if (needsRepair()) {
+        if (needsNonLocationRepair()) {
             sendToSetup()
+            return
+        }
+        val location = evaluateLocation()
+        if (!location.readyForTerminal) {
+            if (!autoRequestedLocation && location.block == TerminalPermissions.Block.LOCATION_DENIED) {
+                autoRequestedLocation = true
+                locationPermission.launch(TerminalPermissions.locationRequestPermissions)
+            }
+            showLocationBlock(location)
             return
         }
         if (!startedCollect) {
@@ -135,21 +169,45 @@ class CollectActivity : AppCompatActivity() {
         locationEvaluated = true
         val state = TerminalPermissions.evaluateAndTrace(
             this,
-            false,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
+            requestedLocationThisSession,
+            TerminalPermissions.shouldShowLocationRationale(this),
             "CollectActivity"
         )
         lastLocation = state
         return state
     }
 
-    private fun needsRepair(): Boolean {
+    private fun needsNonLocationRepair(): Boolean {
         if (parsed !is CollectPayloadParser.Result.Ok) return false
-        return SetupActivity.needsDeviceRepair(
-            evaluateLocation(),
-            TerminalPermissions.nfcAvailable(this),
-            TerminalPermissions.nfcEnabled(this)
-        )
+        val nfcAvailable = TerminalPermissions.nfcAvailable(this)
+        val nfcEnabled = TerminalPermissions.nfcEnabled(this)
+        return android.os.Build.VERSION.SDK_INT < 33 || !nfcAvailable || !nfcEnabled
+    }
+
+    private fun showLocationBlock(state: TerminalPermissions.LocationState) {
+        binding.amount.text = when (val current = parsed) {
+            is CollectPayloadParser.Result.Ok -> SalePayload.money(current.amountCents)
+            else -> "—"
+        }
+        binding.status.text = if (state.block == TerminalPermissions.Block.LOCATION_SERVICES_DISABLED) {
+            "Turn on Location"
+        } else {
+            "Allow Location"
+        }
+        binding.detail.text = TerminalPermissions.userMessage(state)
+        binding.busy.visibility = View.GONE
+        binding.takePayment.visibility = View.GONE
+        binding.cancel.visibility = View.GONE
+        binding.backToPos.visibility = View.VISIBLE
+        binding.openSettings.visibility = View.VISIBLE
+        binding.openSettings.setOnClickListener {
+            startActivity(Intent(TerminalPermissions.settingsAction(state)).apply {
+                if (state.block != TerminalPermissions.Block.LOCATION_SERVICES_DISABLED) {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            })
+        }
+        paintHandoffPanel(parsed)
     }
 
     private fun sendToSetup() {

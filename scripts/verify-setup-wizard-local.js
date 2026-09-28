@@ -158,7 +158,7 @@ assert.match(gate, /NFC_UNAVAILABLE/);
 assert.match(gate, /TERMINAL_MODE_MISMATCH/);
 assert.match(gate, /fun evaluate\(/);
 assert.match(gate, /coarseGranted \|\| fineGranted/);
-assert.match(gate, /Approximate Location is enough/);
+assert.match(gate, /Approximate or Precise is enough/);
 assert.doesNotMatch(gate, /Precise Location is required/);
 assert.doesNotMatch(gate, /Location permission is required for Stripe Terminal/);
 assert.doesNotMatch(gate, /LOCATION_APPROXIMATE/);
@@ -178,7 +178,7 @@ assert.doesNotMatch(setup, /permission\.launch\(missing\)/);
 
 assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
-assert.match(collect, /needsDeviceRepair/);
+assert.match(collect, /needsNonLocationRepair|needsDeviceRepair/);
 assert.match(collect, /SetupActivity/);
 assert.match(collect, /override fun onResume/);
 assert.doesNotMatch(collect, /Location permission is required for Stripe Terminal/);

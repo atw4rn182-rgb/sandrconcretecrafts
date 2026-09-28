@@ -25,6 +25,7 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var setupStore: SetupStore
     private lateinit var session: SessionStore
     private var requestedLocationThisSession = false
+    private var autoRequestedLocation = false
     private var terminalStarted = false
     private var terminalPhase = SetupGate.TerminalPhase.IDLE
     private var terminalError = ""
@@ -33,8 +34,11 @@ class SetupActivity : AppCompatActivity() {
     private var terminal: TerminalController? = null
     private val permission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) {
+    ) { grants ->
         requestedLocationThisSession = true
+        EventTrace.add(
+            "LOCATION_PERMISSION_RESULT coarse=${grants[TerminalPermissions.coarsePermission]} fine=${grants[TerminalPermissions.finePermission]}"
+        )
         render()
     }
 
@@ -70,7 +74,7 @@ class SetupActivity : AppCompatActivity() {
         val location = TerminalPermissions.evaluateAndTrace(
             this,
             requestedLocationThisSession,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission),
+            TerminalPermissions.shouldShowLocationRationale(this),
             "SetupActivity"
         )
         return SetupGate.evaluate(
@@ -147,6 +151,11 @@ class SetupActivity : AppCompatActivity() {
             binding.primary.text = view.button
         }
         refreshDiagnostics(view)
+        if (view.action == SetupGate.Action.REQUEST_LOCATION && !autoRequestedLocation) {
+            autoRequestedLocation = true
+            permission.launch(TerminalPermissions.locationRequestPermissions)
+            return
+        }
         if (view.action == SetupGate.Action.INIT_TERMINAL && !terminalStarted) {
             startTerminal()
         }
@@ -265,7 +274,7 @@ class SetupActivity : AppCompatActivity() {
         val location = TerminalPermissions.evaluate(
             this,
             requestedLocationThisSession,
-            shouldShowRequestPermissionRationale(TerminalPermissions.coarsePermission)
+            TerminalPermissions.shouldShowLocationRationale(this)
         )
         val extra = listOf(
             "BLOCKED STAGE: ${view.stage}",

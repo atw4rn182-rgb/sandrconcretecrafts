@@ -29,6 +29,8 @@ assert.strictEqual(liveManifest.versionCode, 12);
 assert.strictEqual(liveManifest.versionName, "1.0.0");
 assert.strictEqual(liveManifest.buildId, "p4-production");
 assert.strictEqual(liveManifest.simulated, false);
+assert.match(posApp.productionFallbackUrl(), /staff-pos-production/);
+assert.match(posApp.productionFallbackUrl(), /[?&]v=12/);
 
 process.env.SR_POS_APP_CHANNEL = "nope";
 assert.strictEqual(posApp.currentManifest().channel, "test");
@@ -53,6 +55,7 @@ assert.match(fileRoute, /verifyDownloadToken/);
 assert.match(fileRoute, /application\/vnd\.android\.package-archive/);
 assert.match(fileRoute, /manifest\.simulated/);
 assert.match(fileRoute, /testFallbackUrl/);
+assert.match(fileRoute, /productionFallbackUrl/);
 assert.doesNotMatch(fileRoute, /auth\.requireActiveAdmin/);
 
 process.env.POS_APP_DOWNLOAD_SECRET = "local-pos-app-download-test-secret";

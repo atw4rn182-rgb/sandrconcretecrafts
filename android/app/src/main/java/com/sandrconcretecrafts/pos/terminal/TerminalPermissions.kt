@@ -20,7 +20,10 @@ object TerminalPermissions {
     val coarsePermission = Manifest.permission.ACCESS_COARSE_LOCATION
     val phonePermission = Manifest.permission.READ_PHONE_STATE
 
-    val locationRequestPermissions = arrayOf(coarsePermission)
+    // Android 12+ ignores ACCESS_FINE_LOCATION unless it is requested with
+    // ACCESS_COARSE_LOCATION. Stripe Terminal 5.8.1 accepts Coarse OR Fine after
+    // that dialog. Request both; do not request Fine alone.
+    val locationRequestPermissions = arrayOf(coarsePermission, finePermission)
 
     val nearbyPermissions = arrayOf(
         Manifest.permission.BLUETOOTH_CONNECT,
@@ -102,6 +105,11 @@ object TerminalPermissions {
         }
     }
 
+    fun shouldShowLocationRationale(activity: android.app.Activity): Boolean {
+        return activity.shouldShowRequestPermissionRationale(coarsePermission) ||
+            activity.shouldShowRequestPermissionRationale(finePermission)
+    }
+
     fun evaluate(
         context: Context,
         alreadyRequested: Boolean,
@@ -156,9 +164,9 @@ object TerminalPermissions {
         return when (state.block) {
             Block.NONE -> ""
             Block.LOCATION_DENIED ->
-                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nTap to Pay needs Location permission. Approximate Location is enough."
+                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nTap to Pay needs Location permission. Approximate or Precise is enough."
             Block.LOCATION_SETTINGS_REQUIRED ->
-                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nLocation needs to be enabled in Android Settings."
+                "SOURCE: ${ErrorSource.APP_SETUP_GATE}\nLocation was denied. Open Android Settings → Apps → S&R Tap to Pay → Permissions → Location, then choose Allow. Approximate is enough."
             Block.LOCATION_SERVICES_DISABLED ->
                 "SOURCE: ${ErrorSource.ANDROID_PERMISSION_CHECK}\nTurn on Location services to use Tap to Pay. The app permission is already granted."
         }

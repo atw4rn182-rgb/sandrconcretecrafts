@@ -104,7 +104,9 @@ var collect = read(
 );
 assert.match(collect, /CollectPayloadParser\.parse/);
 assert.match(collect, /TerminalPermissions\.evaluateAndTrace/);
-assert.match(collect, /needsDeviceRepair/);
+assert.match(collect, /needsNonLocationRepair|needsDeviceRepair/);
+assert.match(collect, /locationRequestPermissions/);
+assert.match(collect, /showLocationBlock/);
 assert.doesNotMatch(collect, /needsWizard\(/);
 assert.match(collect, /override fun onResume/);
 assert.match(collect, /SetupActivity/);

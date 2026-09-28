@@ -61,6 +61,17 @@ function testFallbackUrl() {
   );
 }
 
+function productionFallbackUrl() {
+  var fromEnv = String(process.env.SR_POS_APP_PRODUCTION_URL || "").trim();
+  if (fromEnv) return fromEnv;
+  return (
+    "https://github.com/atw4rn182-rgb/sandrconcretecrafts/releases/download/staff-pos-production/" +
+    CHANNELS.production.filename +
+    "?v=" +
+    encodeURIComponent(String(CHANNELS.production.versionCode || "12"))
+  );
+}
+
 module.exports = {
   BUCKET: BUCKET,
   CHANNELS: CHANNELS,
@@ -68,4 +79,5 @@ module.exports = {
   currentChannelName: currentChannelName,
   currentManifest: currentManifest,
   testFallbackUrl: testFallbackUrl,
+  productionFallbackUrl: productionFallbackUrl,
 };

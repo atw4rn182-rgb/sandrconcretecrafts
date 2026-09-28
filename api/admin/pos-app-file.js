@@ -25,12 +25,18 @@ async function apkLocation(manifest) {
     var fallback = posApp.testFallbackUrl();
     if (fallback) return fallback;
   }
-  return await db.createSignedStorageUrl(
-    manifest.bucket,
-    manifest.object,
-    90,
-    manifest.filename
-  );
+  try {
+    return await db.createSignedStorageUrl(
+      manifest.bucket,
+      manifest.object,
+      90,
+      manifest.filename
+    );
+  } catch (err) {
+    var production = posApp.productionFallbackUrl();
+    if (!manifest.simulated && production) return production;
+    throw err;
+  }
 }
 
 module.exports = async function handler(req, res) {
