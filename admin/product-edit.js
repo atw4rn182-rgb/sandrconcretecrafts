@@ -347,8 +347,14 @@
     clearDuplicateOffer();
     clearCreateBusy();
     $("addCategoryCancelBtn").disabled = false;
-    $("newCategoryName").focus();
-    $("newCategoryName").select();
+    var nameField = $("newCategoryName");
+    nameField.focus({ preventScroll: true });
+    if (nameField.value && !window.matchMedia("(pointer: coarse)").matches) {
+      nameField.select();
+    }
+    if (typeof panel.scrollIntoView === "function") {
+      panel.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    }
   }
 
   function closeAddCategoryPanel(opts) {
@@ -779,7 +785,8 @@
         else tab.removeAttribute("aria-current");
       });
       var first = document.querySelector('.editor-step.is-active input, .editor-step.is-active textarea, .editor-step.is-active select');
-      if (first && window.matchMedia("(max-width: 899px)").matches) {
+      var phone = window.matchMedia("(max-width: 699px)").matches;
+      if (first && window.matchMedia("(max-width: 899px)").matches && !phone) {
         try { first.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -910,6 +917,9 @@
     bindForm();
     bindEditorSteps();
     syncInventoryUi();
+    if ($("moreDetails") && window.matchMedia("(max-width: 699px)").matches) {
+      $("moreDetails").open = true;
+    }
     try {
       var loaded = await Promise.all([
         SRCatalog.listCategories(true),

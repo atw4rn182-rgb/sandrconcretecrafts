@@ -52,6 +52,18 @@ assert(edit.includes('data-step="1"'), "editor step 1");
 assert(edit.includes('data-step="4"'), "editor step 4 review");
 assert(edit.includes("addCategoryBtn"), "inline category preserved");
 assert(edit.includes("livePreview"), "live preview retained");
+assert(edit.includes('id="item_no"'), "item number field present");
+assert(edit.includes('id="description"'), "description field present");
+assert(/id="item_no"[^>]*inputmode="text"/.test(edit), "item number uses a text keypad on phones");
+assert(css.includes("@media (max-width: 699px)"), "phone-only editor touch rules stay off tablet/desktop");
+assert(css.includes("-webkit-user-select: text"), "phone form fields allow native text selection");
+assert(css.includes("scroll-margin-bottom"), "focused editor fields stay above the bottom nav");
+assert(css.includes("overflow-x: clip"), "phone page clip does not create a hidden scroll container");
+
+const editJs = read("admin/product-edit.js");
+assert(editJs.includes('moreDetails'), "phone editor reveals slug/item number details");
+assert(editJs.includes("(pointer: coarse)"), "category create does not force-select text on phones");
+assert(editJs.includes("scrollIntoView"), "new category panel scrolls into view on phones");
 
 const orders = read("admin/orders.html");
 assert(orders.includes("order-card-list"), "orders list container");

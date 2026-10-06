@@ -104,7 +104,7 @@
               </div>
               <div class="field">
                 <label for="description">Description <span class="optional">optional</span></label>
-                <textarea id="description" name="description" rows="5" maxlength="4000" placeholder="Measurements and details can be added later"></textarea>
+                <textarea id="description" name="description" rows="5" maxlength="4000" autocomplete="off" placeholder="Measurements and details can be added later"></textarea>
               </div>
               <div class="form-grid-2">
                 <div class="field">
@@ -225,7 +225,7 @@
                   </p>
                   <div class="field">
                     <label for="newCategoryName">Category name</label>
-                    <input type="text" id="newCategoryName" maxlength="80" autocomplete="off" />
+                    <input type="text" id="newCategoryName" maxlength="80" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" />
                   </div>
                   <div id="addCategoryInlineError" class="inline-cat-error" role="alert" hidden></div>
                   <div id="addCategoryDupOffer" class="inline-cat-dup" hidden>
@@ -265,7 +265,7 @@
                   </div>
                   <div class="field">
                     <label for="item_no">Item # <span class="optional">optional</span></label>
-                    <input id="item_no" name="item_no" maxlength="40" placeholder="e.g. 3-30" />
+                    <input id="item_no" name="item_no" type="text" inputmode="text" maxlength="40" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="e.g. 3-30" />
                   </div>
                 </div>
               </details>

@@ -1157,6 +1157,21 @@ body {
   overflow-x: hidden;
 }
 
+/*
+ * iPhone Safari treats overflow-x:hidden ancestors as a scroll container.
+ * That blocks caret placement, text highlight, and textarea scrolling.
+ * Keep page-level clipping on html only; leave form ancestors visible.
+ */
+@media (max-width: 699px) {
+  html {
+    overflow-x: clip;
+  }
+  body,
+  .admin-main {
+    overflow-x: visible;
+  }
+}
+
 img,
 input,
 table {
@@ -1882,6 +1897,79 @@ body.more-sheet-open {
 .editor-form textarea,
 .editor-step-nav .btn {
   min-height: 48px;
+}
+
+@media (max-width: 699px) {
+  .admin-main {
+    scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
+  }
+
+  .editor-form input:not([type="checkbox"]):not([type="radio"]),
+  .editor-form select,
+  .editor-form textarea {
+    font-size: 16px;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+    scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom));
+  }
+
+  .editor-form textarea {
+    overflow: auto;
+    touch-action: auto;
+    resize: vertical;
+  }
+
+  .editor-form input:not([type="checkbox"]):not([type="radio"]),
+  .editor-form select {
+    touch-action: manipulation;
+  }
+
+  .check-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .check-item {
+    min-height: 44px;
+    align-items: center;
+    padding: 0.25rem 0;
+  }
+
+  .inline-cat-tools #addCategoryBtn,
+  .inline-cat-actions .btn,
+  .inline-cat-dup .btn {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .inline-cat-panel {
+    max-width: none;
+    overflow: visible;
+  }
+
+  .inline-cat-panel input[type="text"] {
+    min-height: 48px;
+    font-size: 16px;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .editor-categories,
+  .editor-more,
+  .editor-more-body {
+    overflow: visible;
+  }
+
+  .editor-more > summary {
+    min-height: 48px;
+  }
+
+  .photo-meta input[type="text"] {
+    min-height: 48px;
+    font-size: 16px;
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 .editor-steps {
