@@ -58,6 +58,7 @@ assert(/id="item_no"[^>]*inputmode="text"/.test(edit), "item number uses a text 
 assert(css.includes("@media (max-width: 699px)"), "phone-only editor touch rules stay off tablet/desktop");
 assert(css.includes("-webkit-user-select: text"), "phone form fields allow native text selection");
 assert(css.includes("scroll-margin-bottom"), "focused editor fields stay above the bottom nav");
+assert(css.includes("padding-bottom: calc(9rem"), "phone editor clears the fixed bottom nav");
 assert(css.includes("overflow-x: clip"), "phone page clip does not create a hidden scroll container");
 assert(
   /@media \(max-width: 699px\)[\s\S]*\.admin-main \{[\s\S]*overflow-x: visible/.test(css),

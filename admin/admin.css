@@ -1902,6 +1902,7 @@ body.more-sheet-open {
 @media (max-width: 699px) {
   .admin-main {
     overflow-x: visible;
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom));
     scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
   }
 
@@ -1936,11 +1937,16 @@ body.more-sheet-open {
     padding: 0.25rem 0;
   }
 
+  .inline-cat-tools {
+    scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom));
+  }
+
   .inline-cat-tools #addCategoryBtn,
   .inline-cat-actions .btn,
   .inline-cat-dup .btn {
     min-height: 44px;
     width: 100%;
+    scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom));
   }
 
   .inline-cat-panel {
