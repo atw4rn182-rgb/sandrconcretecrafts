@@ -770,7 +770,9 @@
 
   function bindEditorSteps() {
     var current = 1;
-    function showStep(n) {
+    var lastDesktop = null;
+    function showStep(n, opts) {
+      opts = opts || {};
       current = Math.min(4, Math.max(1, Number(n) || 1));
       document.querySelectorAll(".editor-step").forEach(function (el) {
         var step = Number(el.getAttribute("data-step"));
@@ -789,7 +791,9 @@
       if (first && window.matchMedia("(max-width: 899px)").matches && !phone) {
         try { first.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
       }
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (opts.scroll !== false) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
     document.querySelectorAll("[data-next]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -807,26 +811,32 @@
       });
     });
     // Desktop: reveal all steps for continuous form; mobile uses one-at-a-time.
+    // Keyboard open/close changes viewport HEIGHT and fires resize. Do not treat
+    // that as a layout breakpoint change or reset scroll/step.
     function syncDesktopSteps() {
       var desktop = window.matchMedia("(min-width: 900px)").matches;
-      document.querySelectorAll(".editor-step").forEach(function (el) {
-        if (desktop) {
+      if (lastDesktop === desktop) return;
+      lastDesktop = desktop;
+      if (desktop) {
+        document.querySelectorAll(".editor-step").forEach(function (el) {
           el.hidden = false;
           el.classList.add("is-active");
-        } else {
-          showStep(current);
-        }
-      });
+        });
+        return;
+      }
+      showStep(current, { scroll: false });
     }
     syncDesktopSteps();
     window.addEventListener("resize", syncDesktopSteps);
   }
 
+  var lastPhoneExtras = null;
   function revealPhoneEditorExtras() {
+    var phone = window.matchMedia("(max-width: 699px)").matches;
+    if (lastPhoneExtras === phone) return;
+    lastPhoneExtras = phone;
     var more = $("moreDetails");
-    if (more && window.matchMedia("(max-width: 699px)").matches) {
-      more.open = true;
-    }
+    if (more && phone) more.open = true;
   }
 
   function bindForm() {

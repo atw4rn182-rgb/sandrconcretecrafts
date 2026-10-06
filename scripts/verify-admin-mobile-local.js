@@ -70,6 +70,9 @@ const editJs = read("admin/product-edit.js");
 assert(editJs.includes('moreDetails'), "phone editor reveals slug/item number details");
 assert(editJs.includes("(pointer: coarse)"), "category create does not force-select text on phones");
 assert(editJs.includes("scrollIntoView"), "new category panel scrolls into view on phones");
+assert(editJs.includes("lastDesktop === desktop"), "keyboard height resize does not reset editor steps");
+assert(editJs.includes("opts.scroll !== false"), "scroll-to-top only happens on real step changes");
+assert(editJs.includes("lastPhoneExtras === phone"), "keyboard height resize does not reopen editor extras");
 
 const orders = read("admin/orders.html");
 assert(orders.includes("order-card-list"), "orders list container");
