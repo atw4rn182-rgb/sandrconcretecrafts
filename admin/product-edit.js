@@ -822,6 +822,13 @@
     window.addEventListener("resize", syncDesktopSteps);
   }
 
+  function revealPhoneEditorExtras() {
+    var more = $("moreDetails");
+    if (more && window.matchMedia("(max-width: 699px)").matches) {
+      more.open = true;
+    }
+  }
+
   function bindForm() {
     ["price", "painted_price", "sale_price"].forEach(function (id) {
       $(id).addEventListener("blur", function () {
@@ -917,9 +924,8 @@
     bindForm();
     bindEditorSteps();
     syncInventoryUi();
-    if ($("moreDetails") && window.matchMedia("(max-width: 699px)").matches) {
-      $("moreDetails").open = true;
-    }
+    revealPhoneEditorExtras();
+    window.addEventListener("resize", revealPhoneEditorExtras);
     try {
       var loaded = await Promise.all([
         SRCatalog.listCategories(true),

@@ -1901,6 +1901,7 @@ body.more-sheet-open {
 
 @media (max-width: 699px) {
   .admin-main {
+    overflow-x: visible;
     scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
   }
 

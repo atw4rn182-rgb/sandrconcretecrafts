@@ -59,6 +59,11 @@ assert(css.includes("@media (max-width: 699px)"), "phone-only editor touch rules
 assert(css.includes("-webkit-user-select: text"), "phone form fields allow native text selection");
 assert(css.includes("scroll-margin-bottom"), "focused editor fields stay above the bottom nav");
 assert(css.includes("overflow-x: clip"), "phone page clip does not create a hidden scroll container");
+assert(
+  /@media \(max-width: 699px\)[\s\S]*\.admin-main \{[\s\S]*overflow-x: visible/.test(css),
+  "phone editor main does not keep a hidden overflow trap"
+);
+assert(css.includes("revealPhoneEditorExtras") === false, "phone extras helper lives in JS");
 
 const editJs = read("admin/product-edit.js");
 assert(editJs.includes('moreDetails'), "phone editor reveals slug/item number details");
