@@ -3690,6 +3690,52 @@ body.action-sheet-open { overflow: hidden; }
   background: #fff;
   min-width: 0;
 }
+.shipping-pricing-card {
+  border: 2px solid #c45c32;
+  background: #fff7f1;
+  box-shadow: 0 8px 22px rgba(196, 92, 50, 0.08);
+}
+.pricing-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-height: 56px;
+  margin: 0 0 0.55rem;
+  padding: 0.85rem 0.9rem;
+  border: 2px solid rgba(58, 42, 34, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+}
+.pricing-option.is-selected {
+  border-color: #c45c32;
+  background: #fff1e8;
+}
+.pricing-option input {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.1rem;
+  flex: 0 0 auto;
+  accent-color: #c45c32;
+}
+.pricing-option strong,
+.pricing-option-note {
+  display: block;
+}
+.pricing-option-note {
+  font-weight: 500;
+  color: #6d584c;
+  margin-top: 0.15rem;
+}
+.shipping-example {
+  margin: 0.15rem 0 0.35rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 600;
+  white-space: pre-line;
+  line-height: 1.45;
+}
 .settings-card legend {
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.15rem;

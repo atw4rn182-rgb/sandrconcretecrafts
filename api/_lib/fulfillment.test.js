@@ -148,4 +148,83 @@ assert.strictEqual(
   650
 );
 
+var tiered = {
+  fulfillment: {
+    shipping_enabled: true,
+    shipping_pricing_mode: "per_item",
+    shipping_fee_cents: 1000,
+    shipping_first_item_cents: 1000,
+    shipping_additional_item_cents: 300,
+    pickup_enabled: true,
+    pickup_fee_cents: 500,
+  },
+};
+function tierQuote(config, quantity) {
+  return fulfillment.resolveChoice(config, { method: "ship", feeCents: 1, quantity: 1 }, { quantity: quantity }).feeCents;
+}
+assert.strictEqual(tierQuote(tiered, 1), 1000);
+assert.strictEqual(tierQuote(tiered, 2), 1300);
+assert.strictEqual(tierQuote(tiered, 3), 1600);
+assert.strictEqual(tierQuote(tiered, 5), 2200);
+assert.strictEqual(
+  tierQuote(
+    {
+      fulfillment: {
+        shipping_enabled: true,
+        shipping_pricing_mode: "per_item",
+        shipping_fee_cents: 1000,
+        shipping_first_item_cents: 1000,
+        shipping_additional_item_cents: 200,
+        pickup_enabled: true,
+        pickup_fee_cents: 500,
+      },
+    },
+    3
+  ),
+  1400
+);
+assert.strictEqual(
+  tierQuote(
+    {
+      fulfillment: {
+        shipping_enabled: true,
+        shipping_pricing_mode: "per_item",
+        shipping_fee_cents: 1000,
+        shipping_first_item_cents: 1200,
+        shipping_additional_item_cents: 250,
+        pickup_enabled: false,
+      },
+    },
+    4
+  ),
+  1950
+);
+assert.strictEqual(
+  fulfillment.resolveChoice(tiered, { method: "pickup", feeCents: 999 }, { quantity: 5 }).feeCents,
+  500
+);
+assert.strictEqual(
+  fulfillment.resolveChoice(
+    { fulfillment: { shipping_enabled: true, shipping_fee_cents: 1000, pickup_enabled: true, pickup_fee_cents: 500 } },
+    { method: "ship", feeCents: 1 },
+    { quantity: 5 }
+  ).feeCents,
+  1000,
+  "a shop with no pricing mode keeps its saved flat fee"
+);
+assert.strictEqual(fulfillment.perItemShippingCents(1000, 300, 5), 2200);
+var tierFields = fulfillment.stripeFields(fulfillment.resolveChoice(tiered, "ship", { quantity: 3 }));
+assert.strictEqual(
+  tierFields.filter(function (pair) {
+    return pair[0].indexOf("fixed_amount][amount]") !== -1;
+  }).length,
+  1
+);
+assert.strictEqual(
+  tierFields.filter(function (pair) {
+    return pair[0].indexOf("fixed_amount][amount]") !== -1;
+  })[0][1],
+  1600
+);
+
 console.log("fulfillment checks passed");

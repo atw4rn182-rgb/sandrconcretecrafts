@@ -45,6 +45,9 @@
       shipping_label: "Shipping",
       shipping_note: "",
       shipping_fee_cents: null,
+      shipping_pricing_mode: "flat",
+      shipping_first_item_cents: 1000,
+      shipping_additional_item_cents: 300,
       base_weight_oz: 16,
     },
     storefront: {
@@ -108,6 +111,34 @@
     var parsed = parseFeeInput(value);
     if (parsed.ok && parsed.cents == null) return 500;
     return parsed.cents;
+  }
+
+  function normalizeTierFee(value, fallbackCents) {
+    var parsed = parseFeeInput(value);
+    if (!parsed.ok || parsed.cents == null) return fallbackCents;
+    return parsed.cents;
+  }
+
+  /**
+   * A saved shop with no mode keeps flat shipping.
+   * "carrier" is reserved for a later carrier-calculated rate.
+   */
+  function normalizeShippingMode(value) {
+    var mode = String(value == null ? "" : value)
+      .trim()
+      .toLowerCase()
+      .replace(/-/g, "_");
+    if (mode === "per_item") return "per_item";
+    if (mode === "carrier") return "carrier";
+    return "flat";
+  }
+
+  function perItemShippingCents(firstCents, additionalCents, quantity) {
+    var qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty < 1) qty = 1;
+    var first = normalizeTierFee(firstCents, 1000);
+    var extra = normalizeTierFee(additionalCents, 300);
+    return first + Math.max(qty - 1, 0) * extra;
   }
 
   function formatFeeDollars(cents) {
@@ -291,6 +322,9 @@
           DEFAULTS.fulfillment.shipping_label,
         shipping_note: cleanText(f.shipping_note, MAX_NOTE),
         shipping_fee_cents: parseFeeInput(f.shipping_fee_cents).cents,
+        shipping_pricing_mode: normalizeShippingMode(f.shipping_pricing_mode),
+        shipping_first_item_cents: normalizeTierFee(f.shipping_first_item_cents, 1000),
+        shipping_additional_item_cents: normalizeTierFee(f.shipping_additional_item_cents, 300),
         base_weight_oz: normalizeBaseWeightOz(f.base_weight_oz),
       },
       storefront: {
@@ -359,10 +393,14 @@
     }
     var shippingFee = parseFeeInput(fulfillment.shipping_fee_cents);
     var pickupFee = parseFeeInput(fulfillment.pickup_fee_cents);
+    var firstFee = parseFeeInput(fulfillment.shipping_first_item_cents);
+    var additionalFee = parseFeeInput(fulfillment.shipping_additional_item_cents);
     if (!shippingFee.ok) errors.push(shippingFee.error);
     else if (shippingOn && shippingFee.cents == null) {
       errors.push("Enter a flat shipping fee, or turn shipping off. Use 0.00 if shipping is free.");
     }
+    if (!firstFee.ok) errors.push("Enter a first-item shipping fee from 0.00 up.");
+    if (!additionalFee.ok) errors.push("Enter an additional-item shipping fee from 0.00 up.");
     if (!pickupFee.ok) errors.push(pickupFee.error);
     if (fulfillment.base_weight_oz != null && fulfillment.base_weight_oz !== "") {
       var baseOz = Number(fulfillment.base_weight_oz);
@@ -376,9 +414,28 @@
   function readyFulfillment(settings) {
     var fulfillment = normalize(settings).fulfillment;
     var methods = [];
-    if (fulfillment.shipping_enabled && fulfillment.shipping_fee_cents != null) {
+    if (fulfillment.shipping_enabled && fulfillment.shipping_pricing_mode === "per_item") {
       methods.push({
         method: "ship",
+        pricingMode: "per_item",
+        feeCents: perItemShippingCents(
+          fulfillment.shipping_first_item_cents,
+          fulfillment.shipping_additional_item_cents,
+          1
+        ),
+        firstItemCents: fulfillment.shipping_first_item_cents,
+        additionalItemCents: fulfillment.shipping_additional_item_cents,
+        label: fulfillment.shipping_label,
+        instructions: fulfillment.shipping_note,
+      });
+    } else if (
+      fulfillment.shipping_enabled &&
+      fulfillment.shipping_pricing_mode !== "carrier" &&
+      fulfillment.shipping_fee_cents != null
+    ) {
+      methods.push({
+        method: "ship",
+        pricingMode: "flat",
         feeCents: fulfillment.shipping_fee_cents,
         label: fulfillment.shipping_label,
         instructions: fulfillment.shipping_note,
@@ -648,6 +705,8 @@
     parseFeeInput: parseFeeInput,
     formatFeeDollars: formatFeeDollars,
     readyFulfillment: readyFulfillment,
+    perItemShippingCents: perItemShippingCents,
+    normalizeShippingMode: normalizeShippingMode,
     locationLabel: locationLabel,
     activeSocialLinks: activeSocialLinks,
     applyToDocument: applyToDocument,

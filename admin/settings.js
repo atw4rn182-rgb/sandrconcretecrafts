@@ -70,6 +70,9 @@
         shipping_label: $("shippingLabel").value,
         shipping_note: $("shippingNote").value,
         shipping_fee_cents: $("shippingFee").value,
+        shipping_pricing_mode: $("shippingModePerItem").checked ? "per_item" : "flat",
+        shipping_first_item_cents: $("shippingFirstFee").value,
+        shipping_additional_item_cents: $("shippingAdditionalFee").value,
         base_weight_oz: (function () {
           if (typeof SRProductWeight === "undefined") return 16;
           var parsed = SRProductWeight.parseParts($("baseWeightLb").value, $("baseWeightOz").value, {
@@ -122,6 +125,13 @@
     $("shippingLabel").value = s.fulfillment.shipping_label;
     $("shippingNote").value = s.fulfillment.shipping_note;
     $("shippingFee").value = SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents);
+    $("shippingModePerItem").checked = s.fulfillment.shipping_pricing_mode === "per_item";
+    $("shippingModeFlat").checked = s.fulfillment.shipping_pricing_mode !== "per_item";
+    $("shippingFirstFee").value = SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_first_item_cents);
+    $("shippingAdditionalFee").value = SRStoreSettings.formatFeeDollars(
+      s.fulfillment.shipping_additional_item_cents
+    );
+    syncShippingPricing();
     var baseParts = window.SRProductWeight
       ? SRProductWeight.splitOunces(s.fulfillment.base_weight_oz)
       : { pounds: 1, ounces: 0 };
@@ -161,9 +171,15 @@
       "</dd></div>" +
       "<div><dt>Fulfillment</dt><dd>Shipping: " +
       (s.fulfillment.shipping_enabled
-        ? s.fulfillment.shipping_fee_cents == null
-          ? "on, fee not set"
-          : "$" + SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents)
+        ? s.fulfillment.shipping_pricing_mode === "per_item"
+          ? "per-item, $" +
+            SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_first_item_cents) +
+            " first, $" +
+            SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_additional_item_cents) +
+            " each additional"
+          : s.fulfillment.shipping_fee_cents == null
+            ? "flat, fee not set"
+            : "flat, $" + SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents)
         : "off") +
       "<br />Local pickup / meet-up: " +
       (s.fulfillment.pickup_enabled
@@ -200,8 +216,34 @@
     $("saveSettingsBtn").disabled = !dirty;
   }
 
+  function moneyLabel(cents) {
+    var n = Number(cents) / 100;
+    if (!isFinite(n)) return "$0";
+    return cents % 100 === 0 ? "$" + String(n) : "$" + n.toFixed(2);
+  }
+
+  function syncShippingPricing() {
+    var perItem = $("shippingModePerItem") && $("shippingModePerItem").checked;
+    var flatOption = $("shippingFlatOption");
+    var perOption = $("shippingPerItemOption");
+    if (flatOption) flatOption.classList.toggle("is-selected", !perItem);
+    if (perOption) perOption.classList.toggle("is-selected", !!perItem);
+    var example = $("shippingPricingExample");
+    if (!example || typeof SRStoreSettings === "undefined") return;
+    var first = SRStoreSettings.parseFeeInput($("shippingFirstFee").value);
+    var extra = SRStoreSettings.parseFeeInput($("shippingAdditionalFee").value);
+    var firstCents = first.ok && first.cents != null ? first.cents : 1000;
+    var extraCents = extra.ok && extra.cents != null ? extra.cents : 300;
+    function quote(qty) {
+      return moneyLabel(SRStoreSettings.perItemShippingCents(firstCents, extraCents, qty));
+    }
+    example.textContent =
+      "Example:\n1 item = " + quote(1) + "\n2 items = " + quote(2) + "\n3 items = " + quote(3);
+  }
+
   function onFormChange() {
     clearFlash();
+    syncShippingPricing();
     refreshSummary();
   }
 
@@ -230,6 +272,10 @@
       "shippingLabel",
       "shippingNote",
       "shippingFee",
+      "shippingFirstFee",
+      "shippingAdditionalFee",
+      "shippingModeFlat",
+      "shippingModePerItem",
       "baseWeightLb",
       "baseWeightOz",
       "prefSoldOut",
@@ -261,11 +307,15 @@
       readFormIntoDraft();
       var errors = SRStoreSettings.validateDraft(draft);
       var shipParsed = SRStoreSettings.parseFeeInput($("shippingFee").value);
+      var firstParsed = SRStoreSettings.parseFeeInput($("shippingFirstFee").value);
+      var additionalParsed = SRStoreSettings.parseFeeInput($("shippingAdditionalFee").value);
       var pickParsed = SRStoreSettings.parseFeeInput($("pickupFee").value);
       var baseParsed = window.SRProductWeight
         ? SRProductWeight.parseParts($("baseWeightLb").value, $("baseWeightOz").value, { required: true })
         : { ok: true };
       if (!shipParsed.ok) errors.unshift(shipParsed.error);
+      if (!firstParsed.ok) errors.unshift("Enter a first-item shipping fee from 0.00 up.");
+      if (!additionalParsed.ok) errors.unshift("Enter an additional-item shipping fee from 0.00 up.");
       if (!pickParsed.ok) errors.unshift(pickParsed.error);
       if (!baseParsed.ok) errors.unshift(baseParsed.error);
       if (!taxParsed.ok) {

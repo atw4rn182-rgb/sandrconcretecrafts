@@ -221,9 +221,14 @@ module.exports = async function handler(req, res) {
     }
 
     var siteConfig = await catalog.fetchSiteConfig();
+    var totalQuantity = 0;
+    lineItems.forEach(function (item) {
+      totalQuantity += Number(item.quantity) || 0;
+    });
     var choice = fulfillment.resolveChoice(
       siteConfig,
-      body.fulfillment || body.fulfillment_method
+      body.fulfillment || body.fulfillment_method,
+      { quantity: totalQuantity }
     );
     if (!choice.ok) {
       sendJson(

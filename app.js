@@ -1098,6 +1098,23 @@
     return money(cents / 100);
   }
 
+  function quotedFeeCents(method) {
+    if (!method) return 0;
+    if (
+      method.method === "ship" &&
+      method.pricingMode === "per_item" &&
+      typeof SRStoreSettings !== "undefined" &&
+      SRStoreSettings.perItemShippingCents
+    ) {
+      return SRStoreSettings.perItemShippingCents(
+        method.firstItemCents,
+        method.additionalItemCents,
+        cartCountTotal()
+      );
+    }
+    return method.feeCents;
+  }
+
   function renderFulfillmentChoice() {
     var box = document.getElementById("cartFulfillment");
     var lines = document.getElementById("cartSummaryLines");
@@ -1149,7 +1166,7 @@
               " /><span><strong>" +
               esc(method.label) +
               "</strong><span class=\"fulfillment-fee\">" +
-              esc(feeLabel(method.feeCents)) +
+              esc(feeLabel(quotedFeeCents(method))) +
               "</span></span></label>"
             );
           })
@@ -1162,7 +1179,7 @@
         '<div class="cart-summary-line"><span>' +
         esc(chosen.label) +
         "</span><span>" +
-        esc(feeLabel(chosen.feeCents)) +
+        esc(feeLabel(quotedFeeCents(chosen))) +
         "</span></div>";
     }
     lines.innerHTML =
@@ -1178,7 +1195,7 @@
       esc(t("cart.taxLater")) +
       "</span></div>";
     if (cartTotalEl) {
-      var preTax = subtotal + (chosen ? chosen.feeCents / 100 : 0);
+      var preTax = subtotal + (chosen ? quotedFeeCents(chosen) / 100 : 0);
       cartTotalEl.textContent = money(preTax);
     }
     if (note) {

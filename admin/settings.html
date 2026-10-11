@@ -167,16 +167,48 @@
           <fieldset class="settings-card">
             <legend>Fulfillment</legend>
             <p class="field-hint">Customers choose shipping or local pickup / meet-up before they pay. Each fee is charged once per order. Sales tax is calculated at checkout. At least one option must stay on.</p>
+            <fieldset class="settings-card shipping-pricing-card">
+              <legend>Shipping pricing</legend>
+              <p class="field-hint">Charge one shipping fee for the first item, then a smaller fee for each additional item in the order. Only the selected pricing is charged.</p>
+              <label class="pricing-option" id="shippingFlatOption">
+                <input type="radio" name="shippingPricingMode" id="shippingModeFlat" value="flat" checked />
+                <span>
+                  <strong>Flat rate</strong>
+                  <span class="pricing-option-note">One shipping fee for the whole order.</span>
+                </span>
+              </label>
+              <label class="field" id="flatFeeField">
+                <span>Flat shipping fee</span>
+                <input type="text" id="shippingFee" inputmode="decimal" autocomplete="off" placeholder="10.00" />
+              </label>
+              <label class="pricing-option" id="shippingPerItemOption">
+                <input type="radio" name="shippingPricingMode" id="shippingModePerItem" value="per_item" />
+                <span>
+                  <strong>Per-item</strong>
+                  <span class="pricing-option-note">First item, then a smaller fee for each additional item.</span>
+                </span>
+              </label>
+              <div id="perItemFields">
+                <label class="field">
+                  <span>First item</span>
+                  <input type="text" id="shippingFirstFee" inputmode="decimal" autocomplete="off" placeholder="10.00" />
+                </label>
+                <label class="field">
+                  <span>Each additional item</span>
+                  <input type="text" id="shippingAdditionalFee" inputmode="decimal" autocomplete="off" placeholder="3.00" />
+                </label>
+                <p class="shipping-example" id="shippingPricingExample">Example:
+1 item = $10
+2 items = $13
+3 items = $16</p>
+              </div>
+            </fieldset>
             <div class="toggle-row">
               <label class="toggle">
                 <input type="checkbox" id="shippingEnabled" />
                 <span>Offer shipping</span>
               </label>
             </div>
-            <label class="field">
-              <span>Flat shipping fee</span>
-              <input type="text" id="shippingFee" inputmode="decimal" autocomplete="off" placeholder="0.00" />
-            </label>
             <label class="field">
               <span>Shipping label</span>
               <input type="text" id="shippingLabel" maxlength="60" />

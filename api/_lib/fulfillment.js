@@ -58,6 +58,37 @@ function pickupFeeOrDefault(value) {
   return feeCents(value);
 }
 
+var DEFAULT_FIRST_ITEM_CENTS = 1000;
+var DEFAULT_ADDITIONAL_ITEM_CENTS = 300;
+
+/**
+ * Missing mode stays flat so a saved per-order fee keeps charging.
+ * "carrier" is reserved for a later carrier rate and is not priced here.
+ */
+function pricingMode(fulfillment) {
+  var mode = String(fulfillment && fulfillment.shipping_pricing_mode != null ? fulfillment.shipping_pricing_mode : "")
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, "_");
+  if (mode === "per_item") return "per_item";
+  if (mode === "carrier") return "carrier";
+  return "flat";
+}
+
+function tierFeeOrDefault(value, fallback) {
+  if (value == null || value === "") return fallback;
+  var parsed = feeCents(value);
+  return parsed == null ? fallback : parsed;
+}
+
+function perItemShippingCents(firstCents, additionalCents, quantity) {
+  var qty = Number(quantity);
+  if (!Number.isInteger(qty) || qty < 1) qty = 1;
+  var first = tierFeeOrDefault(firstCents, DEFAULT_FIRST_ITEM_CENTS);
+  var extra = tierFeeOrDefault(additionalCents, DEFAULT_ADDITIONAL_ITEM_CENTS);
+  return first + Math.max(qty - 1, 0) * extra;
+}
+
 /**
  * Methods the owner has enabled and priced. Pickup defaults to $5.00 once.
  * $0 is a real free fee when the owner saved 0.
@@ -70,14 +101,35 @@ function readyMethods(config) {
       : {};
   var methods = [];
   if (enabledFlag(fulfillment.shipping_enabled, true)) {
-    var shippingFee = feeCents(fulfillment.shipping_fee_cents);
-    if (shippingFee != null) {
+    var mode = pricingMode(fulfillment);
+    var label = cleanLabel(fulfillment.shipping_label, "Shipping");
+    var instructions = cleanNote(fulfillment.shipping_note);
+    if (mode === "per_item") {
+      var first = tierFeeOrDefault(fulfillment.shipping_first_item_cents, DEFAULT_FIRST_ITEM_CENTS);
+      var additional = tierFeeOrDefault(
+        fulfillment.shipping_additional_item_cents,
+        DEFAULT_ADDITIONAL_ITEM_CENTS
+      );
       methods.push({
         method: "ship",
-        feeCents: shippingFee,
-        label: cleanLabel(fulfillment.shipping_label, "Shipping"),
-        instructions: cleanNote(fulfillment.shipping_note),
+        pricingMode: "per_item",
+        feeCents: perItemShippingCents(first, additional, 1),
+        firstItemCents: first,
+        additionalItemCents: additional,
+        label: label,
+        instructions: instructions,
       });
+    } else if (mode === "flat") {
+      var shippingFee = feeCents(fulfillment.shipping_fee_cents);
+      if (shippingFee != null) {
+        methods.push({
+          method: "ship",
+          pricingMode: "flat",
+          feeCents: shippingFee,
+          label: label,
+          instructions: instructions,
+        });
+      }
     }
   }
   if (enabledFlag(fulfillment.pickup_enabled, true)) {
@@ -98,7 +150,7 @@ function readyMethods(config) {
  * Resolve the customer's choice against saved settings.
  * Client-supplied prices are ignored.
  */
-function resolveChoice(config, requested) {
+function resolveChoice(config, requested, options) {
   var methods = readyMethods(config);
   if (!methods.length) {
     return {
@@ -127,10 +179,19 @@ function resolveChoice(config, requested) {
       error: "That option isn’t available. Choose another way to get your order.",
     };
   }
+  var fee = match.feeCents;
+  if (match.method === "ship" && match.pricingMode === "per_item") {
+    fee = perItemShippingCents(
+      match.firstItemCents,
+      match.additionalItemCents,
+      options && options.quantity
+    );
+  }
   return {
     ok: true,
     method: match.method,
-    feeCents: match.feeCents,
+    pricingMode: match.pricingMode || "flat",
+    feeCents: fee,
     label: match.label,
     instructions: match.instructions,
   };
@@ -232,7 +293,10 @@ function totalsFromSession(session, lineItems) {
 
 module.exports = {
   DEFAULT_PICKUP_FEE_CENTS: DEFAULT_PICKUP_FEE_CENTS,
+  DEFAULT_FIRST_ITEM_CENTS: DEFAULT_FIRST_ITEM_CENTS,
+  DEFAULT_ADDITIONAL_ITEM_CENTS: DEFAULT_ADDITIONAL_ITEM_CENTS,
   feeCents: feeCents,
+  perItemShippingCents: perItemShippingCents,
   methodName: methodName,
   readyMethods: readyMethods,
   resolveChoice: resolveChoice,
