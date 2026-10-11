@@ -185,33 +185,36 @@
               <span>Shipping note</span>
               <textarea id="shippingNote" rows="2" maxlength="240"></textarea>
             </label>
-            <div class="field">
-              <span>Base product weight</span>
-              <div class="form-grid-2">
-                <label class="field">
-                  <span>Pounds</span>
-                  <input type="text" id="baseWeightLb" inputmode="numeric" autocomplete="off" value="1" />
-                </label>
-                <label class="field">
-                  <span>Ounces</span>
-                  <input type="text" id="baseWeightOz" inputmode="numeric" autocomplete="off" value="0" />
-                </label>
-              </div>
-              <p class="field-hint">Products with no custom weight use this. Changing it here does not rewrite products.</p>
-            </div>
             <fieldset class="settings-card">
-              <legend>Apply base weight to products</legend>
-              <label class="field field-checkbox">
-                <input type="radio" name="baseWeightApplyMode" id="baseWeightMissing" value="missing" checked />
-                <span>Only products with no weight</span>
-              </label>
-              <p class="field-hint">Recommended. Custom weights stay as they are.</p>
-              <label class="field field-checkbox">
-                <input type="radio" name="baseWeightApplyMode" id="baseWeightAll" value="all" />
-                <span>All products</span>
-              </label>
-              <p class="field-hint" id="baseWeightAllWarning">This replaces custom weights on every product.</p>
-              <button type="button" class="btn btn-ghost" id="applyBaseWeightBtn">Apply Base Weight to Products</button>
+              <legend>Product shipping weight</legend>
+              <div class="field">
+                <span>Base product weight</span>
+                <div class="form-grid-2">
+                  <label class="field">
+                    <span>Pounds</span>
+                    <input type="text" id="baseWeightLb" inputmode="numeric" autocomplete="off" value="1" />
+                  </label>
+                  <label class="field">
+                    <span>Ounces</span>
+                    <input type="text" id="baseWeightOz" inputmode="numeric" autocomplete="off" value="0" />
+                  </label>
+                </div>
+                <p class="field-hint">Products without their own weight use this base weight for shipping calculations.</p>
+              </div>
+              <fieldset class="settings-card">
+                <legend>Apply base weight to products</legend>
+                <label class="field field-checkbox">
+                  <input type="radio" name="baseWeightApplyMode" id="baseWeightMissing" value="missing" checked />
+                  <span>Apply only to products with no custom weight</span>
+                </label>
+                <p class="field-hint">Recommended. Custom weights stay as they are.</p>
+                <label class="field field-checkbox">
+                  <input type="radio" name="baseWeightApplyMode" id="baseWeightAll" value="all" />
+                  <span>Apply to ALL products</span>
+                </label>
+                <p class="field-hint" id="baseWeightAllWarning">This will replace existing custom product weights.</p>
+                <button type="button" class="btn btn-ghost" id="applyBaseWeightBtn">Apply Base Weight to Products</button>
+              </fieldset>
             </fieldset>
             <div class="toggle-row">
               <label class="toggle">

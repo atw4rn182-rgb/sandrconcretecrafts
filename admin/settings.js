@@ -316,7 +316,7 @@
       var mode = $("baseWeightAll").checked ? "all" : "missing";
       if (SRProductWeight.applyNeedsConfirmation(mode)) {
         var confirmed = window.confirm(
-          "This will overwrite every product weight, including custom weights you already entered. Continue?"
+          "This will replace existing custom product weights. Continue?"
         );
         if (!confirmed) return;
       }

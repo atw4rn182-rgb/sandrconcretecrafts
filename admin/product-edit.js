@@ -108,15 +108,27 @@
     var note = $("weightBaseNote");
     if (!note || typeof SRProductWeight === "undefined") return;
     var parsed = SRProductWeight.parseParts($("weightLb").value, $("weightOz").value, { required: false });
+    var clearBtn = $("useBaseWeightBtn");
+    var blank = !String($("weightLb").value || "").trim() && !String($("weightOz").value || "").trim();
+    if (clearBtn) clearBtn.hidden = blank;
     if (!parsed.ok) {
       note.textContent = parsed.error;
       return;
     }
     if (parsed.ounces == null) {
       note.textContent = "Using base weight: " + SRProductWeight.formatOunces(baseWeightOz);
+      if (clearBtn) clearBtn.hidden = true;
       return;
     }
     note.textContent = "Custom weight: " + SRProductWeight.formatOunces(parsed.ounces);
+    if (clearBtn) clearBtn.hidden = false;
+  }
+
+  function useBaseWeight() {
+    $("weightLb").value = "";
+    $("weightOz").value = "";
+    markDirty();
+    refreshWeightNote();
   }
 
   function markDirty() {
@@ -931,6 +943,9 @@
         markDirty();
         refreshWeightNote();
       });
+    });
+    $("useBaseWeightBtn").addEventListener("click", function () {
+      useBaseWeight();
     });
     $("slug").addEventListener("input", function () {
       slugTouched = true;
