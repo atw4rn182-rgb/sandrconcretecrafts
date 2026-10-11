@@ -21,6 +21,8 @@ assert.doesNotMatch(app, /SHIPPING_FEE|SHIPPING_THRESHOLD/);
 assert.match(app, /fulfillment: chosen\.method/);
 assert.match(app, /cart\.taxLater/);
 assert.match(create, /fulfillment\.resolveChoice/);
+assert.match(create, /unitAmountCents: choice\.feeCents/);
+assert.match(create, /quantity: 1/);
 assert.match(create, /automaticTax: true/);
 assert.doesNotMatch(create, /body\.fee|requestedFee|clientFee/);
 assert.match(stripe, /automatic_tax\[enabled\]/);
@@ -46,8 +48,14 @@ var g = {};
 eval(settings.replace("typeof window !== \"undefined\" ? window : globalThis", "g"));
 var S = g.SRStoreSettings;
 assert.strictEqual(S.cloneDefaults().fulfillment.shipping_fee_cents, null);
-assert.strictEqual(S.cloneDefaults().fulfillment.pickup_fee_cents, null);
-assert.strictEqual(S.readyFulfillment(S.cloneDefaults()).length, 0);
+assert.strictEqual(S.cloneDefaults().fulfillment.pickup_fee_cents, 500);
+assert.strictEqual(S.readyFulfillment(S.cloneDefaults()).length, 1);
+assert.strictEqual(S.readyFulfillment(S.cloneDefaults())[0].feeCents, 500);
+assert.strictEqual(S.normalize({}).fulfillment.pickup_fee_cents, 500);
+assert.strictEqual(
+  S.normalize({ fulfillment: { pickup_fee_cents: "0.00" } }).fulfillment.pickup_fee_cents,
+  0
+);
 var saved = S.normalize({
   fulfillment: {
     shipping_enabled: true,

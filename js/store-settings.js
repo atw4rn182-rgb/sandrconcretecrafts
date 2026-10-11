@@ -38,9 +38,9 @@
     },
     fulfillment: {
       pickup_enabled: true,
-      pickup_label: "Local Pickup",
+      pickup_label: "Local Pickup / Meet-Up",
       pickup_instructions: "",
-      pickup_fee_cents: null,
+      pickup_fee_cents: 500,
       shipping_enabled: true,
       shipping_label: "Shipping",
       shipping_note: "",
@@ -94,6 +94,12 @@
       return { ok: false, cents: null, error: "Enter a fee from 0.00 to 100000.00." };
     }
     return { ok: true, cents: cents };
+  }
+
+  function normalizePickupFee(value) {
+    var parsed = parseFeeInput(value);
+    if (parsed.ok && parsed.cents == null) return 500;
+    return parsed.cents;
   }
 
   function formatFeeDollars(cents) {
@@ -270,7 +276,7 @@
           cleanText(f.pickup_label, MAX_PICKUP_LABEL) ||
           DEFAULTS.fulfillment.pickup_label,
         pickup_instructions: cleanText(f.pickup_instructions, MAX_NOTE),
-        pickup_fee_cents: parseFeeInput(f.pickup_fee_cents).cents,
+        pickup_fee_cents: normalizePickupFee(f.pickup_fee_cents),
         shipping_enabled: asBool(f.shipping_enabled, true),
         shipping_label:
           cleanText(f.shipping_label, MAX_PICKUP_LABEL) ||
@@ -349,9 +355,6 @@
       errors.push("Enter a flat shipping fee, or turn shipping off. Use 0.00 if shipping is free.");
     }
     if (!pickupFee.ok) errors.push(pickupFee.error);
-    else if (pickupOn && pickupFee.cents == null) {
-      errors.push("Enter a local pickup fee, or turn pickup off. Use 0.00 for free pickup.");
-    }
     return errors;
   }
 

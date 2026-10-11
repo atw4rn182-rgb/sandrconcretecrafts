@@ -237,7 +237,7 @@ module.exports = async function handler(req, res) {
     var productCount = lineItems.length;
     if (choice.method === "pickup" && choice.feeCents > 0) {
       lineItems.push({
-        name: choice.label || "Local Pickup",
+        name: choice.label || "Local Pickup / Meet-Up",
         description: choice.instructions || "Local pickup for this order",
         unitAmountCents: choice.feeCents,
         quantity: 1,

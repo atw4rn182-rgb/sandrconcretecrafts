@@ -166,7 +166,7 @@
 
           <fieldset class="settings-card">
             <legend>Fulfillment</legend>
-            <p class="field-hint">Customers choose shipping or local pickup before they pay. Each fee is charged once per order. Use 0.00 for free. Sales tax is calculated at checkout. At least one option must stay on.</p>
+            <p class="field-hint">Customers choose shipping or local pickup / meet-up before they pay. Each fee is charged once per order. Sales tax is calculated at checkout. At least one option must stay on.</p>
             <div class="toggle-row">
               <label class="toggle">
                 <input type="checkbox" id="shippingEnabled" />
@@ -188,14 +188,14 @@
             <div class="toggle-row">
               <label class="toggle">
                 <input type="checkbox" id="pickupEnabled" />
-                <span>Offer local pickup</span>
+                <span>Offer local pickup / meet-up</span>
               </label>
             </div>
             <label class="field">
-              <span>Pickup fee</span>
-              <input type="text" id="pickupFee" inputmode="decimal" autocomplete="off" placeholder="0.00" />
+              <span>Pickup / meet-up fee</span>
+              <input type="text" id="pickupFee" inputmode="decimal" autocomplete="off" placeholder="5.00" />
             </label>
-            <p class="field-hint">Use 0.00 for free pickup.</p>
+            <p class="field-hint">Starting amount is 5.00, charged once per order. You can change it. Use 0.00 only if you want this fee to be free.</p>
             <label class="field">
               <span>Pickup label</span>
               <input type="text" id="pickupLabel" maxlength="60" />

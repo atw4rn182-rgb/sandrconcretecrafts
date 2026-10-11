@@ -284,7 +284,7 @@
     var subtotal = metaNumber(order, ["amount_subtotal_cents", "subtotal_cents"]);
     var fee = metaNumber(order, ["fulfillment_fee_cents"]);
     var tax = metaNumber(order, ["tax_cents"]);
-    var feeName = method === "pickup" ? "Local pickup" : "Shipping";
+    var feeName = method === "pickup" ? "Local pickup / meet-up" : "Shipping";
     var lines =
       "<p>Subtotal: " +
       (subtotal == null ? "Not recorded" : SRCatalog.escapeHtml(moneyFromCents(subtotal, order.currency))) +

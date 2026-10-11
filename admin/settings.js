@@ -153,7 +153,7 @@
           ? "on, fee not set"
           : "$" + SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents)
         : "off") +
-      "<br />Local pickup: " +
+      "<br />Local pickup / meet-up: " +
       (s.fulfillment.pickup_enabled
         ? s.fulfillment.pickup_fee_cents == null
           ? "on, fee not set"

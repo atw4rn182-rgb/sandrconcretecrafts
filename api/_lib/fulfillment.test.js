@@ -21,11 +21,29 @@ assert.strictEqual(ready.length, 2);
 assert.strictEqual(ready[0].feeCents, 800);
 assert.strictEqual(ready[1].feeCents, 0);
 
-assert.strictEqual(fulfillment.readyMethods({}).length, 0);
+var defaults = fulfillment.readyMethods({});
+assert.strictEqual(defaults.length, 1);
+assert.strictEqual(defaults[0].method, "pickup");
+assert.strictEqual(defaults[0].feeCents, 500, "missing pickup fee is $5.00 once");
+assert.strictEqual(defaults[0].label, "Local Pickup / Meet-Up");
+var unsetFees = fulfillment.readyMethods({
+  fulfillment: { shipping_enabled: true, pickup_enabled: true },
+});
+assert.strictEqual(unsetFees.length, 1, "shipping without a saved fee is not offered");
+assert.strictEqual(unsetFees[0].feeCents, 500);
 assert.strictEqual(
-  fulfillment.readyMethods({ fulfillment: { shipping_enabled: true, pickup_enabled: true } }).length,
+  fulfillment.resolveChoice({}, "pickup").feeCents,
+  500,
+  "checkout uses the $5 default, not a client price"
+);
+assert.strictEqual(
+  fulfillment.resolveChoice({ fulfillment: { pickup_fee_cents: 0, pickup_enabled: true, shipping_enabled: false } }, "pickup").feeCents,
   0,
-  "enabled without a saved fee is not ready"
+  "a saved 0 stays free"
+);
+assert.strictEqual(
+  fulfillment.readyMethods({ fulfillment: { pickup_enabled: false, shipping_enabled: false } }).length,
+  0
 );
 
 var ship = fulfillment.resolveChoice(priced, "ship");
@@ -71,7 +89,14 @@ assert.strictEqual(
   ).code,
   "FULFILLMENT_UNAVAILABLE"
 );
-assert.strictEqual(fulfillment.resolveChoice({}, "ship").code, "FULFILLMENT_NOT_CONFIGURED");
+assert.strictEqual(
+  fulfillment.resolveChoice(
+    { fulfillment: { shipping_enabled: false, pickup_enabled: false } },
+    "ship"
+  ).code,
+  "FULFILLMENT_NOT_CONFIGURED"
+);
+assert.strictEqual(fulfillment.resolveChoice({}, "ship").code, "FULFILLMENT_UNAVAILABLE");
 assert.strictEqual(fulfillment.feeCents(-1), null);
 assert.strictEqual(fulfillment.feeCents(1.5), null);
 

@@ -6,6 +6,7 @@
 "use strict";
 
 var MAX_FEE_CENTS = 10000000;
+var DEFAULT_PICKUP_FEE_CENTS = 500;
 
 function feeCents(value) {
   if (value == null || value === "") return null;
@@ -42,15 +43,33 @@ function methodName(raw) {
   return value === "ship" || value === "pickup" ? value : "";
 }
 
+function enabledFlag(value, fallback) {
+  if (value === true || value === "true" || value === 1 || value === "1") return true;
+  if (value === false || value === "false" || value === 0 || value === "0") return false;
+  return fallback;
+}
+
 /**
- * Methods the owner has both enabled and priced. $0 is a real free fee.
+ * Missing pickup fee uses the $5.00 default. An explicit 0 stays free.
+ * A shipping fee is never invented.
+ */
+function pickupFeeOrDefault(value) {
+  if (value == null || value === "") return DEFAULT_PICKUP_FEE_CENTS;
+  return feeCents(value);
+}
+
+/**
+ * Methods the owner has enabled and priced. Pickup defaults to $5.00 once.
+ * $0 is a real free fee when the owner saved 0.
  * @param {object} config site_settings.config
  */
 function readyMethods(config) {
-  var fulfillment = config && config.fulfillment;
-  if (!fulfillment || typeof fulfillment !== "object") return [];
+  var fulfillment =
+    config && config.fulfillment && typeof config.fulfillment === "object"
+      ? config.fulfillment
+      : {};
   var methods = [];
-  if (fulfillment.shipping_enabled === true) {
+  if (enabledFlag(fulfillment.shipping_enabled, true)) {
     var shippingFee = feeCents(fulfillment.shipping_fee_cents);
     if (shippingFee != null) {
       methods.push({
@@ -61,13 +80,13 @@ function readyMethods(config) {
       });
     }
   }
-  if (fulfillment.pickup_enabled === true) {
-    var pickupFee = feeCents(fulfillment.pickup_fee_cents);
+  if (enabledFlag(fulfillment.pickup_enabled, true)) {
+    var pickupFee = pickupFeeOrDefault(fulfillment.pickup_fee_cents);
     if (pickupFee != null) {
       methods.push({
         method: "pickup",
         feeCents: pickupFee,
-        label: cleanLabel(fulfillment.pickup_label, "Local Pickup"),
+        label: cleanLabel(fulfillment.pickup_label, "Local Pickup / Meet-Up"),
         instructions: cleanNote(fulfillment.pickup_instructions),
       });
     }
@@ -212,6 +231,7 @@ function totalsFromSession(session, lineItems) {
 }
 
 module.exports = {
+  DEFAULT_PICKUP_FEE_CENTS: DEFAULT_PICKUP_FEE_CENTS,
   feeCents: feeCents,
   methodName: methodName,
   readyMethods: readyMethods,
