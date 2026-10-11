@@ -231,6 +231,15 @@
   let catalogReady = !liveMode;
   let catalogError = null;
   let activeCategory = "all";
+  let productIndex = {};
+  let catalogRequest = 0;
+  let catalogStartPage = 1;
+  let catalogPagesLoaded = 0;
+  let catalogTotal = 0;
+  let catalogBusy = false;
+  let catalogExhausted = false;
+  let catalogObserver = null;
+  let catalogScrollOnLoad = false;
   let cart = [];
   let modalProduct = null;
   let modalQty = 1;
@@ -251,11 +260,41 @@
   const esc = (s) => (Cat && Cat.escapeHtml ? Cat.escapeHtml(s) : String(s == null ? "" : s));
   const escAttr = (s) => (Cat && Cat.escapeAttr ? Cat.escapeAttr(s) : esc(s));
 
+  function rememberProduct(p) {
+    if (!p || p.id == null) return;
+    productIndex[String(p.id)] = p;
+    if (p.legacyId) productIndex[String(p.legacyId)] = p;
+    if (p.sourceKey) productIndex[String(p.sourceKey)] = p;
+  }
+
   function findProduct(id) {
-    return products.find((p) => p.id === id) || null;
+    var key = String(id == null ? "" : id);
+    if (key && productIndex[key]) return productIndex[key];
+    return (
+      products.find(function (p) {
+        return p.id === id || p.legacyId === id || p.sourceKey === id;
+      }) || null
+    );
+  }
+
+  function productsForCart() {
+    var list = products.slice();
+    var seen = {};
+    list.forEach(function (p) {
+      if (p && p.id) seen[p.id] = true;
+    });
+    Object.keys(productIndex).forEach(function (key) {
+      var product = productIndex[key];
+      if (product && product.id && !seen[product.id]) {
+        seen[product.id] = true;
+        list.push(product);
+      }
+    });
+    return list;
   }
 
   function visibleProducts() {
+    if (liveMode) return products.slice();
     var list = products.slice();
     var p = prefs();
     if (!p.show_sold_out) {
@@ -419,8 +458,9 @@
       return Number(!!b.featured) - Number(!!a.featured);
     });
     if (aboutPhoto && picks[0]) {
-      aboutPhoto.style.backgroundImage =
-        'url("' + String(safeImgSrc(picks[0])).replace(/"/g, "") + '")';
+      var aboutSrc = safeImgSrc(picks[0]);
+      if (window.SRImageDisplay) aboutSrc = SRImageDisplay.displayUrl(aboutSrc, "about");
+      aboutPhoto.style.backgroundImage = 'url("' + String(aboutSrc).replace(/"/g, "") + '")';
       aboutPhoto.classList.add("has-image");
     }
   }
@@ -449,15 +489,17 @@
       .map(function (c) {
         var active = activeCategory === c.id;
         return (
-          '<button type="button" class="filter-chip' +
+          '<a class="filter-chip' +
           (active ? " is-active" : "") +
+          '" href="' +
+          escAttr(catalogHrefFor(c.id, 1)) +
           '" data-category="' +
           escAttr(c.id) +
           '" aria-pressed="' +
           (active ? "true" : "false") +
           '">' +
           esc(c.name) +
-          "</button>"
+          "</a>"
         );
       })
       .join("");
@@ -501,7 +543,7 @@
     raw.forEach(function (line) {
       var resolved =
         Cat && Cat.resolveCartProductId
-          ? Cat.resolveCartProductId(line.id, products)
+          ? Cat.resolveCartProductId(line.id, productsForCart())
           : findProduct(line.id)
             ? line.id
             : null;
@@ -618,11 +660,13 @@
     if (!grid) return;
     if (liveMode && !catalogReady && !catalogError) {
       grid.innerHTML = "";
+      hideCatalogNav();
       showCatalogStatus("loading", t("products.loading"), false);
       return;
     }
     if (liveMode && catalogError) {
       grid.innerHTML = "";
+      hideCatalogNav();
       showCatalogStatus(
         "error",
         catalogError + " " + t("products.loadError"),
@@ -632,6 +676,7 @@
     }
     if (!products.length) {
       grid.innerHTML = "";
+      hideCatalogNav();
       showCatalogStatus(
         "empty",
         liveMode
@@ -644,91 +689,125 @@
     var list = visibleProducts();
     if (!list.length) {
       grid.innerHTML = "";
+      hideCatalogNav();
       showCatalogStatus("empty", t("products.emptyCategory"), false);
       return;
     }
     showCatalogStatus(null);
     grid.innerHTML = list
-      .map(function (p) {
-        var sold = !canPurchase(p);
-        var tag =
-          p.tag
-            ? '<span class="card-tag ' +
-              (p.tagSoft ? "card-tag--soft" : "") +
-              '">' +
-              esc(p.tag) +
-              "</span>"
-            : "";
-        var soldBadge = sold
-          ? '<span class="card-sold" aria-hidden="true">' + esc(t("card.soldOut")) + "</span>"
-          : "";
-        var lowStock = "";
-        if (
-          prefs().show_low_stock &&
-          !sold &&
-          p.trackInventory &&
-          Number(p.quantity) > 0 &&
-          Number(p.quantity) <= 3
-        ) {
-          lowStock =
-            '<span class="card-low-stock">' +
-            esc(t("card.onlyLeft", { n: p.quantity })) +
-            "</span>";
-        }
-        var addBtn = sold
-          ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">' +
-            esc(t("card.unavailable")) +
-            "</button>"
-          : '<button class="add" type="button" data-add="' +
-            escAttr(p.id) +
-            '">' +
-            esc(t("card.add")) +
-            "</button>";
-        return (
-          '<article class="card' +
-          (sold ? " card--sold-out" : "") +
-          (p.featured ? " card--featured" : "") +
-          '" data-id="' +
-          escAttr(p.id) +
-          '" tabindex="0" role="button" aria-label="' +
-          escAttr(t("card.quickViewOf", { name: p.name })) +
-          '">' +
-          '<div class="card-img">' +
-          tag +
-          soldBadge +
-          '<img src="' +
-          escAttr(safeImgSrc(p)) +
-          '" data-seed="' +
-          escAttr(p.seed) +
-          '" alt="' +
-          escAttr(p.alt || p.name) +
-          '" loading="lazy" />' +
-          '<div class="card-quick">' +
-          esc(t("card.quickView")) +
-          "</div>" +
-          "</div>" +
-          '<div class="card-body">' +
-          "<h3>" +
-          esc(p.name) +
-          "</h3>" +
-          (p.itemNo
-            ? '<span class="card-item">' + esc(t("card.itemNo", { n: p.itemNo })) + "</span>"
-            : "") +
-          lowStock +
-          (String(p.desc || "").trim()
-            ? '<p class="card-desc">' + esc(shortDesc(p.desc)) + "</p>"
-            : "") +
-          '<div class="card-foot">' +
-          '<div class="card-prices">' +
-          priceHtml(p) +
-          "</div>" +
-          addBtn +
-          "</div>" +
-          "</div>" +
-          "</article>"
-        );
+      .map(function (p, index) {
+        return productCardHtml(p, index < 2);
       })
       .join("");
+    renderCatalogPages();
+    ensureCatalogObserver();
+  }
+
+  function productCardHtml(p, eager) {
+    var sold = !canPurchase(p);
+    var tag = p.tag
+      ? '<span class="card-tag ' +
+        (p.tagSoft ? "card-tag--soft" : "") +
+        '">' +
+        esc(p.tag) +
+        "</span>"
+      : "";
+    var soldBadge = sold
+      ? '<span class="card-sold" aria-hidden="true">' + esc(t("card.soldOut")) + "</span>"
+      : "";
+    var lowStock = "";
+    if (
+      prefs().show_low_stock &&
+      !sold &&
+      p.trackInventory &&
+      Number(p.quantity) > 0 &&
+      Number(p.quantity) <= 3
+    ) {
+      lowStock =
+        '<span class="card-low-stock">' + esc(t("card.onlyLeft", { n: p.quantity })) + "</span>";
+    }
+    var addBtn = sold
+      ? '<button class="add add--disabled" type="button" disabled aria-disabled="true">' +
+        esc(t("card.unavailable")) +
+        "</button>"
+      : '<button class="add" type="button" data-add="' +
+        escAttr(p.id) +
+        '">' +
+        esc(t("card.add")) +
+        "</button>";
+    return (
+      '<article class="card' +
+      (sold ? " card--sold-out" : "") +
+      (p.featured ? " card--featured" : "") +
+      '" data-id="' +
+      escAttr(p.id) +
+      '" tabindex="0" role="button" aria-label="' +
+      escAttr(t("card.quickViewOf", { name: p.name })) +
+      '">' +
+      '<div class="card-img">' +
+      tag +
+      soldBadge +
+      productImageTag(p, "card", { eager: !!eager, width: 800, height: 800 }) +
+      '<div class="card-quick">' +
+      esc(t("card.quickView")) +
+      "</div>" +
+      "</div>" +
+      '<div class="card-body">' +
+      '<h3><a class="card-product-link" href="/?product=' +
+      encodeURIComponent(p.id) +
+      '">' +
+      esc(p.name) +
+      "</a></h3>" +
+      (p.itemNo
+        ? '<span class="card-item">' + esc(t("card.itemNo", { n: p.itemNo })) + "</span>"
+        : "") +
+      lowStock +
+      (String(p.desc || "").trim()
+        ? '<p class="card-desc">' + esc(shortDesc(p.desc)) + "</p>"
+        : "") +
+      '<div class="card-foot">' +
+      '<div class="card-prices">' +
+      priceHtml(p) +
+      "</div>" +
+      addBtn +
+      "</div>" +
+      "</div>" +
+      "</article>"
+    );
+  }
+
+  function appendProductCards(rows) {
+    if (!grid || !rows || !rows.length) return;
+    grid.insertAdjacentHTML(
+      "beforeend",
+      rows
+        .map(function (p) {
+          return productCardHtml(p, false);
+        })
+        .join("")
+    );
+  }
+
+  function productImageTag(p, preset, opts) {
+    opts = opts || {};
+    var full = safeImgSrc(p);
+    if (window.SRImageDisplay) {
+      return SRImageDisplay.imgTag(full, {
+        preset: preset,
+        alt: (p && (p.alt || p.name)) || "",
+        eager: !!opts.eager,
+        width: opts.width,
+        height: opts.height,
+        fallback: fallback(p && p.seed),
+      });
+    }
+    return (
+      '<img src="' +
+      escAttr(full) +
+      '" alt="' +
+      escAttr((p && (p.alt || p.name)) || "") +
+      '" loading="lazy" decoding="async" />'
+    );
   }
 
   let toastTimer;
@@ -834,9 +913,18 @@
     }
   }
 
-  function openSharedProduct() {
+  async function openSharedProduct() {
     var id = requestedProductId();
-    if (id && findProduct(id)) openModal(id);
+    if (!id) return;
+    if (!findProduct(id) && Cat && Cat.fetchStorefrontProductsByIds) {
+      try {
+        var rows = await Cat.fetchStorefrontProductsByIds([id]);
+        rows.forEach(rememberProduct);
+      } catch (err) {
+        return;
+      }
+    }
+    if (findProduct(id)) openModal(id);
   }
 
   function initReviewBanner() {
@@ -1047,11 +1135,7 @@
           '<div class="cart-line" data-key="' +
           escAttr(key) +
           '">' +
-          '<img src="' +
-          escAttr(safeImgSrc(p)) +
-          '" alt="' +
-          escAttr(p.alt || p.name) +
-          '" />' +
+          productImageTag(p, "cart") +
           '<div class="cart-line-info">' +
           "<h4>" +
           esc(p.name) +
@@ -1126,13 +1210,18 @@
     modalQty = 1;
     modalFinish = "raw";
     const img = $("#modalImg");
-    img.src = safeImgSrc(modalProduct);
+    var full = safeImgSrc(modalProduct);
+    var detail = window.SRImageDisplay ? SRImageDisplay.displayUrl(full, "detail") : full;
     img.dataset.seed = modalProduct.seed;
-    img.onerror = function () {
-      this.onerror = null;
-      this.src = fallback(modalProduct.seed);
-    };
     img.alt = modalProduct.alt || modalProduct.name;
+    img.decoding = "async";
+    img.classList.remove("img-failed");
+    img.removeAttribute("data-img-step");
+    if (detail !== full) img.dataset.full = full;
+    else img.removeAttribute("data-full");
+    img.dataset.fallback = fallback(modalProduct.seed);
+    img.onerror = null;
+    img.src = detail;
     $("#modalTitle").textContent = modalProduct.name;
     var finishChoice = $("#modalFinishChoice");
     if (hasPaintedOption(modalProduct)) {
@@ -1204,15 +1293,20 @@
   async function refreshCatalogBeforeCheckout() {
     if (!liveMode || !Cat) return true;
     try {
-      var fresh = await Cat.fetchStorefrontProducts();
-      products = fresh;
-      try {
-        await loadStorefrontCategories();
-      } catch (categoryErr) {
-        storefrontCategories = [];
+      var ids = cart.map(function (line) {
+        return line.id;
+      });
+      if (Cat.fetchStorefrontProductsByIds && ids.length) {
+        var fresh = await Cat.fetchStorefrontProductsByIds(ids);
+        fresh.forEach(function (product) {
+          rememberProduct(product);
+          var index = -1;
+          products.forEach(function (item, i) {
+            if (item.id === product.id) index = i;
+          });
+          if (index !== -1) products[index] = product;
+        });
       }
-      catalogReady = true;
-      catalogError = null;
       reconcileCart(true);
       renderProducts();
       updateCart();
@@ -1432,11 +1526,7 @@
             : "";
         return (
           '<div class="summary-row">' +
-          '<img src="' +
-          escAttr(safeImgSrc(p)) +
-          '" alt="' +
-          escAttr(p.alt || p.name) +
-          '" />' +
+          productImageTag(p, "cart") +
           "<div><div class=\"s-name\">" +
           esc(p.name) +
           "</div>" +
@@ -1508,7 +1598,15 @@
       filterChips.addEventListener("click", function (e) {
         var chip = e.target.closest("[data-category]");
         if (!chip) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        if (chip.tagName === "A") e.preventDefault();
         activeCategory = chip.getAttribute("data-category") || "all";
+        if (liveMode) {
+          catalogStartPage = 1;
+          writeCatalogUrl(1);
+          loadLiveCatalog(false, true);
+          return;
+        }
         renderProducts();
       });
     }
@@ -1523,6 +1621,11 @@
         else addToCart(addBtn.dataset.add, 1, "raw");
         return;
       }
+      var productLink = e.target.closest("a.card-product-link");
+      if (productLink) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        e.preventDefault();
+      }
       var card = e.target.closest(".card");
       if (card) openModal(card.dataset.id);
     });
@@ -1531,6 +1634,16 @@
         e.preventDefault();
         openModal(e.target.dataset.id);
       }
+    });
+
+    document.addEventListener("click", function (e) {
+      var pageLink = e.target.closest("a[data-catalog-page]");
+      if (!pageLink) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      var page = parseInt(pageLink.getAttribute("data-catalog-page") || "1", 10);
+      if (!isFinite(page) || page < 1) return;
+      goToCatalogPage(page);
     });
 
     $("#modalClose").addEventListener("click", closeModal);
@@ -1627,31 +1740,318 @@
     });
   }
 
-  async function loadLiveCatalog(isRetry) {
+  function pageSize() {
+    return (Cat && Cat.STOREFRONT_PAGE_SIZE) || 24;
+  }
+
+  function readCatalogLocation() {
+    var page = 1;
+    var category = "all";
+    try {
+      var params = new URLSearchParams(window.location.search);
+      page = parseInt(params.get("page") || "1", 10);
+      category = params.get("category") || "all";
+    } catch (err) {
+      page = 1;
+    }
+    if (!isFinite(page) || page < 1 || page > 10000) page = 1;
+    return { page: page, category: category };
+  }
+
+  function resolveCategoryParam(raw) {
+    if (!raw || raw === "all") return "all";
+    var hit = storefrontCategories.find(function (c) {
+      return c.id === raw || c.slug === raw;
+    });
+    return hit ? hit.id : "all";
+  }
+
+  function catalogHrefFor(categoryId, page) {
+    var params = new URLSearchParams();
+    if (categoryId && categoryId !== "all") {
+      var cat = storefrontCategories.find(function (c) {
+        return c.id === categoryId;
+      });
+      params.set("category", (cat && cat.slug) || categoryId);
+    }
+    if (page > 1) params.set("page", String(page));
+    var qs = params.toString();
+    return "/" + (qs ? "?" + qs : "");
+  }
+
+  function writeCatalogUrl(page) {
+    var params = new URLSearchParams();
+    if (activeCategory && activeCategory !== "all") {
+      var cat = storefrontCategories.find(function (c) {
+        return c.id === activeCategory;
+      });
+      params.set("category", (cat && cat.slug) || activeCategory);
+    }
+    if (page > 1) params.set("page", String(page));
+    var product = requestedProductId();
+    if (product) params.set("product", product);
+    var qs = params.toString();
+    var url = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+    var current = window.location.pathname + window.location.search + window.location.hash;
+    if (url !== current) window.history.replaceState({}, "", url);
+  }
+
+  function catalogQueryOptions(offset) {
+    return {
+      offset: offset,
+      limit: pageSize(),
+      categoryId: activeCategory && activeCategory !== "all" ? activeCategory : "",
+      hideSoldOut: prefs().show_sold_out === false,
+      featuredFirst: prefs().featured_first !== false,
+    };
+  }
+
+  function nextCatalogOffset() {
+    return (Math.max(catalogStartPage, 1) - 1) * pageSize() + catalogPagesLoaded * pageSize();
+  }
+
+  function catalogHasMore() {
+    if (!liveMode || catalogExhausted || !catalogReady) return false;
+    if (catalogTotal && products.length >= catalogTotal) return false;
+    return catalogPagesLoaded > 0;
+  }
+
+  function setCatalogMore(message) {
+    var el = $("#catalogMore");
+    if (!el) return;
+    el.textContent = message || "";
+  }
+
+  function hideCatalogNav() {
+    var nav = $("#catalogPages");
+    if (nav) {
+      nav.hidden = true;
+      nav.innerHTML = "";
+    }
+    document.querySelectorAll("link[data-catalog-rel]").forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  function setPageRels(current, pages) {
+    document.querySelectorAll("link[data-catalog-rel]").forEach(function (el) {
+      el.remove();
+    });
+    if (!pages || pages < 2 || !current) return;
+    function add(rel, page) {
+      var link = document.createElement("link");
+      link.rel = rel;
+      link.href = catalogHrefFor(activeCategory, page);
+      link.setAttribute("data-catalog-rel", rel);
+      document.head.appendChild(link);
+    }
+    if (current > 1) add("prev", current - 1);
+    if (current < pages) add("next", current + 1);
+  }
+
+  function pageLinkHtml(page, label, kind) {
+    var current = kind === "current";
+    var rel = kind === "next" ? ' rel="next"' : kind === "prev" ? ' rel="prev"' : "";
+    return (
+      '<a href="' +
+      escAttr(catalogHrefFor(activeCategory, page)) +
+      '" data-catalog-page="' +
+      page +
+      '"' +
+      (current ? ' aria-current="page"' : "") +
+      rel +
+      ">" +
+      esc(label) +
+      "</a>"
+    );
+  }
+
+  function renderCatalogPages() {
+    var nav = $("#catalogPages");
+    if (!nav) return;
+    if (!liveMode || !catalogReady) {
+      hideCatalogNav();
+      return;
+    }
+    var size = pageSize();
+    var pages = Math.max(1, Math.ceil((catalogTotal || 0) / size));
+    if (pages <= 1) {
+      hideCatalogNav();
+      return;
+    }
+    var current = Math.min(Math.max(catalogStartPage, 1), pages);
+    var html = "";
+    if (current > 1) html += pageLinkHtml(current - 1, t("products.prev"), "prev");
+    var start = Math.max(1, current - 2);
+    var end = Math.min(pages, start + 4);
+    start = Math.max(1, end - 4);
+    if (start > 1) html += pageLinkHtml(1, "1", 1 === current ? "current" : "");
+    if (start > 2) html += '<span class="catalog-pages-gap" aria-hidden="true">…</span>';
+    var n;
+    for (n = start; n <= end; n++) {
+      if (n === 1 && start > 1) continue;
+      html += pageLinkHtml(n, String(n), n === current ? "current" : "");
+    }
+    if (end < pages - 1) html += '<span class="catalog-pages-gap" aria-hidden="true">…</span>';
+    if (end < pages) html += pageLinkHtml(pages, String(pages), pages === current ? "current" : "");
+    if (current < pages) html += pageLinkHtml(current + 1, t("products.next"), "next");
+    nav.hidden = false;
+    nav.setAttribute("aria-label", t("products.pages"));
+    nav.innerHTML = html;
+    setPageRels(current, pages);
+  }
+
+  function ensureCatalogObserver() {
+    if (!liveMode) return;
+    var el = $("#catalogMore");
+    if (!el || catalogObserver || typeof IntersectionObserver === "undefined") return;
+    catalogObserver = new IntersectionObserver(
+      function (entries) {
+        if (
+          entries.some(function (entry) {
+            return entry.isIntersecting;
+          })
+        ) {
+          loadMoreCatalog();
+        }
+      },
+      { root: null, rootMargin: "700px 0px", threshold: 0 }
+    );
+    catalogObserver.observe(el);
+  }
+
+  function goToCatalogPage(page) {
+    catalogScrollOnLoad = true;
+    catalogStartPage = page;
+    writeCatalogUrl(page);
+    loadLiveCatalog(false, true);
+  }
+
+  async function hydrateCartProducts() {
+    if (!Cat || !Cat.fetchStorefrontProductsByIds) return;
+    var raw = loadCartRaw();
+    var missing = raw
+      .map(function (line) {
+        return line.id;
+      })
+      .filter(function (id) {
+        return id && !findProduct(id);
+      });
+    if (!missing.length) return;
+    var rows = await Cat.fetchStorefrontProductsByIds(missing);
+    rows.forEach(rememberProduct);
+  }
+
+  async function loadMoreCatalog() {
+    if (!liveMode || !catalogReady || catalogBusy || !catalogHasMore()) return;
+    if (!Cat || !Cat.fetchStorefrontProductPage) return;
+    catalogBusy = true;
+    var gen = catalogRequest;
+    setCatalogMore(t("products.loadingMore"));
+    var failed = false;
+    try {
+      var result = await Cat.fetchStorefrontProductPage(catalogQueryOptions(nextCatalogOffset()));
+      if (gen !== catalogRequest) return;
+      var added = [];
+      (result.products || []).forEach(function (product) {
+        if (
+          products.some(function (item) {
+            return item.id === product.id;
+          })
+        ) {
+          return;
+        }
+        products.push(product);
+        rememberProduct(product);
+        added.push(product);
+      });
+      if (typeof result.total === "number") catalogTotal = result.total;
+      catalogPagesLoaded += 1;
+      var more = Cat.pageHasMore(
+        (result.products || []).length,
+        result.limit || pageSize(),
+        products.length,
+        catalogTotal
+      );
+      if (!added.length || !more) catalogExhausted = true;
+      if (added.length) {
+        appendProductCards(added);
+        renderCatalogPages();
+      }
+    } catch (err) {
+      failed = true;
+      if (gen === catalogRequest) setCatalogMore(t("products.loadError"));
+    } finally {
+      if (gen === catalogRequest) catalogBusy = false;
+    }
+    if (!failed && gen === catalogRequest) setCatalogMore("");
+    if (!failed && gen === catalogRequest && catalogHasMore()) {
+      var moreEl = $("#catalogMore");
+      if (moreEl) {
+        var rect = moreEl.getBoundingClientRect();
+        if (rect.top <= window.innerHeight + 700) loadMoreCatalog();
+      }
+    }
+  }
+
+  async function loadLiveCatalog(isRetry, quietCart) {
+    catalogRequest += 1;
+    var gen = catalogRequest;
     catalogError = null;
     catalogReady = false;
-    if (isRetry) renderProducts();
+    catalogExhausted = false;
+    catalogPagesLoaded = 0;
+    catalogBusy = false;
+    if (isRetry || quietCart) {
+      products = [];
+      renderProducts();
+    }
     showCatalogStatus("loading", t("products.loading"), false);
     try {
-      products = await Cat.fetchStorefrontProducts();
       try {
         await loadStorefrontCategories();
       } catch (categoryErr) {
-        // Keep the independently loaded products purchasable under ALL.
         storefrontCategories = [];
       }
+      if (gen !== catalogRequest) return;
+      var query = readCatalogLocation();
+      activeCategory = resolveCategoryParam(query.category);
+      catalogStartPage = query.page;
+      var result = await Cat.fetchStorefrontProductPage(
+        catalogQueryOptions((catalogStartPage - 1) * pageSize())
+      );
+      if (gen !== catalogRequest) return;
+      products = result.products || [];
+      products.forEach(rememberProduct);
+      catalogTotal = typeof result.total === "number" ? result.total : products.length;
+      catalogPagesLoaded = 1;
+      catalogExhausted = !Cat.pageHasMore(
+        products.length,
+        result.limit || pageSize(),
+        products.length,
+        catalogTotal
+      );
+      try {
+        await hydrateCartProducts();
+      } catch (hydrateErr) {
+        /* Cart lines that are already on this page still resolve. */
+      }
+      if (gen !== catalogRequest) return;
       catalogReady = true;
       catalogError = null;
-      reconcileCart(true);
+      reconcileCart(!quietCart);
       renderProducts();
       updateCart();
-      openSharedProduct();
+      await openSharedProduct();
+      if (catalogScrollOnLoad) {
+        catalogScrollOnLoad = false;
+        if (grid && grid.scrollIntoView) grid.scrollIntoView({ block: "start" });
+      }
     } catch (err) {
+      if (gen !== catalogRequest) return;
       products = [];
-      storefrontCategories = [];
       catalogReady = false;
       catalogError = (err && err.message) || t("products.catalogFailed");
-      // Never fall back to demo products when live mode is on.
       renderProducts();
       updateCart();
     }
@@ -1753,6 +2153,7 @@
 
   async function init() {
     bind();
+    if (window.SRImageDisplay) SRImageDisplay.installFallback(document);
     syncCheckoutButtonLabel();
     await handleCheckoutReturn();
     // Theme + settings first so paint settles quickly; catalog can follow.

@@ -7,6 +7,7 @@
 
   var BUCKET = "product-images";
   var SITE_ASSETS_BUCKET = "site-assets";
+  var PRODUCT_PAGE_SIZE = 50;
   var ALLOWED_TYPES = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -152,6 +153,125 @@
 
     if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t load products."));
     return (result.data || []).map(normalizeProductRow);
+  }
+
+  /**
+   * Strip LIKE wildcards so a search stays a literal title match.
+   * Blank means "no search filter".
+   */
+  function likeContainsPattern(raw) {
+    var text = String(raw || "")
+      .trim()
+      .replace(/[%_\\]/g, "");
+    if (!text) return "";
+    return "%" + text + "%";
+  }
+
+  /**
+   * Append a page without duplicating ids. Order of `existing` is preserved.
+   */
+  function mergeProductPage(existing, incoming) {
+    var seen = {};
+    var products = [];
+    (existing || []).forEach(function (product) {
+      if (!product || !product.id || seen[product.id]) return;
+      seen[product.id] = true;
+      products.push(product);
+    });
+    var added = [];
+    var duplicates = 0;
+    (incoming || []).forEach(function (product) {
+      if (!product || !product.id || seen[product.id]) {
+        duplicates += 1;
+        return;
+      }
+      seen[product.id] = true;
+      products.push(product);
+      added.push(product);
+    });
+    return { products: products, added: added, duplicates: duplicates };
+  }
+
+  /**
+   * Stop when this page was short, or the loaded rows cover the match count.
+   * A full last page (exactly `limit` rows) still stops once loaded >= total.
+   */
+  function pageHasMore(returnedCount, limit, loadedCount, total) {
+    var returned = Number(returnedCount) || 0;
+    var size = Number(limit) || 0;
+    var loaded = Number(loadedCount) || 0;
+    if (!returned) return false;
+    if (typeof total === "number" && isFinite(total) && loaded >= total) return false;
+    if (size && returned < size) return false;
+    return true;
+  }
+
+  var PRODUCT_LIST_SELECT =
+    "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active))";
+
+  async function loadCategoryMap(supabase, productIds) {
+    if (!productIds.length) return {};
+    var result = await supabase
+      .from("product_categories")
+      .select("product_id, categories(id, name, slug, active)")
+      .in("product_id", productIds);
+    if (result.error) return null;
+    var map = {};
+    (result.data || []).forEach(function (row) {
+      if (!map[row.product_id]) map[row.product_id] = [];
+      if (row.categories) map[row.product_id].push(row.categories);
+    });
+    return map;
+  }
+
+  /**
+   * One database page of products. Supabase applies filters, order, and range.
+   * Does not download the rest of the catalog.
+   */
+  async function listProductsPage(opts) {
+    opts = opts || {};
+    var limit = Math.min(Math.max(Number(opts.limit) || PRODUCT_PAGE_SIZE, 1), 100);
+    var offset = Math.max(Number(opts.offset) || 0, 0);
+    var sort = opts.sort === "oldest" ? "oldest" : "newest";
+    var status = opts.status ? String(opts.status) : "";
+    var categoryId = opts.categoryId ? String(opts.categoryId) : "";
+    var pattern = likeContainsPattern(opts.search || "");
+    var supabase = await client();
+    var select = categoryId
+      ? PRODUCT_LIST_SELECT.replace("product_categories(", "product_categories!inner(")
+      : PRODUCT_LIST_SELECT;
+    var ascending = sort === "oldest";
+    var q = supabase.from("products").select(select, { count: "exact" });
+    if (status) q = q.eq("status", status);
+    if (pattern) q = q.ilike("title", pattern);
+    if (categoryId) q = q.eq("product_categories.category_id", categoryId);
+    q = q
+      .order("updated_at", { ascending: ascending })
+      .order("id", { ascending: ascending })
+      .range(offset, offset + limit - 1);
+
+    var result = await q;
+    if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t load products."));
+    var products = (result.data || []).map(normalizeProductRow);
+    if (categoryId && products.length) {
+      var map = await loadCategoryMap(
+        supabase,
+        products.map(function (product) {
+          return product.id;
+        })
+      );
+      if (map) {
+        products.forEach(function (product) {
+          if (map[product.id]) product.categories = map[product.id];
+        });
+      }
+    }
+    return {
+      products: products,
+      total: typeof result.count === "number" ? result.count : products.length,
+      offset: offset,
+      limit: limit,
+    };
   }
 
   function normalizeProductRow(row) {
@@ -486,8 +606,10 @@
       ext;
 
     if (typeof onProgress === "function") onProgress("uploading");
+    // Store the original file unchanged. The path is a new id, so a long cache
+    // cannot serve a stale photo after a replacement upload.
     var up = await supabase.storage.from(BUCKET).upload(path, file, {
-      cacheControl: "3600",
+      cacheControl: "31536000",
       upsert: false,
       contentType: file.type,
     });
@@ -845,7 +967,10 @@
 
   async function countProducts(filter) {
     var supabase = await client();
-    var q = supabase.from("products").select("id", { count: "exact", head: true });
+    var categoryId = filter && filter.categoryId ? String(filter.categoryId) : "";
+    var pattern = likeContainsPattern(filter && filter.search ? filter.search : "");
+    var select = categoryId ? "id, product_categories!inner(category_id)" : "id";
+    var q = supabase.from("products").select(select, { count: "exact", head: true });
     if (filter && filter.status) {
       q = q.eq("status", filter.status);
     }
@@ -855,6 +980,8 @@
     if (filter && filter.quantity === 0) {
       q = q.eq("quantity", 0);
     }
+    if (categoryId) q = q.eq("product_categories.category_id", categoryId);
+    if (pattern) q = q.ilike("title", pattern);
     var result = await q;
     if (result.error) {
       throw new Error(friendlyDbError(result.error, "Couldn’t load product counts."));
@@ -1520,7 +1647,12 @@
     friendlyDbError: friendlyDbError,
     primaryImage: primaryImage,
     normalizeProductStatusFilter: normalizeProductStatusFilter,
+    PRODUCT_PAGE_SIZE: PRODUCT_PAGE_SIZE,
+    likeContainsPattern: likeContainsPattern,
+    mergeProductPage: mergeProductPage,
+    pageHasMore: pageHasMore,
     listProducts: listProducts,
+    listProductsPage: listProductsPage,
     fetchProducts: listProducts,
     getProduct: getProduct,
     fetchProduct: getProduct,

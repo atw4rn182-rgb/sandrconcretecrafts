@@ -20,6 +20,25 @@
     return document.getElementById(id);
   }
 
+  if (window.SRImageDisplay) SRImageDisplay.installFallback(document);
+
+  function applyDisplaySrc(imgEl, url, preset, eager) {
+    if (!imgEl) return;
+    var full = url || "";
+    var src = full;
+    if (full && full.indexOf("blob:") !== 0 && window.SRImageDisplay) {
+      src = SRImageDisplay.displayUrl(full, preset);
+    }
+    if (src && full && src !== full) imgEl.setAttribute("data-full", full);
+    else imgEl.removeAttribute("data-full");
+    imgEl.decoding = "async";
+    imgEl.loading = eager ? "eager" : "lazy";
+    if (eager) imgEl.setAttribute("fetchpriority", "high");
+    else imgEl.removeAttribute("fetchpriority");
+    if (src) imgEl.src = src;
+    else imgEl.removeAttribute("src");
+  }
+
   function selectedCategoryIds() {
     return Array.prototype.map.call(
       document.querySelectorAll('input[name="category"]:checked'),
@@ -185,7 +204,7 @@
     if (primary && (primary.localUrl || primary.image_url)) {
       $("previewImg").hidden = false;
       $("previewPlaceholder").hidden = true;
-      $("previewImg").src = primary.localUrl || primary.image_url;
+      applyDisplaySrc($("previewImg"), primary.localUrl || primary.image_url, "editorPreview", true);
       $("previewImg").alt = primary.alt_text || title;
     } else {
       $("previewImg").hidden = true;
@@ -475,16 +494,15 @@
     }
     list.innerHTML = images
       .map(function (img, index) {
-        var src = img.localUrl || img.image_url || "";
         return (
           '<div class="photo-item' +
           (img.is_primary ? " is-primary" : "") +
           '" data-index="' +
           index +
           '">' +
-          '<div class="photo-thumb"><img src="' +
-          SRCatalog.escapeHtml(src) +
-          '" alt="" /></div>' +
+          '<div class="photo-thumb"><img alt="" width="88" height="88" data-photo-index="' +
+          index +
+          '" /></div>' +
           '<div class="photo-meta">' +
           '<label>Alt text<input type="text" data-alt="' +
           index +
@@ -514,6 +532,13 @@
         );
       })
       .join("");
+
+    list.querySelectorAll("[data-photo-index]").forEach(function (imgEl) {
+      var i = Number(imgEl.getAttribute("data-photo-index"));
+      var photo = images[i];
+      if (!photo) return;
+      applyDisplaySrc(imgEl, photo.localUrl || photo.image_url || "", "editorThumb", i < 2);
+    });
 
     list.querySelectorAll("[data-alt]").forEach(function (input) {
       input.addEventListener("input", function () {

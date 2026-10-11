@@ -5,6 +5,8 @@
 (function () {
   "use strict";
 
+  if (window.SRImageDisplay) SRImageDisplay.installFallback(document);
+
   var loadedOnce = false;
   var loading = false;
   var skipAnim = false;
@@ -114,8 +116,14 @@
     if (primary && primary.image_url) {
       return (
         '<img src="' +
-        SRCatalog.escapeHtml(primary.image_url) +
-        '" alt="" width="48" height="48" />'
+        SRCatalog.escapeHtml(
+          window.SRImageDisplay
+            ? SRImageDisplay.displayUrl(primary.image_url, "dashThumb")
+            : primary.image_url
+        ) +
+        '" alt="" width="48" height="48" loading="lazy" decoding="async"' +
+        (window.SRImageDisplay ? ' data-full="' + SRCatalog.escapeHtml(primary.image_url) + '"' : "") +
+        " />"
       );
     }
     return '<div class="thumb-empty">No photo</div>';

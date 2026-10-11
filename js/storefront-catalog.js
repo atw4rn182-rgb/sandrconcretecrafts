@@ -145,6 +145,150 @@
     return String(env.USE_LIVE_CATALOG || "").toLowerCase() === "true";
   }
 
+  var STOREFRONT_PAGE_SIZE = 24;
+  var STOREFRONT_SELECT =
+    "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, published_at, updated_at, product_images(id, image_url, alt_text, sort_order, is_primary), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))";
+
+  function mergeProductPage(existing, incoming) {
+    var seen = {};
+    var products = [];
+    (existing || []).forEach(function (product) {
+      if (!product || !product.id || seen[product.id]) return;
+      seen[product.id] = true;
+      products.push(product);
+    });
+    var added = [];
+    var duplicates = 0;
+    (incoming || []).forEach(function (product) {
+      if (!product || !product.id || seen[product.id]) {
+        duplicates += 1;
+        return;
+      }
+      seen[product.id] = true;
+      products.push(product);
+      added.push(product);
+    });
+    return { products: products, added: added, duplicates: duplicates };
+  }
+
+  function pageHasMore(returnedCount, limit, loadedCount, total) {
+    var returned = Number(returnedCount) || 0;
+    var size = Number(limit) || 0;
+    var loaded = Number(loadedCount) || 0;
+    if (!returned) return false;
+    if (typeof total === "number" && isFinite(total) && loaded >= total) return false;
+    if (size && returned < size) return false;
+    return true;
+  }
+
+  function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value || "")
+    );
+  }
+
+  function storefrontClient() {
+    if (!global.SRSupabase || !SRSupabase.isConfigured()) {
+      throw new Error(
+        "Store catalog isn’t configured. Set SUPABASE_URL and SUPABASE_ANON_KEY, then rebuild."
+      );
+    }
+    var client = SRSupabase.createClient();
+    if (!client) {
+      throw new Error("Couldn’t start the catalog connection. Please try again.");
+    }
+    return client;
+  }
+
+  /**
+   * One page of public products. Filters and range run in Supabase.
+   */
+  async function fetchStorefrontProductPage(opts) {
+    opts = opts || {};
+    var limit = Math.min(Math.max(Number(opts.limit) || STOREFRONT_PAGE_SIZE, 1), 60);
+    var offset = Math.max(Number(opts.offset) || 0, 0);
+    var categoryId = opts.categoryId ? String(opts.categoryId) : "";
+    var client = storefrontClient();
+    var select = categoryId
+      ? STOREFRONT_SELECT.replace("product_categories(", "product_categories!inner(")
+      : STOREFRONT_SELECT;
+    var q = client.from("products").select(select, { count: "exact" });
+    if (opts.hideSoldOut) {
+      q = q.eq("status", "published").or("track_inventory.eq.false,quantity.gt.0");
+    } else {
+      q = q.in("status", ["published", "sold_out"]);
+    }
+    if (categoryId) q = q.eq("product_categories.category_id", categoryId);
+    if (opts.featuredFirst !== false) q = q.order("featured", { ascending: false });
+    q = q
+      .order("published_at", { ascending: false })
+      .order("title", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + limit - 1);
+    var result = await q;
+    if (result.error) {
+      throw new Error(result.error.message || "Couldn’t load products from the catalog.");
+    }
+    return {
+      products: (result.data || []).map(mapRow),
+      total: typeof result.count === "number" ? result.count : (result.data || []).length,
+      offset: offset,
+      limit: limit,
+    };
+  }
+
+  /**
+   * Load specific products for the cart or a shared link without paging the catalog.
+   * Accepts uuids and legacy cart ids.
+   */
+  async function fetchStorefrontProductsByIds(ids) {
+    var uuids = [];
+    var legacy = [];
+    var seen = {};
+    (ids || []).forEach(function (raw) {
+      var id = String(raw || "");
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      if (isUuid(id)) uuids.push(id);
+      else legacy.push(id.indexOf("legacy:") === 0 ? id : "legacy:" + id);
+    });
+    if (!uuids.length && !legacy.length) return [];
+    var client = storefrontClient();
+    var merged = [];
+    var found = {};
+    function take(rows) {
+      (rows || []).forEach(function (row) {
+        var mapped = mapRow(row);
+        if (!mapped.id || found[mapped.id]) return;
+        found[mapped.id] = true;
+        merged.push(mapped);
+      });
+    }
+    if (uuids.length) {
+      var byId = await client
+        .from("products")
+        .select(STOREFRONT_SELECT)
+        .in("id", uuids)
+        .in("status", ["published", "sold_out"]);
+      if (byId.error) {
+        throw new Error(byId.error.message || "Couldn’t load products from the catalog.");
+      }
+      take(byId.data);
+    }
+    if (legacy.length) {
+      var byKey = await client
+        .from("products")
+        .select(STOREFRONT_SELECT)
+        .in("source_key", legacy)
+        .in("status", ["published", "sold_out"]);
+      if (byKey.error) {
+        throw new Error(byKey.error.message || "Couldn’t load products from the catalog.");
+      }
+      take(byKey.data);
+    }
+    return merged;
+  }
+
   async function fetchStorefrontProducts() {
     if (!global.SRSupabase || !SRSupabase.isConfigured()) {
       throw new Error(
@@ -247,7 +391,12 @@
     isSafeImageUrl: isSafeImageUrl,
     normalizeImageUrl: normalizeImageUrl,
     useLiveCatalog: useLiveCatalog,
+    STOREFRONT_PAGE_SIZE: STOREFRONT_PAGE_SIZE,
+    mergeProductPage: mergeProductPage,
+    pageHasMore: pageHasMore,
     fetchStorefrontProducts: fetchStorefrontProducts,
+    fetchStorefrontProductPage: fetchStorefrontProductPage,
+    fetchStorefrontProductsByIds: fetchStorefrontProductsByIds,
     fetchStorefrontCategories: fetchStorefrontCategories,
     resolveCartProductId: resolveCartProductId,
     mapRow: mapRow,

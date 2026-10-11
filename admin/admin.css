@@ -4762,3 +4762,26 @@ body.action-sheet-open { overflow: hidden; }
   }
 }
 
+.product-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 98px;
+}
+.product-card-media img,
+.photo-thumb img {
+  background: transparent;
+}
+img.img-failed {
+  visibility: hidden;
+}
+.list-more {
+  min-height: 1.4rem;
+  margin: 0.35rem 0 0.2rem;
+  text-align: center;
+  color: var(--warm-gray);
+  font-size: 0.85rem;
+}
+.list-more:empty {
+  min-height: 0;
+  margin: 0;
+}
+

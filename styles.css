@@ -1548,3 +1548,59 @@ body[data-season="thanksgiving"] {
 html[data-season="thanksgiving"] .section-eyebrow {
   color: #b85a28;
 }
+
+.card-product-link,
+a.filter-chip {
+  color: inherit;
+  text-decoration: none;
+}
+.card-img img,
+.modal-media img {
+  background-color: transparent;
+}
+img.img-failed {
+  visibility: hidden;
+}
+.catalog-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  margin: 1.15rem 0 0.35rem;
+}
+.catalog-pages a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(58, 42, 34, 0.14);
+  background: rgba(255, 252, 248, 0.8);
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.catalog-pages a[aria-current="page"] {
+  background: var(--turquoise);
+  border-color: transparent;
+  color: #fff;
+}
+.catalog-pages-gap {
+  padding: 0 0.15rem;
+  color: var(--brown-soft, #6b5b52);
+}
+.catalog-more {
+  min-height: 1.25rem;
+  margin: 0.35rem 0 0;
+  text-align: center;
+  color: var(--brown-soft, #6b5b52);
+  font-size: 0.9rem;
+}
+.catalog-more:empty {
+  min-height: 0;
+  margin: 0;
+}
