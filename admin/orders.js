@@ -267,10 +267,67 @@
       .join("");
   }
 
+  function metaNumber(order, keys) {
+    var meta = order && order.metadata;
+    if (!meta || typeof meta !== "object") return null;
+    for (var i = 0; i < keys.length; i++) {
+      if (meta[keys[i]] == null || meta[keys[i]] === "") continue;
+      var n = Number(meta[keys[i]]);
+      if (Number.isFinite(n)) return Math.round(n);
+    }
+    return null;
+  }
+
+  function totalsBlock(order) {
+    var method = String(order.fulfillment_method || "").toLowerCase();
+    var online = sourceValue(order) === "online";
+    var subtotal = metaNumber(order, ["amount_subtotal_cents", "subtotal_cents"]);
+    var fee = metaNumber(order, ["fulfillment_fee_cents"]);
+    var tax = metaNumber(order, ["tax_cents"]);
+    var feeName = method === "pickup" ? "Local pickup" : "Shipping";
+    var lines =
+      "<p>Subtotal: " +
+      (subtotal == null ? "Not recorded" : SRCatalog.escapeHtml(moneyFromCents(subtotal, order.currency))) +
+      "</p>";
+    if (fee != null || online) {
+      lines +=
+        "<p>" +
+        feeName +
+        ": " +
+        (fee == null
+          ? "Not recorded"
+          : fee === 0
+            ? "FREE"
+            : SRCatalog.escapeHtml(moneyFromCents(fee, order.currency))) +
+        "</p>";
+    }
+    lines +=
+      "<p>Tax: " +
+      (tax == null ? "Not recorded" : SRCatalog.escapeHtml(moneyFromCents(tax, order.currency))) +
+      "</p>" +
+      "<p><strong>Total paid: " +
+      SRCatalog.escapeHtml(moneyFromCents(order.amount_total, order.currency)) +
+      "</strong></p>";
+    return lines;
+  }
+
   function shippingBlock(order) {
     var method = String(order.fulfillment_method || "").toLowerCase();
     if (method === "pickup") {
-      return '<p><span class="method-pill">Pickup</span> — customer will pick up (not in Needs Shipping).</p>';
+      var instructions =
+        order.metadata && order.metadata.pickup_instructions
+          ? String(order.metadata.pickup_instructions)
+          : "";
+      var note = instructions
+        ? SRCatalog.escapeHtml(instructions)
+        : sourceValue(order) === "online"
+          ? "Local pickup. No shipping address."
+          : "In-person sale. No shipping address.";
+      return (
+        '<p><span class="method-pill">Pickup</span> — not in Needs Shipping.</p><p>' +
+        note +
+        "</p>"
+      );
     }
     var parts = [
       order.shipping_name,
@@ -412,6 +469,7 @@
       "</strong> · " +
       SRCatalog.escapeHtml(formatWhen(SRSales.saleDate(order))) +
       "</p>" +
+      totalsBlock(order) +
       "</div>" +
       '<div class="order-detail-section">' +
       "<h3>Fulfillment</h3>" +
@@ -428,7 +486,9 @@
       "</p>" +
       "</div>" +
       '<div class="order-detail-section">' +
-      "<h3>Shipping</h3>" +
+      "<h3>" +
+      (String(order.fulfillment_method || "").toLowerCase() === "pickup" ? "Pickup" : "Shipping") +
+      "</h3>" +
       shippingBlock(order) +
       "</div>" +
       '<div class="order-detail-section">' +

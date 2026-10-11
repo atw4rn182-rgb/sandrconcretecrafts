@@ -9,6 +9,7 @@
 
 var stripe = require("./_lib/stripe");
 var adminDb = require("./_lib/supabase-admin");
+var fulfillment = require("./_lib/fulfillment");
 
 module.exports.config = {
   api: {
@@ -23,7 +24,7 @@ function sendJson(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function pickAddress(session) {
+function pickAddress(session, method) {
   var shipping =
     (session &&
       session.collected_information &&
@@ -31,8 +32,10 @@ function pickAddress(session) {
     (session && session.shipping_details) ||
     null;
   var billing =
-    (session && session.customer_details && session.customer_details.address) ||
-    null;
+    method === "pickup"
+      ? null
+      : (session && session.customer_details && session.customer_details.address) ||
+        null;
   var name =
     (shipping && shipping.name) ||
     (session && session.customer_details && session.customer_details.name) ||
@@ -162,7 +165,8 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
   var retrievedLineItems =
     await stripe.retrieveCheckoutSessionLineItems(sessionId);
   var details = session.customer_details || {};
-  var ship = pickAddress(session);
+  var totals = fulfillment.totalsFromSession(session, retrievedLineItems);
+  var ship = pickAddress(session, totals.method);
   var paymentIntent =
     typeof session.payment_intent === "string"
       ? session.payment_intent
@@ -195,17 +199,27 @@ async function handleCheckoutCompleted(sessionStub, eventType) {
     shipping_postal_code: ship.shipping_postal_code,
     shipping_country: ship.shipping_country,
     shipping_address: ship.shipping_address,
-    // Do NOT set fulfillment_* here: DB defaults apply on INSERT, and
-    // webhook retries must not reset an admin's shipped/completed status.
+    // Do not set fulfillment_status here. Retries must not undo shipped/completed.
     metadata: {
       cart: (session.metadata && session.metadata.cart) || null,
       source: (session.metadata && session.metadata.source) || null,
       event_type: eventType || null,
+      fulfillment_method: totals.method || null,
+      fulfillment_fee_cents: totals.feeCents,
+      tax_cents: totals.taxCents,
+      amount_subtotal_cents: totals.subtotalCents,
+      pickup_instructions: totals.instructions || null,
     },
   };
+  if (totals.method === "ship" || totals.method === "pickup") {
+    order.fulfillment_method = totals.method;
+  }
 
   var cartLines = parseCartMetadata(session.metadata && session.metadata.cart);
-  var items = lineItemsFromSession(session, cartLines, retrievedLineItems);
+  var productLines = (retrievedLineItems || []).filter(function (line) {
+    return !fulfillment.isFulfillmentLine(line);
+  });
+  var items = lineItemsFromSession(session, cartLines, productLines);
 
   var saved = await adminDb.upsertOrderWithItems(order, items);
 

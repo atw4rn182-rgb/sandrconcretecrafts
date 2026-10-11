@@ -210,9 +210,8 @@
     };
   }
 
-  const SHIPPING_THRESHOLD = 50;
-  const SHIPPING_FEE = 6;
   const CART_KEY = "sr_cart_v1";
+  var selectedFulfillment = "";
 
   const Cat = window.SRStorefrontCatalog || null;
   const liveMode = !!(Cat && Cat.useLiveCatalog && Cat.useLiveCatalog());
@@ -1087,9 +1086,106 @@
     }, 0);
   }
 
-  function shippingFor(subtotal) {
-    if (cart.length === 0) return 0;
-    return subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+  function readyFulfillmentMethods() {
+    if (!storeSettings || typeof SRStoreSettings === "undefined" || !SRStoreSettings.readyFulfillment) {
+      return [];
+    }
+    return SRStoreSettings.readyFulfillment(storeSettings);
+  }
+
+  function feeLabel(cents) {
+    if (cents === 0) return t("cart.free");
+    return money(cents / 100);
+  }
+
+  function renderFulfillmentChoice() {
+    var box = document.getElementById("cartFulfillment");
+    var lines = document.getElementById("cartSummaryLines");
+    var note = document.getElementById("cartFulfillmentNote");
+    if (!box || !lines) return;
+    var methods = readyFulfillmentMethods();
+    if (selectedFulfillment && !methods.some(function (method) { return method.method === selectedFulfillment; })) {
+      selectedFulfillment = "";
+    }
+    var subtotal = cartSubtotal();
+    var chosen = methods.filter(function (method) { return method.method === selectedFulfillment; })[0] || null;
+    if (!cart.length) {
+      box.hidden = true;
+      box.innerHTML = "";
+      lines.innerHTML = "";
+      if (note) {
+        note.hidden = true;
+        note.textContent = "";
+      }
+      if (cartTotalEl) cartTotalEl.textContent = money(0);
+      return;
+    }
+    box.hidden = false;
+    if (!methods.length) {
+      box.innerHTML =
+        '<p class="cart-fulfillment-error">' +
+        esc(t("cart.fulfillmentNotConfigured")) +
+        "</p>";
+    } else {
+      box.innerHTML =
+        "<fieldset><legend>" +
+        esc(t("cart.fulfillmentLegend")) +
+        "</legend>" +
+        methods
+          .map(function (method) {
+            var id = "fulfillment-" + method.method;
+            var checked = selectedFulfillment === method.method ? " checked" : "";
+            return (
+              '<label class="fulfillment-option' +
+              (checked ? " is-selected" : "") +
+              '" for="' +
+              id +
+              '"><input type="radio" name="fulfillment" id="' +
+              id +
+              '" value="' +
+              escAttr(method.method) +
+              '"' +
+              checked +
+              " /><span><strong>" +
+              esc(method.label) +
+              "</strong><span class=\"fulfillment-fee\">" +
+              esc(feeLabel(method.feeCents)) +
+              "</span></span></label>"
+            );
+          })
+          .join("") +
+        "</fieldset>";
+    }
+    var feeLine = "";
+    if (chosen) {
+      feeLine =
+        '<div class="cart-summary-line"><span>' +
+        esc(chosen.label) +
+        "</span><span>" +
+        esc(feeLabel(chosen.feeCents)) +
+        "</span></div>";
+    }
+    lines.innerHTML =
+      '<div class="cart-summary-line"><span>' +
+      esc(t("cart.subtotal")) +
+      "</span><span>" +
+      esc(money(subtotal)) +
+      "</span></div>" +
+      feeLine +
+      '<div class="cart-summary-line cart-summary-note"><span>' +
+      esc(t("cart.tax")) +
+      "</span><span>" +
+      esc(t("cart.taxLater")) +
+      "</span></div>";
+    if (cartTotalEl) {
+      var preTax = subtotal + (chosen ? chosen.feeCents / 100 : 0);
+      cartTotalEl.textContent = money(preTax);
+    }
+    if (note) {
+      var instructions = chosen && chosen.instructions;
+      note.hidden = !instructions;
+      note.textContent = instructions || "";
+    }
   }
 
   function updateCart(bump) {
@@ -1173,7 +1269,7 @@
       })
       .join("");
 
-    cartTotalEl.textContent = money(cartSubtotal());
+    renderFulfillmentChoice();
   }
 
   function openCart() {
@@ -1358,6 +1454,19 @@
       return;
     }
 
+    var methods = readyFulfillmentMethods();
+    var chosen = methods.filter(function (method) {
+      return method.method === selectedFulfillment;
+    })[0];
+    if (!methods.length) {
+      toast(t("cart.fulfillmentNotConfigured"));
+      return;
+    }
+    if (!chosen) {
+      toast(t("cart.chooseFulfillment"));
+      return;
+    }
+
     var items = cart
       .map(function (l) {
         var p = findProduct(l.id);
@@ -1383,7 +1492,7 @@
       var res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ items: items }),
+        body: JSON.stringify({ items: items, fulfillment: chosen.method }),
       });
       var data = null;
       try {
@@ -1513,8 +1622,7 @@
 
   function renderCheckoutSummary() {
     const subtotal = cartSubtotal();
-    const shipping = shippingFor(subtotal);
-    const total = subtotal + shipping;
+    const total = subtotal;
 
     $("#summaryItems").innerHTML = cart
       .map(function (l) {
@@ -1543,7 +1651,7 @@
       .join("");
 
     $("#sumSubtotal").textContent = money(subtotal);
-    $("#sumShipping").textContent = shipping === 0 ? t("checkout.free") : money(shipping);
+    $("#sumShipping").textContent = t("checkout.notCharged");
     $("#sumTotal").textContent = money(total);
     $("#checkoutPayAmt").textContent = money(total);
   }
@@ -1567,6 +1675,15 @@
   }
 
   function bind() {
+    var fulfillmentBox = document.getElementById("cartFulfillment");
+    if (fulfillmentBox) {
+      fulfillmentBox.addEventListener("change", function (event) {
+        var input = event.target;
+        if (!input || input.name !== "fulfillment") return;
+        selectedFulfillment = input.value === "pickup" ? "pickup" : "ship";
+        updateCart();
+      });
+    }
     var shareButton = $("#storeShare");
     if (shareButton) shareButton.addEventListener("click", shareStorefront);
     var productShare = $("#modalShare");
@@ -2091,6 +2208,7 @@
         SRStorefrontI18n.applyStatic();
       }
       syncCheckoutButtonLabel();
+      updateCart();
     } catch (err) {
       storeSettings =
         typeof SRStoreSettings !== "undefined"

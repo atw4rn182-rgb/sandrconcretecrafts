@@ -170,8 +170,28 @@ function assertPurchasable(row, quantity, finish) {
   };
 }
 
+async function fetchSiteConfig() {
+  var cfg = supabaseConfig();
+  var res = await fetch(cfg.url + "/rest/v1/site_settings?select=config&limit=1", {
+    headers: {
+      apikey: cfg.anonKey,
+      Authorization: "Bearer " + cfg.anonKey,
+      Accept: "application/json",
+    },
+  });
+  var rows = await res.json().catch(function () {
+    return null;
+  });
+  if (!res.ok || !Array.isArray(rows)) {
+    throw new Error("Couldn’t load store settings.");
+  }
+  var config = rows[0] && rows[0].config;
+  return config && typeof config === "object" ? config : {};
+}
+
 module.exports = {
   fetchPublicProduct: fetchPublicProduct,
+  fetchSiteConfig: fetchSiteConfig,
   primaryImageUrl: primaryImageUrl,
   assertPurchasable: assertPurchasable,
   effectiveUnitCents: effectiveUnitCents,

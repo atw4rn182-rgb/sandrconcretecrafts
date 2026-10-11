@@ -40,8 +40,11 @@
       pickup_enabled: true,
       pickup_label: "Local Pickup",
       pickup_instructions: "",
+      pickup_fee_cents: null,
       shipping_enabled: true,
+      shipping_label: "Shipping",
       shipping_note: "",
+      shipping_fee_cents: null,
     },
     storefront: {
       show_sold_out: true,
@@ -67,6 +70,38 @@
   var MAX_URL = 400;
   var MAX_PICKUP_LABEL = 60;
   var MAX_NOTE = 240;
+
+  function parseFeeInput(value) {
+    if (value == null || String(value).trim() === "") {
+      return { ok: true, cents: null };
+    }
+    if (typeof value === "number") {
+      if (!Number.isInteger(value) || value < 0 || value > 10000000) {
+        return { ok: false, cents: null, error: "Enter a fee from 0.00 to 100000.00." };
+      }
+      return { ok: true, cents: value };
+    }
+    var text = String(value).trim().replace(/^\$/, "");
+    if (!/^\d+(\.\d{1,2})?$/.test(text)) {
+      return {
+        ok: false,
+        cents: null,
+        error: "Enter a fee like 8.00. Use 0.00 for free.",
+      };
+    }
+    var cents = Math.round(Number(text) * 100);
+    if (cents > 10000000) {
+      return { ok: false, cents: null, error: "Enter a fee from 0.00 to 100000.00." };
+    }
+    return { ok: true, cents: cents };
+  }
+
+  function formatFeeDollars(cents) {
+    if (cents == null || cents === "") return "";
+    var n = Number(cents);
+    if (!Number.isInteger(n) || n < 0) return "";
+    return (n / 100).toFixed(2);
+  }
 
   function normalizeTaxMilli(value) {
     var n = Number(value);
@@ -235,8 +270,13 @@
           cleanText(f.pickup_label, MAX_PICKUP_LABEL) ||
           DEFAULTS.fulfillment.pickup_label,
         pickup_instructions: cleanText(f.pickup_instructions, MAX_NOTE),
+        pickup_fee_cents: parseFeeInput(f.pickup_fee_cents).cents,
         shipping_enabled: asBool(f.shipping_enabled, true),
+        shipping_label:
+          cleanText(f.shipping_label, MAX_PICKUP_LABEL) ||
+          DEFAULTS.fulfillment.shipping_label,
         shipping_note: cleanText(f.shipping_note, MAX_NOTE),
+        shipping_fee_cents: parseFeeInput(f.shipping_fee_cents).cents,
       },
       storefront: {
         show_sold_out: asBool(st.show_sold_out, true),
@@ -296,7 +336,45 @@
         errors.push("In-person tax rate must be 0% through 200%.");
       }
     }
+    var fulfillment = d.fulfillment || {};
+    var shippingOn = asBool(fulfillment.shipping_enabled, true);
+    var pickupOn = asBool(fulfillment.pickup_enabled, true);
+    if (!shippingOn && !pickupOn) {
+      errors.push("Turn on shipping or local pickup. Online checkout needs at least one.");
+    }
+    var shippingFee = parseFeeInput(fulfillment.shipping_fee_cents);
+    var pickupFee = parseFeeInput(fulfillment.pickup_fee_cents);
+    if (!shippingFee.ok) errors.push(shippingFee.error);
+    else if (shippingOn && shippingFee.cents == null) {
+      errors.push("Enter a flat shipping fee, or turn shipping off. Use 0.00 if shipping is free.");
+    }
+    if (!pickupFee.ok) errors.push(pickupFee.error);
+    else if (pickupOn && pickupFee.cents == null) {
+      errors.push("Enter a local pickup fee, or turn pickup off. Use 0.00 for free pickup.");
+    }
     return errors;
+  }
+
+  function readyFulfillment(settings) {
+    var fulfillment = normalize(settings).fulfillment;
+    var methods = [];
+    if (fulfillment.shipping_enabled && fulfillment.shipping_fee_cents != null) {
+      methods.push({
+        method: "ship",
+        feeCents: fulfillment.shipping_fee_cents,
+        label: fulfillment.shipping_label,
+        instructions: fulfillment.shipping_note,
+      });
+    }
+    if (fulfillment.pickup_enabled && fulfillment.pickup_fee_cents != null) {
+      methods.push({
+        method: "pickup",
+        feeCents: fulfillment.pickup_fee_cents,
+        label: fulfillment.pickup_label,
+        instructions: fulfillment.pickup_instructions,
+      });
+    }
+    return methods;
   }
 
   function locationLabel(settings) {
@@ -471,51 +549,27 @@
       }
     }
 
-    // Fulfillment notes
+    // Fulfillment notes — only methods that have a saved fee.
     var fulfill = document.getElementById("footerFulfillment");
     if (fulfill) {
       var parts = [];
-      if (s.fulfillment.pickup_enabled) {
-        parts.push(
-          s.fulfillment.pickup_label +
-            (s.fulfillment.pickup_instructions
-              ? ": " + s.fulfillment.pickup_instructions
-              : "")
-        );
-      }
-      if (s.fulfillment.shipping_enabled && s.fulfillment.shipping_note) {
-        parts.push(s.fulfillment.shipping_note);
-      } else if (s.fulfillment.shipping_enabled) {
-        parts.push(ui("cart.fulfillmentShipping", "Shipping available"));
-      }
+      readyFulfillment(s).forEach(function (method) {
+        if (method.method === "pickup") {
+          parts.push(
+            method.label + (method.instructions ? ": " + method.instructions : "")
+          );
+        } else if (method.instructions) {
+          parts.push(method.instructions);
+        } else {
+          parts.push(method.label || ui("cart.fulfillmentShipping", "Shipping available"));
+        }
+      });
       if (parts.length) {
         fulfill.hidden = false;
         setText(fulfill, parts.join(" · "));
       } else {
         fulfill.hidden = true;
         setText(fulfill, "");
-      }
-    }
-
-    var cartFulfill = document.getElementById("cartFulfillmentNote");
-    if (cartFulfill) {
-      var cartParts = [];
-      if (s.fulfillment.pickup_enabled) {
-        cartParts.push(s.fulfillment.pickup_label || ui("cart.fulfillmentPickup", "Local Pickup"));
-      }
-      if (s.fulfillment.shipping_enabled) {
-        cartParts.push(
-          s.fulfillment.shipping_note
-            ? s.fulfillment.shipping_note
-            : ui("cart.fulfillmentShipping", "Shipping available")
-        );
-      }
-      if (cartParts.length) {
-        cartFulfill.hidden = false;
-        setText(cartFulfill, cartParts.join(" · "));
-      } else {
-        cartFulfill.hidden = true;
-        setText(cartFulfill, "");
       }
     }
 
@@ -573,6 +627,9 @@
     cloneDefaults: cloneDefaults,
     equals: equals,
     validateDraft: validateDraft,
+    parseFeeInput: parseFeeInput,
+    formatFeeDollars: formatFeeDollars,
+    readyFulfillment: readyFulfillment,
     locationLabel: locationLabel,
     activeSocialLinks: activeSocialLinks,
     applyToDocument: applyToDocument,

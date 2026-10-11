@@ -111,9 +111,20 @@ async function createCheckoutSession(input) {
     siteUrl() + "/?checkout=success&session_id={CHECKOUT_SESSION_ID}"
   );
   appendForm(params, "cancel_url", siteUrl() + "/?checkout=cancel");
-  appendForm(params, "billing_address_collection", "auto");
   appendForm(params, "phone_number_collection[enabled]", "true");
-  appendForm(params, "shipping_address_collection[allowed_countries][0]", "US");
+  if (input.automaticTax) {
+    appendForm(params, "automatic_tax[enabled]", "true");
+  }
+
+  var fulfillmentFields = input.fulfillmentFields;
+  if (!fulfillmentFields) {
+    appendForm(params, "billing_address_collection", "auto");
+    appendForm(params, "shipping_address_collection[allowed_countries][0]", "US");
+  } else {
+    fulfillmentFields.forEach(function (pair) {
+      appendForm(params, pair[0], pair[1]);
+    });
+  }
 
   (input.lineItems || []).forEach(function (item, i) {
     var prefix = "line_items[" + i + "]";
@@ -124,6 +135,9 @@ async function createCheckoutSession(input) {
       prefix + "[price_data][unit_amount]",
       item.unitAmountCents
     );
+    if (input.automaticTax) {
+      appendForm(params, prefix + "[price_data][tax_behavior]", "exclusive");
+    }
     appendForm(
       params,
       prefix + "[price_data][product_data][name]",
@@ -141,6 +155,13 @@ async function createCheckoutSession(input) {
         params,
         prefix + "[price_data][product_data][metadata][finish]",
         item.finish
+      );
+    }
+    if (item.fulfillment) {
+      appendForm(
+        params,
+        prefix + "[price_data][product_data][metadata][fulfillment]",
+        item.fulfillment
       );
     }
     if (item.description) {

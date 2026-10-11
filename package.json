@@ -20,7 +20,8 @@
     "verify:checkout": "node scripts/verify-online-checkout-local.js && node scripts/verify-painted-pricing-local.js",
     "verify:android": "node scripts/verify-android-structure-local.js && node scripts/verify-tap-handoff-local.js && node scripts/verify-location-gate-local.js && node scripts/verify-setup-wizard-local.js && node api/_lib/tap-total.test.js && node api/_lib/terminal-mode.test.js && node scripts/verify-terminal-production-local.js && node scripts/inspect-pos-apk-manifest.js",
     "verify:catalog-performance": "node scripts/verify-catalog-performance-local.js",
-    "verify:foundation": "npm run verify:step4 && npm run verify:dashboard && npm run verify:inline-category && npm run verify:categories && npm run verify:painted-pricing && npm run verify:polish && npm run verify:admin-mobile && npm run verify:settings && npm run verify:payments && npm run verify:foundation-security && npm run verify:analytics && npm run verify:receipts && npm run verify:engagement && npm run verify:checkout && npm run verify:android && npm run verify:catalog-performance",
+    "verify:fulfillment": "node api/_lib/fulfillment.test.js && node scripts/verify-fulfillment-local.js",
+    "verify:foundation": "npm run verify:step4 && npm run verify:dashboard && npm run verify:inline-category && npm run verify:categories && npm run verify:painted-pricing && npm run verify:polish && npm run verify:admin-mobile && npm run verify:settings && npm run verify:payments && npm run verify:foundation-security && npm run verify:analytics && npm run verify:receipts && npm run verify:engagement && npm run verify:checkout && npm run verify:android && npm run verify:catalog-performance && npm run verify:fulfillment",
     "verify": "npm run verify:foundation"
   },
   "engines": {

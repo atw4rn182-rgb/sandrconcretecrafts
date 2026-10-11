@@ -65,8 +65,11 @@
         pickup_enabled: $("pickupEnabled").checked,
         pickup_label: $("pickupLabel").value,
         pickup_instructions: $("pickupInstructions").value,
+        pickup_fee_cents: $("pickupFee").value,
         shipping_enabled: $("shippingEnabled").checked,
+        shipping_label: $("shippingLabel").value,
         shipping_note: $("shippingNote").value,
+        shipping_fee_cents: $("shippingFee").value,
       },
       storefront: {
         show_sold_out: $("prefSoldOut").checked,
@@ -107,8 +110,11 @@
     $("pickupEnabled").checked = s.fulfillment.pickup_enabled;
     $("pickupLabel").value = s.fulfillment.pickup_label;
     $("pickupInstructions").value = s.fulfillment.pickup_instructions;
+    $("pickupFee").value = SRStoreSettings.formatFeeDollars(s.fulfillment.pickup_fee_cents);
     $("shippingEnabled").checked = s.fulfillment.shipping_enabled;
+    $("shippingLabel").value = s.fulfillment.shipping_label;
     $("shippingNote").value = s.fulfillment.shipping_note;
+    $("shippingFee").value = SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents);
     $("prefSoldOut").checked = s.storefront.show_sold_out;
     $("prefFeaturedFirst").checked = s.storefront.featured_first;
     $("prefLowStock").checked = s.storefront.show_low_stock;
@@ -141,10 +147,20 @@
       "<br />Email: " +
       (s.contact.email_enabled ? "enabled" : "hidden") +
       "</dd></div>" +
-      "<div><dt>Store</dt><dd>Pickup: " +
-      (s.fulfillment.pickup_enabled ? "enabled" : "off") +
-      "<br />Shipping: " +
-      (s.fulfillment.shipping_enabled ? "enabled" : "off") +
+      "<div><dt>Fulfillment</dt><dd>Shipping: " +
+      (s.fulfillment.shipping_enabled
+        ? s.fulfillment.shipping_fee_cents == null
+          ? "on, fee not set"
+          : "$" + SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents)
+        : "off") +
+      "<br />Local pickup: " +
+      (s.fulfillment.pickup_enabled
+        ? s.fulfillment.pickup_fee_cents == null
+          ? "on, fee not set"
+          : s.fulfillment.pickup_fee_cents === 0
+            ? "Free"
+            : "$" + SRStoreSettings.formatFeeDollars(s.fulfillment.pickup_fee_cents)
+        : "off") +
       "</dd></div>" +
       "<div><dt>Announcement</dt><dd>" +
       (s.announcement.enabled ? "Enabled" : "Disabled") +
@@ -193,8 +209,11 @@
       "pickupEnabled",
       "pickupLabel",
       "pickupInstructions",
+      "pickupFee",
       "shippingEnabled",
+      "shippingLabel",
       "shippingNote",
+      "shippingFee",
       "prefSoldOut",
       "prefFeaturedFirst",
       "prefLowStock",
@@ -223,6 +242,10 @@
       var taxParsed = SRPosTotals.parsePercentToMilli($("posTaxRate").value);
       readFormIntoDraft();
       var errors = SRStoreSettings.validateDraft(draft);
+      var shipParsed = SRStoreSettings.parseFeeInput($("shippingFee").value);
+      var pickParsed = SRStoreSettings.parseFeeInput($("pickupFee").value);
+      if (!shipParsed.ok) errors.unshift(shipParsed.error);
+      if (!pickParsed.ok) errors.unshift(pickParsed.error);
       if (!taxParsed.ok) {
         errors.unshift(taxParsed.error || "Enter a tax rate from 0% to 100%.");
       }

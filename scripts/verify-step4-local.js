@@ -24,8 +24,8 @@ const demoIds = [...appJs.matchAll(/id:\s*"([a-z0-9-]+)"/g)]
   .map((m) => m[1])
   .filter((id, i, arr) => arr.indexOf(id) === i && !id.includes(" "));
 
-// Rough: DEMO_PRODUCTS block ids before SHIPPING
-const demoBlock = appJs.slice(0, appJs.indexOf("SHIPPING_THRESHOLD"));
+// Rough: DEMO_PRODUCTS block ids before the cart key.
+const demoBlock = appJs.slice(0, appJs.indexOf("const CART_KEY"));
 const productIds = [...demoBlock.matchAll(/id:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]);
 assert(productIds.length === 17, "demo catalog has 17 products (got " + productIds.length + ")");
 

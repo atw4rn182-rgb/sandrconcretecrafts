@@ -334,8 +334,10 @@
       <span data-i18n="cart.emptyHint">Add a hand-cast piece to get started.</span>
     </div>
     <div class="cart-foot" id="cartFoot">
+      <div class="cart-fulfillment" id="cartFulfillment" hidden></div>
+      <div class="cart-summary-lines" id="cartSummaryLines"></div>
       <p class="cart-fulfillment-note" id="cartFulfillmentNote" hidden></p>
-      <div class="cart-total"><span data-i18n="cart.total">Total</span><span id="cartTotal">$0.00</span></div>
+      <div class="cart-total"><span data-i18n="cart.preTax">Pre-tax total</span><span id="cartTotal">$0.00</span></div>
       <button type="button" class="btn btn-primary cart-checkout" id="cartCheckout">Checkout</button>
       <p class="cart-note" id="cartCheckoutNote">Secure checkout · You’ll finish payment on Stripe’s page</p>
     </div>

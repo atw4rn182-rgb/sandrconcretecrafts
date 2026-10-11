@@ -216,6 +216,13 @@ assert(
     fetchPublicProduct: async () => trusted,
     assertPurchasable: serverCatalog.assertPurchasable,
     primaryImageUrl: () => null,
+    fetchSiteConfig: async () => ({
+      fulfillment: {
+        shipping_enabled: true,
+        shipping_fee_cents: 800,
+        pickup_enabled: false,
+      },
+    }),
   };
   require.cache[stripePath] = {
     id: stripePath,
@@ -271,6 +278,7 @@ assert(
             unit_amount: 1,
           },
         ],
+        fulfillment: "ship",
       },
     },
     res

@@ -165,31 +165,44 @@
           </fieldset>
 
           <fieldset class="settings-card">
-            <legend>Fulfillment / Pickup</legend>
-            <p class="field-hint">These notes help customers understand pickup and shipping. They do not change Stripe checkout rates.</p>
-            <div class="toggle-row">
-              <label class="toggle">
-                <input type="checkbox" id="pickupEnabled" />
-                <span>Enable Local Pickup messaging</span>
-              </label>
-            </div>
-            <label class="field">
-              <span>Pickup Label</span>
-              <input type="text" id="pickupLabel" maxlength="60" />
-            </label>
-            <label class="field">
-              <span>Pickup Instructions</span>
-              <textarea id="pickupInstructions" rows="2" maxlength="240"></textarea>
-            </label>
+            <legend>Fulfillment</legend>
+            <p class="field-hint">Customers choose shipping or local pickup before they pay. Each fee is charged once per order. Use 0.00 for free. Sales tax is calculated at checkout. At least one option must stay on.</p>
             <div class="toggle-row">
               <label class="toggle">
                 <input type="checkbox" id="shippingEnabled" />
-                <span>Enable Shipping messaging</span>
+                <span>Offer shipping</span>
               </label>
             </div>
             <label class="field">
-              <span>Shipping Note</span>
+              <span>Flat shipping fee</span>
+              <input type="text" id="shippingFee" inputmode="decimal" autocomplete="off" placeholder="0.00" />
+            </label>
+            <label class="field">
+              <span>Shipping label</span>
+              <input type="text" id="shippingLabel" maxlength="60" />
+            </label>
+            <label class="field">
+              <span>Shipping note</span>
               <textarea id="shippingNote" rows="2" maxlength="240"></textarea>
+            </label>
+            <div class="toggle-row">
+              <label class="toggle">
+                <input type="checkbox" id="pickupEnabled" />
+                <span>Offer local pickup</span>
+              </label>
+            </div>
+            <label class="field">
+              <span>Pickup fee</span>
+              <input type="text" id="pickupFee" inputmode="decimal" autocomplete="off" placeholder="0.00" />
+            </label>
+            <p class="field-hint">Use 0.00 for free pickup.</p>
+            <label class="field">
+              <span>Pickup label</span>
+              <input type="text" id="pickupLabel" maxlength="60" />
+            </label>
+            <label class="field">
+              <span>Pickup instructions</span>
+              <textarea id="pickupInstructions" rows="2" maxlength="240"></textarea>
             </label>
           </fieldset>
 

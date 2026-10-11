@@ -16,6 +16,7 @@
 
 var catalog = require("./_lib/supabase-catalog");
 var stripe = require("./_lib/stripe");
+var fulfillment = require("./_lib/fulfillment");
 
 function sendJson(res, status, payload) {
   res.statusCode = status;
@@ -219,13 +220,44 @@ module.exports = async function handler(req, res) {
       metaLines.push(productId + ":" + check.finish + ":" + check.quantity);
     }
 
+    var siteConfig = await catalog.fetchSiteConfig();
+    var choice = fulfillment.resolveChoice(
+      siteConfig,
+      body.fulfillment || body.fulfillment_method
+    );
+    if (!choice.ok) {
+      sendJson(
+        res,
+        400,
+        mergeAllowLive({ error: choice.error, code: choice.code })
+      );
+      return;
+    }
+
+    var productCount = lineItems.length;
+    if (choice.method === "pickup" && choice.feeCents > 0) {
+      lineItems.push({
+        name: choice.label || "Local Pickup",
+        description: choice.instructions || "Local pickup for this order",
+        unitAmountCents: choice.feeCents,
+        quantity: 1,
+        fulfillment: "pickup",
+      });
+    }
+
     var session = await stripe.createCheckoutSession({
       lineItems: lineItems,
+      fulfillmentFields: fulfillment.stripeFields(choice),
+      automaticTax: true,
       metadata: {
         source: "storefront",
-        item_count: String(lineItems.length),
+        item_count: String(productCount),
         // Compact product:qty list for webhook visibility (keep short)
         cart: metaLines.join(",").slice(0, 450),
+        fulfillment_method: choice.method,
+        fulfillment_fee_cents: String(choice.feeCents),
+        pickup_instructions:
+          choice.method === "pickup" ? choice.instructions : "",
       },
     });
 
