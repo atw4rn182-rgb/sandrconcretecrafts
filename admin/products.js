@@ -163,7 +163,7 @@
   function updateMoreLabel(message) {
     var el = ensureMore();
     if (!("IntersectionObserver" in window)) return;
-    if (message) {
+    if (typeof message === "string") {
       el.textContent = message;
       return;
     }
@@ -516,6 +516,7 @@
     } finally {
       if (gen === requestGen) {
         loadingPage = false;
+        updateMoreLabel("");
         maybeFill();
       }
     }
