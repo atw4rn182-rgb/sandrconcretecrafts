@@ -7,6 +7,7 @@
   var productId = null;
   var existing = null;
   var dirty = false;
+  var baseWeightOz = 16;
   var saving = false;
   var slugTouched = false;
   var images = []; // { id?, image_url, alt_text, sort_order, is_primary, file?, localUrl?, pending? }
@@ -103,6 +104,21 @@
     el.textContent = msg;
   }
 
+  function refreshWeightNote() {
+    var note = $("weightBaseNote");
+    if (!note || typeof SRProductWeight === "undefined") return;
+    var parsed = SRProductWeight.parseParts($("weightLb").value, $("weightOz").value, { required: false });
+    if (!parsed.ok) {
+      note.textContent = parsed.error;
+      return;
+    }
+    if (parsed.ounces == null) {
+      note.textContent = "Using base weight: " + SRProductWeight.formatOunces(baseWeightOz);
+      return;
+    }
+    note.textContent = "Custom weight: " + SRProductWeight.formatOunces(parsed.ounces);
+  }
+
   function markDirty() {
     dirty = true;
   }
@@ -117,6 +133,8 @@
       sale_price: $("sale_price").value,
       quantity: $("quantity").value,
       item_no: $("item_no").value,
+      weight_lb: $("weightLb").value,
+      weight_oz: $("weightOz").value,
       track_inventory: $("track_inventory").checked,
       product_type: $("product_type").value,
       status: $("status").value,
@@ -645,6 +663,13 @@
     $("sale_price").value = SRCatalog.formatMoneyInput(product.sale_price);
     $("quantity").value = product.quantity != null ? product.quantity : 0;
     $("item_no").value = product.item_no || "";
+    var weightParts =
+      product.weight_oz == null
+        ? { pounds: "", ounces: "" }
+        : SRProductWeight.splitOunces(product.weight_oz);
+    $("weightLb").value = weightParts.pounds === "" ? "" : String(weightParts.pounds);
+    $("weightOz").value = weightParts.ounces === "" ? "" : String(weightParts.ounces);
+    refreshWeightNote();
     $("track_inventory").checked = !!product.track_inventory;
     $("product_type").value = product.product_type || "single";
     $("status").value = product.status || "draft";
@@ -901,6 +926,12 @@
         });
       }
     );
+    ["weightLb", "weightOz"].forEach(function (id) {
+      $(id).addEventListener("input", function () {
+        markDirty();
+        refreshWeightNote();
+      });
+    });
     $("slug").addEventListener("input", function () {
       slugTouched = true;
       markDirty();
@@ -965,8 +996,10 @@
       var loaded = await Promise.all([
         SRCatalog.listCategories(true),
         SRCatalog.listBadges(true),
+        SRCatalog.getBaseWeightOz().catch(function () { return 16; }),
       ]);
       categories = loaded[0];
+      baseWeightOz = loaded[2] || 16;
       badges = loaded[1].filter(function (b) {
         return b.active;
       });
@@ -988,6 +1021,7 @@
         renderChecks();
         fillForm(existing);
       } else {
+        refreshWeightNote();
         updatePreview();
       }
     } catch (err) {

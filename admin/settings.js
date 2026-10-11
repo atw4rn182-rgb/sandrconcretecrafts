@@ -70,6 +70,13 @@
         shipping_label: $("shippingLabel").value,
         shipping_note: $("shippingNote").value,
         shipping_fee_cents: $("shippingFee").value,
+        base_weight_oz: (function () {
+          if (typeof SRProductWeight === "undefined") return 16;
+          var parsed = SRProductWeight.parseParts($("baseWeightLb").value, $("baseWeightOz").value, {
+            required: true,
+          });
+          return parsed.ok ? parsed.ounces : "invalid";
+        })(),
       },
       storefront: {
         show_sold_out: $("prefSoldOut").checked,
@@ -115,6 +122,11 @@
     $("shippingLabel").value = s.fulfillment.shipping_label;
     $("shippingNote").value = s.fulfillment.shipping_note;
     $("shippingFee").value = SRStoreSettings.formatFeeDollars(s.fulfillment.shipping_fee_cents);
+    var baseParts = window.SRProductWeight
+      ? SRProductWeight.splitOunces(s.fulfillment.base_weight_oz)
+      : { pounds: 1, ounces: 0 };
+    $("baseWeightLb").value = String(baseParts.pounds);
+    $("baseWeightOz").value = String(baseParts.ounces);
     $("prefSoldOut").checked = s.storefront.show_sold_out;
     $("prefFeaturedFirst").checked = s.storefront.featured_first;
     $("prefLowStock").checked = s.storefront.show_low_stock;
@@ -161,6 +173,10 @@
             ? "Free"
             : "$" + SRStoreSettings.formatFeeDollars(s.fulfillment.pickup_fee_cents)
         : "off") +
+      "<br />Base weight: " +
+      (window.SRProductWeight
+        ? SRProductWeight.formatOunces(s.fulfillment.base_weight_oz)
+        : "1 lb 0 oz") +
       "</dd></div>" +
       "<div><dt>Announcement</dt><dd>" +
       (s.announcement.enabled ? "Enabled" : "Disabled") +
@@ -214,6 +230,8 @@
       "shippingLabel",
       "shippingNote",
       "shippingFee",
+      "baseWeightLb",
+      "baseWeightOz",
       "prefSoldOut",
       "prefFeaturedFirst",
       "prefLowStock",
@@ -244,8 +262,12 @@
       var errors = SRStoreSettings.validateDraft(draft);
       var shipParsed = SRStoreSettings.parseFeeInput($("shippingFee").value);
       var pickParsed = SRStoreSettings.parseFeeInput($("pickupFee").value);
+      var baseParsed = window.SRProductWeight
+        ? SRProductWeight.parseParts($("baseWeightLb").value, $("baseWeightOz").value, { required: true })
+        : { ok: true };
       if (!shipParsed.ok) errors.unshift(shipParsed.error);
       if (!pickParsed.ok) errors.unshift(pickParsed.error);
+      if (!baseParsed.ok) errors.unshift(baseParsed.error);
       if (!taxParsed.ok) {
         errors.unshift(taxParsed.error || "Enter a tax rate from 0% to 100%.");
       }
@@ -281,6 +303,54 @@
       fillForm(draft);
       refreshSummary();
       showFlash("Unsaved changes discarded.", true);
+    });
+
+    $("applyBaseWeightBtn").addEventListener("click", async function () {
+      var parsed = SRProductWeight.parseParts($("baseWeightLb").value, $("baseWeightOz").value, {
+        required: true,
+      });
+      if (!parsed.ok) {
+        showFlash(parsed.error, false);
+        return;
+      }
+      var mode = $("baseWeightAll").checked ? "all" : "missing";
+      if (SRProductWeight.applyNeedsConfirmation(mode)) {
+        var confirmed = window.confirm(
+          "This will overwrite every product weight, including custom weights you already entered. Continue?"
+        );
+        if (!confirmed) return;
+      }
+      var btn = $("applyBaseWeightBtn");
+      btn.disabled = true;
+      try {
+        var result = await SRCatalog.applyProductBaseWeight(parsed.ounces, mode);
+        if (draft.fulfillment) draft.fulfillment.base_weight_oz = result.ounces;
+        if (saved.fulfillment) saved.fulfillment.base_weight_oz = result.ounces;
+        refreshSummary();
+        showFlash(
+          result.missingOnly
+            ? "Applied " +
+                SRProductWeight.formatOunces(result.ounces) +
+                " to " +
+                result.updated +
+                " products with no weight. Custom weights were kept."
+            : "Applied " +
+                SRProductWeight.formatOunces(result.ounces) +
+                " to " +
+                result.updated +
+                " products. Custom weights were replaced.",
+          true
+        );
+      } catch (err) {
+        var message = (err && err.message) || "Couldn’t apply the base weight.";
+        if (message.indexOf("The base weight was saved") === 0 && draft.fulfillment) {
+          draft.fulfillment.base_weight_oz = parsed.ounces;
+          if (saved.fulfillment) saved.fulfillment.base_weight_oz = parsed.ounces;
+          refreshSummary();
+        }
+        showFlash(message, false);
+      }
+      btn.disabled = false;
     });
 
     window.addEventListener("beforeunload", function (e) {

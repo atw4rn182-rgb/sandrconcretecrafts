@@ -45,6 +45,7 @@
       shipping_label: "Shipping",
       shipping_note: "",
       shipping_fee_cents: null,
+      base_weight_oz: 16,
     },
     storefront: {
       show_sold_out: true,
@@ -94,6 +95,13 @@
       return { ok: false, cents: null, error: "Enter a fee from 0.00 to 100000.00." };
     }
     return { ok: true, cents: cents };
+  }
+
+  function normalizeBaseWeightOz(value) {
+    if (value == null || value === "") return 16;
+    var n = Number(value);
+    if (!Number.isInteger(n) || n < 1 || n > 8000) return 16;
+    return n;
   }
 
   function normalizePickupFee(value) {
@@ -283,6 +291,7 @@
           DEFAULTS.fulfillment.shipping_label,
         shipping_note: cleanText(f.shipping_note, MAX_NOTE),
         shipping_fee_cents: parseFeeInput(f.shipping_fee_cents).cents,
+        base_weight_oz: normalizeBaseWeightOz(f.base_weight_oz),
       },
       storefront: {
         show_sold_out: asBool(st.show_sold_out, true),
@@ -355,6 +364,12 @@
       errors.push("Enter a flat shipping fee, or turn shipping off. Use 0.00 if shipping is free.");
     }
     if (!pickupFee.ok) errors.push(pickupFee.error);
+    if (fulfillment.base_weight_oz != null && fulfillment.base_weight_oz !== "") {
+      var baseOz = Number(fulfillment.base_weight_oz);
+      if (!Number.isInteger(baseOz) || baseOz < 1 || baseOz > 8000) {
+        errors.push("Base product weight must be from 1 ounce through 500 pounds.");
+      }
+    }
     return errors;
   }
 

@@ -20,6 +20,10 @@
   var HERO_MAX_EDGE = 2400;
   var HERO_MIN_WIDTH = 800;
   var HERO_MIN_HEIGHT = 450;
+  var PRODUCT_DETAIL_SELECT =
+    "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, weight_oz, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))";
+  var PRODUCT_DETAIL_SELECT_LEGACY =
+    "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))";
 
   function client() {
     return SRAdminAuth.getClient();
@@ -296,15 +300,35 @@
     });
   }
 
+  function weightColumnMissing(error) {
+    if (!error) return false;
+    var text = [error.message, error.details, error.hint, error.code].join(" ").toLowerCase();
+    return text.indexOf("weight_oz") !== -1;
+  }
+
+  async function saveProductRow(run, payload, fallback) {
+    var result = await run(payload);
+    if (result.error && weightColumnMissing(result.error)) {
+      if (payload.weight_oz != null) {
+        throw new Error(
+          "This custom weight could not be saved because the product weight column is not on the database yet."
+        );
+      }
+      var legacy = Object.assign({}, payload);
+      delete legacy.weight_oz;
+      result = await run(legacy);
+    }
+    if (result.error) throw new Error(friendlyDbError(result.error, fallback));
+    return result.data;
+  }
+
   async function getProduct(id) {
     var supabase = await client();
-    var result = await supabase
-      .from("products")
-      .select(
-        "id, title, slug, description, price, painted_price, sale_price, quantity, status, product_type, featured, source_key, item_no, track_inventory, created_at, updated_at, published_at, product_images(id, image_url, alt_text, sort_order, is_primary, created_at), product_categories(category_id, categories(id, name, slug, active)), product_badges(badge_id, badges(id, name, slug, label, active))"
-      )
-      .eq("id", id)
-      .maybeSingle();
+    var result = await supabase.from("products").select(PRODUCT_DETAIL_SELECT).eq("id", id).maybeSingle();
+    if (result.error && weightColumnMissing(result.error)) {
+      result = await supabase.from("products").select(PRODUCT_DETAIL_SELECT_LEGACY).eq("id", id).maybeSingle();
+      if (result.data) result.data.weight_oz = null;
+    }
     if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t load this product."));
     if (!result.data) throw new Error("That product wasn’t found.");
     return normalizeProductRow(result.data);
@@ -376,6 +400,10 @@
     var imageCount = Number(input.imageCount || 0);
     var trackInventory = !!input.track_inventory;
     var itemNo = String(input.item_no || "").trim() || null;
+    var weightParsed =
+      typeof SRProductWeight !== "undefined"
+        ? SRProductWeight.parseParts(input.weight_lb, input.weight_oz, { required: false })
+        : { ok: true, ounces: null };
 
     if (!title) errors.push("Please add a product title.");
     if (!priceParsed.ok) errors.push(priceParsed.error);
@@ -411,6 +439,7 @@
     if (["single", "bundle"].indexOf(productType) === -1) {
       errors.push("Choose a valid product type.");
     }
+    if (!weightParsed.ok) errors.push(weightParsed.error);
     if ((opts && opts.publishing) || status === "published") {
       if (!title) {
         /* already covered */
@@ -433,6 +462,7 @@
         featured: !!input.featured,
         item_no: itemNo,
         track_inventory: trackInventory,
+        weight_oz: weightParsed.ok ? weightParsed.ounces : null,
         slug: String(input.slug || "").trim() || slugify(title),
         category_ids: input.category_ids || [],
         badge_ids: input.badge_ids || [],
@@ -456,12 +486,17 @@
       featured: !!fields.featured,
       item_no: fields.item_no,
       track_inventory: !!fields.track_inventory,
+      weight_oz: fields.weight_oz == null ? null : fields.weight_oz,
       published_at:
         fields.status === "published" ? new Date().toISOString() : null,
     };
-    var result = await supabase.from("products").insert(payload).select("*").single();
-    if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t create the product."));
-    return result.data;
+    return saveProductRow(
+      function (body) {
+        return supabase.from("products").insert(body).select("*").single();
+      },
+      payload,
+      "Couldn’t create the product."
+    );
   }
 
   async function updateProduct(id, fields, previous) {
@@ -487,16 +522,68 @@
       featured: !!fields.featured,
       item_no: fields.item_no,
       track_inventory: !!fields.track_inventory,
+      weight_oz: fields.weight_oz == null ? null : fields.weight_oz,
       published_at: publishedAt,
     };
+    return saveProductRow(
+      function (body) {
+        return supabase.from("products").update(body).eq("id", id).select("*").single();
+      },
+      payload,
+      "Couldn’t update the product."
+    );
+  }
+
+  async function getBaseWeightOz() {
+    var row = await getSiteSettingsRow();
+    var fulfillment = row.config && row.config.fulfillment;
+    var raw = fulfillment && fulfillment.base_weight_oz;
+    if (typeof SRProductWeight !== "undefined") return SRProductWeight.normalizeBaseOz(raw);
+    var n = Number(raw);
+    if (!Number.isInteger(n) || n < 1 || n > 8000) return 16;
+    return n;
+  }
+
+  async function saveBaseWeightOz(ounces) {
+    var oz = typeof SRProductWeight !== "undefined" ? SRProductWeight.normalizeBaseOz(ounces) : Number(ounces);
+    if (!Number.isInteger(oz) || oz < 1 || oz > 8000) {
+      throw new Error("Enter a base weight from 1 ounce through 500 pounds.");
+    }
+    var current = await getSiteSettingsRow();
+    if (!current.id) throw new Error("Site settings aren’t set up yet.");
+    var fulfillment = Object.assign({}, (current.config && current.config.fulfillment) || {}, {
+      base_weight_oz: oz,
+    });
+    var nextConfig = Object.assign({}, current.config || {}, { fulfillment: fulfillment });
+    var supabase = await client();
     var result = await supabase
-      .from("products")
-      .update(payload)
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t update the product."));
-    return result.data;
+      .from("site_settings")
+      .update({ config: nextConfig })
+      .eq("id", current.id)
+      .select("id, config")
+      .maybeSingle();
+    if (result.error) throw new Error(friendlyDbError(result.error, "Couldn’t save the base weight."));
+    return oz;
+  }
+
+  async function applyProductBaseWeight(ounces, mode) {
+    var missingOnly = mode !== "all";
+    var oz = await saveBaseWeightOz(ounces);
+    var supabase = await client();
+    var result = await supabase.rpc("apply_product_base_weight", {
+      p_ounces: oz,
+      p_missing_only: missingOnly,
+    });
+    if (result.error) {
+      var rpcMessage = String(result.error.message || "");
+      if (/apply_product_base_weight|PGRST202|schema cache/i.test(rpcMessage)) {
+        throw new Error(
+          "The base weight was saved. Writing it onto product rows needs the product weight database update to be applied first."
+        );
+      }
+      throw new Error(friendlyDbError(result.error, "Couldn’t apply the base weight to products."));
+    }
+    return { ounces: oz, updated: Number(result.data) || 0, missingOnly: missingOnly };
   }
 
   async function syncProductCategories(productId, categoryIds) {
@@ -1695,6 +1782,9 @@
     deleteProductImage: deleteProductImage,
     reorderProductImages: reorderProductImages,
     deleteProduct: deleteProduct,
+    getBaseWeightOz: getBaseWeightOz,
+    saveBaseWeightOz: saveBaseWeightOz,
+    applyProductBaseWeight: applyProductBaseWeight,
     createCategory: createCategory,
     updateCategory: updateCategory,
     countCategoryProducts: countCategoryProducts,
