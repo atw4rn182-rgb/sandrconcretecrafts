@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/img/:preset/:folder/:file",
-      "destination": "/api/img?preset=:preset&folder=:folder&file=:file"
+      "destination": "/api/verify-checkout-session?preset=:preset&folder=:folder&file=:file"
     }
   ],
   "redirects": [

@@ -1,6 +1,7 @@
 "use strict";
 
 const stripe = require("./_lib/stripe");
+const productImage = require("./_lib/product-image");
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -10,6 +11,10 @@ function sendJson(res, status, body) {
 }
 
 module.exports = async function handler(req, res) {
+  if (productImage.isImageRequest(req)) {
+    await productImage.serve(req, res);
+    return;
+  }
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     sendJson(res, 405, { verified: false, error: "Method not allowed." });
