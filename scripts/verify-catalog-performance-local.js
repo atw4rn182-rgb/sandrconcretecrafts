@@ -418,15 +418,16 @@ loadScript("admin/catalog-api.js", adminSandbox);
   var original =
     "https://example.supabase.co/storage/v1/object/public/product-images/prod/photo.jpg";
   var thumb = Images.displayUrl(original, "adminThumb");
-  assert(thumb.indexOf("/storage/v1/render/image/public/") !== -1, "thumbnails use the render endpoint");
-  assert(thumb.indexOf("width=160") !== -1, "admin thumbs request 160px");
-  assert(thumb.indexOf(original) === -1, "thumbnail URL is not the original object URL");
+  assert(thumb === "/img/admin/prod/photo.jpg", "admin thumbs use one same-origin size");
+  assert(thumb.indexOf("supabase") === -1, "thumbnail URL is not a Supabase request");
+  assert(Images.displayUrl(original, "card") === "/img/card/prod/photo.jpg", "cards use one 600px route");
+  assert(Images.displayUrl(original, "detail") === "/img/detail/prod/photo.jpg", "detail uses its own larger route");
   assert(Images.displayUrl("/assets/prod-01.png", "card") === "/assets/prod-01.png", "local assets stay unchanged");
   var tag = Images.imgTag(original, { preset: "card", alt: "Planter", width: 800, height: 800 });
   assert(tag.indexOf('loading="lazy"') !== -1, "card images lazy-load");
   assert(tag.indexOf('decoding="async"') !== -1, "card images decode async");
-  assert(tag.indexOf("data-full=") !== -1, "original URL is kept for fallback");
-  assert(tag.indexOf("srcset=") !== -1, "cards offer a srcset");
+  assert(tag.indexOf("data-full=") === -1, "cards do not fall back to the stored original");
+  assert(tag.indexOf("srcset=") === -1, "cards do not request a second image size");
   var eager = Images.imgTag(original, { preset: "card", alt: "", eager: true });
   assert(eager.indexOf('loading="eager"') !== -1 && eager.indexOf('fetchpriority="high"') !== -1, "above-the-fold images are prioritized");
 

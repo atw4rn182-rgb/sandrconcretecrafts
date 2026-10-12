@@ -1330,8 +1330,7 @@
     img.decoding = "async";
     img.classList.remove("img-failed");
     img.removeAttribute("data-img-step");
-    if (detail !== full) img.dataset.full = full;
-    else img.removeAttribute("data-full");
+    img.removeAttribute("data-full");
     img.dataset.fallback = fallback(modalProduct.seed);
     img.onerror = null;
     img.src = detail;

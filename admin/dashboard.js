@@ -121,9 +121,7 @@
             ? SRImageDisplay.displayUrl(primary.image_url, "dashThumb")
             : primary.image_url
         ) +
-        '" alt="" width="48" height="48" loading="lazy" decoding="async"' +
-        (window.SRImageDisplay ? ' data-full="' + SRCatalog.escapeHtml(primary.image_url) + '"' : "") +
-        " />"
+        '" alt="" width="48" height="48" loading="lazy" decoding="async" />'
       );
     }
     return '<div class="thumb-empty">No photo</div>';

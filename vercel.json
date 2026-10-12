@@ -4,6 +4,12 @@
   "outputDirectory": ".",
   "buildCommand": "npm run build",
   "installCommand": "npm install --ignore-scripts",
+  "rewrites": [
+    {
+      "source": "/img/:preset/:folder/:file",
+      "destination": "/api/img?preset=:preset&folder=:folder&file=:file"
+    }
+  ],
   "redirects": [
     {
       "source": "/admin",

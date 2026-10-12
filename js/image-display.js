@@ -1,25 +1,22 @@
 /**
- * Display-size URLs for product photos.
- * Original storage objects are never modified. Supabase image transformations
- * resize on request; if a transform fails, callers fall back to the original URL.
+ * Display URLs for product photos.
+ * Cards, thumbs, and the product detail use a few same-origin sizes.
+ * Those URLs are cached at the site edge, so a visit does not download the
+ * photo from Supabase. Storage paths stay content-addressed, so a replaced
+ * photo gets a new URL instead of a stale cached one.
  */
 (function (global) {
   "use strict";
 
   var PRESETS = {
-    adminThumb: { width: 160, quality: 70 },
-    dashThumb: { width: 96, quality: 70 },
-    editorThumb: { width: 176, quality: 75 },
-    editorPreview: { width: 960, quality: 80 },
-    card: {
-      width: 480,
-      quality: 75,
-      srcset: [480, 800],
-      sizes: "(max-width: 560px) 92vw, (max-width: 960px) 45vw, 340px",
-    },
-    detail: { width: 1200, quality: 82 },
-    cart: { width: 160, quality: 70 },
-    about: { width: 960, quality: 78 },
+    adminThumb: { route: "admin" },
+    dashThumb: { route: "admin" },
+    editorThumb: { route: "admin" },
+    editorPreview: { route: "detail" },
+    card: { route: "card" },
+    detail: { route: "detail" },
+    cart: { route: "cart" },
+    about: { route: "detail" },
   };
 
   function escapeAttr(str) {
@@ -44,21 +41,22 @@
     return { origin: origin, path: path };
   }
 
-  function transformUrl(url, width, quality) {
+  function displayPath(url, route) {
     var parts = objectPublicParts(url);
-    if (!parts) return String(url || "");
-    var w = Math.max(16, Math.round(Number(width) || 480));
-    var q = Math.min(100, Math.max(40, Math.round(Number(quality) || 75)));
-    return (
-      parts.origin +
-      "/storage/v1/render/image/public/" +
-      parts.path +
-      "?width=" +
-      w +
-      "&quality=" +
-      q +
-      "&resize=contain"
-    );
+    if (!parts) return "";
+    var path = parts.path;
+    var bucket = "product-images/";
+    if (path.indexOf(bucket) !== 0) return "";
+    var rest = path.slice(bucket.length);
+    if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9-]+\.(?:webp|jpe?g|png)$/i.test(rest)) return "";
+    if (route !== "card" && route !== "admin" && route !== "detail" && route !== "cart") return "";
+    return "/img/" + route + "/" + rest;
+  }
+
+  function transformUrl(url, presetName) {
+    var preset = presetOf(presetName);
+    var local = displayPath(url, preset.route);
+    return local || String(url || "");
   }
 
   function presetOf(name) {
@@ -66,27 +64,17 @@
   }
 
   function displayUrl(url, presetName) {
-    var preset = presetOf(presetName);
-    return transformUrl(url, preset.width, preset.quality);
+    return transformUrl(url, presetName);
   }
 
   function resolved(url, presetName) {
     var original = String(url || "");
-    var preset = presetOf(presetName);
-    var src = transformUrl(original, preset.width, preset.quality);
-    var srcset = "";
-    if (src !== original && preset.srcset && preset.srcset.length) {
-      srcset = preset.srcset
-        .map(function (w) {
-          return transformUrl(original, w, preset.quality) + " " + w + "w";
-        })
-        .join(", ");
-    }
+    var src = transformUrl(original, presetName);
     return {
       src: src,
-      srcset: srcset,
-      sizes: srcset ? preset.sizes || "" : "",
-      full: src !== original ? original : "",
+      srcset: "",
+      sizes: "",
+      full: "",
     };
   }
 
@@ -100,13 +88,8 @@
       'loading="' + (opts.eager ? "eager" : "lazy") + '"',
     ];
     if (opts.eager) parts.push('fetchpriority="high"');
-    if (view.srcset) {
-      parts.push('srcset="' + escapeAttr(view.srcset) + '"');
-      if (view.sizes) parts.push('sizes="' + escapeAttr(view.sizes) + '"');
-    }
     if (opts.width) parts.push('width="' + escapeAttr(String(opts.width)) + '"');
     if (opts.height) parts.push('height="' + escapeAttr(String(opts.height)) + '"');
-    if (view.full) parts.push('data-full="' + escapeAttr(view.full) + '"');
     if (opts.fallback) parts.push('data-fallback="' + escapeAttr(opts.fallback) + '"');
     return "<img " + parts.join(" ") + " />";
   }
@@ -135,14 +118,7 @@
         var img = event.target;
         if (!img || !img.getAttribute || String(img.tagName).toUpperCase() !== "IMG") return;
         var step = img.getAttribute("data-img-step") || "";
-        var full = img.getAttribute("data-full");
         var last = img.getAttribute("data-fallback");
-        if (step !== "full" && full && !urlsMatch(img.src, full)) {
-          img.setAttribute("data-img-step", "full");
-          img.removeAttribute("srcset");
-          img.src = full;
-          return;
-        }
         if (step !== "fallback" && last && !urlsMatch(img.src, last)) {
           img.setAttribute("data-img-step", "fallback");
           img.removeAttribute("srcset");

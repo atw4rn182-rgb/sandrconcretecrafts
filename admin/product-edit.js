@@ -30,8 +30,7 @@
     if (full && full.indexOf("blob:") !== 0 && window.SRImageDisplay) {
       src = SRImageDisplay.displayUrl(full, preset);
     }
-    if (src && full && src !== full) imgEl.setAttribute("data-full", full);
-    else imgEl.removeAttribute("data-full");
+    imgEl.removeAttribute("data-full");
     imgEl.decoding = "async";
     imgEl.loading = eager ? "eager" : "lazy";
     if (eager) imgEl.setAttribute("fetchpriority", "high");
