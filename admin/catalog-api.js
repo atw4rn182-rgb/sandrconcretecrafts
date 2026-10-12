@@ -661,8 +661,130 @@
     if (!ALLOWED_TYPES[file.type]) {
       return "Use JPEG, PNG, WebP, GIF, or AVIF images.";
     }
-    if (file.size > MAX_BYTES) return "Each photo must be 10 MB or smaller.";
+    if (file.size > MAX_BYTES) return "Each photo must be 10 MB or smaller after optimization.";
     return null;
+  }
+
+  function optimizerRules() {
+    if (!global.SRImageOptimize) {
+      throw new Error("Photo optimizer didn’t load. Refresh the page and try again.");
+    }
+    return global.SRImageOptimize;
+  }
+
+  async function decodeOrientedImage(file) {
+    if (typeof createImageBitmap === "function") {
+      try {
+        return await createImageBitmap(file, { imageOrientation: "from-image" });
+      } catch (err) {
+        /* Fall through to Image decoding. */
+      }
+    }
+    return loadImageFromFile(file);
+  }
+
+  function canvasHasAlpha(canvas) {
+    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return false;
+    var data;
+    try {
+      data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    } catch (err) {
+      return false;
+    }
+    var step = Math.max(4, Math.floor(data.length / (800 * 4)) * 4);
+    for (var i = 3; i < data.length; i += step) {
+      if (data[i] < 250) return true;
+    }
+    return false;
+  }
+
+  function blobFromCanvas(canvas, mime, quality) {
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (blob) {
+        resolve(blob || null);
+      }, mime, quality);
+    });
+  }
+
+  /**
+   * Resize and compress a product photo before it is stored.
+   * Longest edge stays at most 1600px. Smaller photos are not enlarged.
+   * Returns { file, optimized, width, height }.
+   */
+  async function prepareProductImageFile(file) {
+    var rules = optimizerRules();
+    var gate = rules.classify({
+      type: file && file.type,
+      bytes: file && file.size,
+      width: 1,
+      height: 1,
+    });
+    if (gate.action === "reject") throw new Error(gate.message);
+    if (!file || file.type === "image/gif") return { file: file, optimized: false, width: 0, height: 0 };
+
+    var source = await decodeOrientedImage(file);
+    var width = source.naturalWidth || source.width;
+    var height = source.naturalHeight || source.height;
+    var verdict = rules.classify({
+      type: file.type,
+      bytes: file.size,
+      width: width,
+      height: height,
+    });
+    if (verdict.action === "reject") {
+      if (source.close) source.close();
+      throw new Error(verdict.message);
+    }
+    if (verdict.action === "passthrough") {
+      if (source.close) source.close();
+      if (file.size > MAX_BYTES) {
+        throw new Error("This photo couldn’t be compressed enough to store. Try another photo.");
+      }
+      return { file: file, optimized: false, width: width, height: height };
+    }
+
+    var target = rules.targetDimensions(width, height);
+    var canvas = document.createElement("canvas");
+    canvas.width = target.width;
+    canvas.height = target.height;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) {
+      if (source.close) source.close();
+      throw new Error("This browser couldn’t prepare that photo. Try another browser or a smaller file.");
+    }
+    ctx.drawImage(source, 0, 0, target.width, target.height);
+    if (source.close) source.close();
+
+    var alpha = canvasHasAlpha(canvas);
+    var candidates = alpha ? ["image/webp", "image/png"] : ["image/webp", "image/jpeg"];
+    var best = null;
+    for (var c = 0; c < candidates.length; c++) {
+      var mime = candidates[c];
+      var blob = await blobFromCanvas(canvas, mime, mime === "image/png" ? undefined : rules.QUALITY);
+      if (!blob) continue;
+      if (!best || blob.size < best.size) best = blob;
+    }
+    if (!best) {
+      throw new Error("This photo couldn’t be prepared. Try a JPEG or PNG.");
+    }
+    var keepOptimized = rules.preferOptimized({
+      originalBytes: file.size,
+      optimizedBytes: best.size,
+      resized: target.resized,
+    });
+    if (!keepOptimized) {
+      if (file.size > MAX_BYTES) {
+        throw new Error("This photo couldn’t be compressed enough to store. Try another photo.");
+      }
+      return { file: file, optimized: false, width: width, height: height };
+    }
+    if (best.size > MAX_BYTES) {
+      throw new Error("This photo couldn’t be compressed enough to store. Try another photo.");
+    }
+    var ext = ALLOWED_TYPES[best.type] || "jpg";
+    var stored = new File([best], "photo." + ext, { type: best.type || "image/jpeg" });
+    return { file: stored, optimized: true, width: target.width, height: target.height };
   }
 
   function publicUrlForPath(supabase, path) {
@@ -679,10 +801,17 @@
   }
 
   async function uploadProductImage(productId, file, onProgress) {
-    var err = validateImageFile(file);
+    var prepared;
+    try {
+      prepared = await prepareProductImageFile(file);
+    } catch (prepErr) {
+      throw new Error(prepErr.message || "That photo couldn’t be prepared. Try another file.");
+    }
+    var stored = prepared.file;
+    var err = validateImageFile(stored);
     if (err) throw new Error(err);
     var supabase = await client();
-    var ext = ALLOWED_TYPES[file.type];
+    var ext = ALLOWED_TYPES[stored.type];
     var path =
       productId +
       "/" +
@@ -693,12 +822,12 @@
       ext;
 
     if (typeof onProgress === "function") onProgress("uploading");
-    // Store the original file unchanged. The path is a new id, so a long cache
-    // cannot serve a stale photo after a replacement upload.
-    var up = await supabase.storage.from(BUCKET).upload(path, file, {
+    // Store the resized photo only. A new path keeps the long cache from
+    // serving an older file after a later replacement.
+    var up = await supabase.storage.from(BUCKET).upload(path, stored, {
       cacheControl: "31536000",
       upsert: false,
-      contentType: file.type,
+      contentType: stored.type,
     });
     if (up.error) {
       throw new Error(
@@ -1777,6 +1906,7 @@
     syncProductBadges: syncProductBadges,
     saveProductBadges: syncProductBadges,
     validateImageFile: validateImageFile,
+    prepareProductImageFile: prepareProductImageFile,
     uploadProductImage: uploadProductImage,
     syncProductImages: syncProductImages,
     deleteProductImage: deleteProductImage,
