@@ -16,7 +16,7 @@
     card: { route: "card" },
     detail: { route: "detail" },
     cart: { route: "cart" },
-    about: { route: "detail" },
+    about: { route: "card" },
   };
 
   function escapeAttr(str) {

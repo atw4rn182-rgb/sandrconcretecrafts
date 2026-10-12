@@ -459,7 +459,15 @@
     if (aboutPhoto && picks[0]) {
       var aboutSrc = safeImgSrc(picks[0]);
       if (window.SRImageDisplay) aboutSrc = SRImageDisplay.displayUrl(aboutSrc, "about");
-      aboutPhoto.style.backgroundImage = 'url("' + String(aboutSrc).replace(/"/g, "") + '")';
+      var aboutImg = document.createElement("img");
+      aboutImg.alt = "";
+      aboutImg.decoding = "async";
+      aboutImg.loading = "lazy";
+      aboutImg.width = 600;
+      aboutImg.height = 750;
+      aboutImg.src = aboutSrc;
+      aboutPhoto.replaceChildren(aboutImg);
+      aboutPhoto.style.backgroundImage = "";
       aboutPhoto.classList.add("has-image");
     }
   }
