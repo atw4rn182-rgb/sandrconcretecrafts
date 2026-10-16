@@ -553,15 +553,17 @@ img { max-width: 100%; display: block; }
   min-height: 1.5rem; margin-top: -0.15rem;
 }
 .card-heart {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 0.3rem;
-  min-height: 40px; min-width: 40px; padding: 0 0.55rem; margin-right: -0.55rem;
+  margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  min-height: 44px; min-width: 44px; padding: 0 0.5rem; margin-right: -0.5rem;
   border: 0; background: transparent; border-radius: 999px; cursor: pointer;
-  color: var(--brown-soft); font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+  color: var(--brown-soft); font-family: var(--sans); font-size: 0.97rem; font-weight: 600;
+  line-height: 1; font-variant-numeric: tabular-nums;
   -webkit-tap-highlight-color: transparent;
   transition: color var(--motion) var(--ease), transform var(--motion) var(--ease);
 }
 .card-heart-icon {
-  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round;
+  flex: none; width: 26px; height: 26px;
+  fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round;
   transition: fill var(--motion) var(--ease), transform var(--motion) var(--ease);
 }
 .card-heart-count:empty { display: none; }

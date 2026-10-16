@@ -883,7 +883,7 @@
   }
 
   var HEART_SVG =
-    '<svg class="card-heart-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+    '<svg class="card-heart-icon" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">' +
     '<path d="M12 20.4s-7.6-4.7-7.6-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.6 2.8c0 5.5-7.6 10.2-7.6 10.2z"/></svg>';
 
   function heartCountText(p) {
