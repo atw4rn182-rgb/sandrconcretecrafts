@@ -5,6 +5,10 @@
  * Hobby plan does not gain another serverless function.
  * The public URL is /img/<preset>/<folder>/<file>. The site edge caches the
  * response for a year. Supabase is contacted only when that copy is missing.
+ *
+ * Cache misses read the stored object directly. Never use Supabase's
+ * /render/image endpoint here: every miss would count against the Image
+ * Transformations quota. Uploads are already resized to 1600px before storage.
  */
 
 var PRESETS = {
@@ -14,7 +18,8 @@ var PRESETS = {
   cart: { width: 160, quality: 70 },
 };
 
-var MAX_BYTES = 1500000;
+// Under Vercel's 4.5 MB response limit; stored photos are typically ~80 KB.
+var MAX_BYTES = 4000000;
 
 function parseImageRequest(query) {
   query = query || {};
@@ -69,6 +74,16 @@ function cacheHeaders(res, type, length) {
   res.setHeader("X-Content-Type-Options", "nosniff");
 }
 
+function objectUrl(base, parsed) {
+  return (
+    base +
+    "/storage/v1/object/public/product-images/" +
+    encodeURIComponent(parsed.folder) +
+    "/" +
+    encodeURIComponent(parsed.file)
+  );
+}
+
 async function readImage(url) {
   var upstream = await fetch(url, { redirect: "manual" });
   if (!upstream || upstream.status !== 200) return null;
@@ -95,22 +110,9 @@ async function serve(req, res) {
     res.end();
     return;
   }
-  var objectPath = encodeURIComponent(parsed.folder) + "/" + encodeURIComponent(parsed.file);
-  var rendered =
-    base +
-    "/storage/v1/render/image/public/product-images/" +
-    objectPath +
-    "?width=" +
-    parsed.width +
-    "&quality=" +
-    parsed.quality +
-    "&resize=contain";
   var image = null;
   try {
-    image = await readImage(rendered);
-    if (!image) {
-      image = await readImage(base + "/storage/v1/object/public/product-images/" + objectPath);
-    }
+    image = await readImage(objectUrl(base, parsed));
   } catch (err) {
     image = null;
   }
@@ -132,5 +134,6 @@ module.exports = {
   PRESETS: PRESETS,
   parseImageRequest: parseImageRequest,
   isImageRequest: isImageRequest,
+  objectUrl: objectUrl,
   serve: serve,
 };
