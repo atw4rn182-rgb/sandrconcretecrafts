@@ -29,6 +29,9 @@ fun releaseSigningConfigured(): Boolean {
         file(propOrEnv("SR_RELEASE_STORE_FILE")).exists()
 }
 
+val releaseVersionCode = 13
+val releaseVersionName = "1.0.1"
+
 android {
     namespace = "com.sandrconcretecrafts.pos"
     compileSdk = 35
@@ -48,6 +51,7 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${publicProp("SR_SUPABASE_ANON_KEY")}\"")
         buildConfigField("boolean", "SIMULATED_READER", "true")
         buildConfigField("String", "BUILD_ID", "\"p311-physical\"")
+        buildConfigField("int", "APP_VERSION_CODE", "11")
     }
 
     buildFeatures {
@@ -81,7 +85,8 @@ android {
             isDebuggable = false
             versionNameSuffix = ""
             buildConfigField("boolean", "SIMULATED_READER", "false")
-            buildConfigField("String", "BUILD_ID", "\"p4-production\"")
+            buildConfigField("String", "BUILD_ID", "\"p5-production\"")
+            buildConfigField("int", "APP_VERSION_CODE", "$releaseVersionCode")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -166,8 +171,8 @@ afterEvaluate {
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
-            output.versionCode.set(12)
-            output.versionName.set("1.0.0")
+            output.versionCode.set(releaseVersionCode)
+            output.versionName.set(releaseVersionName)
         }
     }
 }

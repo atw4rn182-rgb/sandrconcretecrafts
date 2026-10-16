@@ -932,6 +932,120 @@
     }
   }
 
+  // Set from the app's return URL (?app_code=, ?setup=ready). Apps older than
+  // 1.0.1 never send app_code, which is how an outdated install is detected.
+  var POS_APP_CODE_KEY = "sr_ttp_app_code";
+  var POS_APP_READY_KEY = "sr_ttp_ready";
+  var POS_APP_OUTDATED_KEY = "sr_ttp_outdated";
+  var MIN_POS_APP_CODE = 13;
+  var posAppHelpOpen = false;
+
+  function readPosAppStore(key) {
+    try {
+      return window.localStorage.getItem(key) || "";
+    } catch (_err) {
+      return "";
+    }
+  }
+
+  function writePosAppStore(key, value) {
+    try {
+      if (value) window.localStorage.setItem(key, String(value));
+      else window.localStorage.removeItem(key);
+    } catch (_err) {
+      /* ignore quota / private mode */
+    }
+  }
+
+  function requiredPosAppCode() {
+    var code = posAppMeta && Number(posAppMeta.version_code);
+    return code > 0 ? code : MIN_POS_APP_CODE;
+  }
+
+  function posAppSetupState() {
+    var code = Number(readPosAppStore(POS_APP_CODE_KEY)) || 0;
+    var current = code >= requiredPosAppCode();
+    if (!current && (code > 0 || readPosAppStore(POS_APP_OUTDATED_KEY) === "1")) {
+      return { state: "outdated", code: code };
+    }
+    if (current && readPosAppStore(POS_APP_READY_KEY) === "1") {
+      return { state: "ready", code: code };
+    }
+    if (current) return { state: "returned", code: code };
+    return { state: posAppSeen() ? "opened" : "new", code: 0 };
+  }
+
+  function recordPosAppReturn(params, outcome) {
+    var code = parseInt(params.get("app_code"), 10);
+    if (code > 0) {
+      writePosAppStore(POS_APP_CODE_KEY, code);
+      writePosAppStore(POS_APP_OUTDATED_KEY, "");
+      markPosAppSeen();
+      if (params.get("setup") === "ready" || outcome === "paid" || outcome === "cancel") {
+        writePosAppStore(POS_APP_READY_KEY, "1");
+      }
+      return;
+    }
+    if (outcome === "paid" || outcome === "cancel" || outcome === "failed") {
+      writePosAppStore(POS_APP_OUTDATED_KEY, "1");
+      writePosAppStore(POS_APP_READY_KEY, "");
+    }
+  }
+
+  var POS_SETUP_STEPS = [
+    ["Install", "Tap Install S&R Tap to Pay below. If Android asks, allow installs from your browser."],
+    ["Open", "Open S&R Tap to Pay from the button below or your home screen."],
+    ["Permissions", "Allow Location when the app asks (Stripe requires it for Tap to Pay), and turn on NFC if prompted."],
+    ["Stripe setup", "Sign in with your S&R Admin email. The app connects this phone to Stripe by itself."],
+    ["Return to Admin", "When the app says Tap to Pay Ready, tap Continue. It brings you back to this page."],
+    ["Ready", "Enter an amount or add items, then tap Take Payment."],
+  ];
+
+  function renderPosSetupGuide(setup) {
+    var list = byId("posAppSteps");
+    if (!list) return;
+    var opened = setup.state !== "new";
+    var returned = setup.state === "returned" || setup.state === "ready";
+    var done = [opened, opened, returned, returned, returned, setup.state === "ready"];
+    if (setup.state === "outdated") done = [false, false, false, false, false, false];
+    list.innerHTML = POS_SETUP_STEPS.map(function (step, i) {
+      return (
+        '<li class="pos-app-guide-step' + (done[i] ? " is-done" : "") + '">' +
+        '<span class="pos-app-guide-num" aria-hidden="true">' + (done[i] ? "✓" : i + 1) + "</span>" +
+        "<span><strong>" + escapeHtml(step[0]) + "</strong> " + escapeHtml(step[1]) +
+        (done[i] ? '<span class="sr-only"> (done)</span>' : "") +
+        "</span></li>"
+      );
+    }).join("");
+  }
+
+  function renderPosAppSetup(android) {
+    var setup = posAppSetupState();
+    var ready = android && setup.state === "ready";
+    var readyRow = byId("posAppReady");
+    var setupWrap = byId("posAppSetup");
+    var outdated = byId("posAppOutdated");
+    var toggle = byId("posAppHelpToggle");
+    var nudge = byId("posSetupNudge");
+    var steps = byId("posAppSteps");
+    if (readyRow) readyRow.hidden = !ready;
+    if (setupWrap) setupWrap.hidden = ready && !posAppHelpOpen;
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", posAppHelpOpen ? "true" : "false");
+      toggle.textContent = posAppHelpOpen ? "Hide setup help" : "Setup help";
+    }
+    if (outdated) outdated.hidden = !(android && setup.state === "outdated");
+    if (nudge) nudge.hidden = !android || ready;
+    if (steps) steps.hidden = !android;
+    var readyText = byId("posAppReadyText");
+    if (readyText && ready) {
+      var name = posAppMeta && posAppMeta.version_code === setup.code && posAppMeta.version_name;
+      readyText.textContent = "Tap to Pay is set up on this phone" + (name ? " · v" + name : "") + ".";
+    }
+    renderPosSetupGuide(setup);
+    return setup;
+  }
+
   function renderPosAppCard() {
     var android = isAndroidPos();
     var installBtn = byId("installPosAppBtn");
@@ -939,7 +1053,8 @@
     var copy = byId("posAppCopy");
     var help = byId("posAppHelp");
     var badge = byId("posAppBadge");
-    var seen = posAppSeen();
+    var setup = renderPosAppSetup(android);
+    var seen = posAppSeen() && setup.state !== "outdated";
     if (posAppMeta && badge) {
       badge.textContent = posAppMeta.version_name
         ? posAppMeta.label + " · " + posAppMeta.version_name
@@ -1302,9 +1417,22 @@
     var paid = String(params.get("paid") || "").trim();
     var tap = String(params.get("tap") || "").trim();
     var app = String(params.get("app") || "").trim();
-    if (!paid && !tap && !app) return;
+    var fromApp = params.has("app_code") || params.has("setup");
+    if (!paid && !tap && !app && !fromApp) return;
     if (window.history && window.history.replaceState) {
       window.history.replaceState({}, "", "/admin/payments.html");
+    }
+    recordPosAppReturn(params, paid ? "paid" : tap);
+    renderPosAppCard();
+    if (posAppSetupState().state === "outdated") {
+      setError(
+        "posAppError",
+        "This phone has an older S&R Tap to Pay app. Uninstall it, then tap Install below."
+      );
+      var card = byId("posAppCard");
+      if (card && card.scrollIntoView && !paid) card.scrollIntoView({ block: "start" });
+    } else if (params.get("setup") === "ready" && !paid && !tap) {
+      announce("Tap to Pay is set up on this phone. You’re ready to take payments.", "ok");
     }
     if (app === "missing") {
       setError(
@@ -1510,6 +1638,10 @@
     }
     byId("installPosAppBtn").addEventListener("click", installPosApp);
     byId("openPosAppBtn").addEventListener("click", openPosApp);
+    byId("posAppHelpToggle").addEventListener("click", function () {
+      posAppHelpOpen = !posAppHelpOpen;
+      renderPosAppCard();
+    });
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden && tapSubmitting) {
         window.setTimeout(function () {

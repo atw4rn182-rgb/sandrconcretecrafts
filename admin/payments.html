@@ -218,6 +218,7 @@
           <pre class="pos-handoff-diag" id="tapHandoffDiag" hidden></pre>
           <p class="tap-charge-source" id="tapChargeSource" aria-live="polite">Enter amounts or select website products. Only one total is charged.</p>
           <p class="pos-total-banner" id="posTotalBanner">TOTAL: $0.00</p>
+          <a class="pos-setup-nudge" id="posSetupNudge" href="#posAppCard" hidden>First time on this phone? Set up S&amp;R Tap to Pay ↓</a>
           <button class="btn btn-primary btn-block payment-submit tap-take-payment" id="takePaymentBtn" type="button" disabled aria-describedby="terminalHelp">TAKE PAYMENT — Native App Required</button>
           <p class="payment-help" id="terminalHelp">This browser does not tap cards. On this Pixel, Take Payment opens the S&amp;R Tap to Pay app. The amount is still calculated on the S&amp;R server.</p>
         </section>
@@ -230,14 +231,23 @@
             </div>
             <span class="pos-app-badge pos-app-badge--test" id="posAppBadge">TEST VERSION — Simulated payments only</span>
           </div>
+          <div class="pos-app-ready" id="posAppReady" hidden>
+            <span class="pos-app-ready-dot" aria-hidden="true"></span>
+            <span class="pos-app-ready-text" id="posAppReadyText">Tap to Pay is set up on this phone.</span>
+            <button type="button" class="btn btn-ghost btn-small" id="posAppHelpToggle" aria-expanded="false" aria-controls="posAppSetup">Setup help</button>
+          </div>
+          <div class="pos-app-outdated" id="posAppOutdated" hidden role="alert">
+            <strong>Update S&amp;R Tap to Pay on this phone</strong>
+            <p>This phone has an older version. Older versions can show $0.00 or ask for Location even when Android says Location is allowed.</p>
+            <ol>
+              <li>Open Android Settings → Apps → S&amp;R Tap to Pay → Uninstall.</li>
+              <li>Come back here and tap Install S&amp;R Tap to Pay.</li>
+              <li>Open it, sign in, and allow Location when it asks.</li>
+            </ol>
+          </div>
+          <div class="pos-app-setup" id="posAppSetup">
           <p class="pos-app-copy" id="posAppCopy">Required once on this Android phone to accept contactless payments. Customers do not install an app.</p>
-          <ol class="pos-app-steps" id="posAppSteps" hidden>
-            <li>Tap Install S&amp;R Tap to Pay.</li>
-            <li>Allow installation if Android asks.</li>
-            <li>Open S&amp;R Tap to Pay.</li>
-            <li>Tap Get Started and approve the settings the app asks for.</li>
-            <li>When it says Tap to Pay Ready, you’re done.</li>
-          </ol>
+          <ol class="pos-app-steps pos-app-guide" id="posAppSteps" hidden></ol>
           <p class="payment-form-error" id="posAppError" hidden role="alert"></p>
           <p class="payment-help" id="posAppDownloadHelp" hidden>
             <a id="posAppDownloadLink" href="#" download="S-and-R-Tap-to-Pay-TEST.apk">Tap here if the download did not start.</a>
@@ -248,6 +258,7 @@
           </div>
           <pre class="pos-handoff-diag" id="posAppInstallerDiag" hidden></pre>
           <p class="payment-help" id="posAppHelp">Authorized S&amp;R staff devices only.</p>
+          </div>
         </section>
       </section>
     </main>
@@ -262,6 +273,6 @@
   <script src="/admin/catalog-api.js"></script>
   <script src="/admin/pos-totals.js?v=11"></script>
   <script src="/admin/tap-handoff.js?v=11"></script>
-  <script src="/admin/payments.js?v=11"></script>
+  <script src="/admin/payments.js?v=12"></script>
 </body>
 </html>

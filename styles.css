@@ -548,6 +548,27 @@ img { max-width: 100%; display: block; }
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--clay);
 }
+.card-meta {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  min-height: 1.5rem; margin-top: -0.15rem;
+}
+.card-heart {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 0.3rem;
+  min-height: 40px; min-width: 40px; padding: 0 0.55rem; margin-right: -0.55rem;
+  border: 0; background: transparent; border-radius: 999px; cursor: pointer;
+  color: var(--brown-soft); font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion) var(--ease), transform var(--motion) var(--ease);
+}
+.card-heart-icon {
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round;
+  transition: fill var(--motion) var(--ease), transform var(--motion) var(--ease);
+}
+.card-heart-count:empty { display: none; }
+.card-heart.is-liked { color: #c4333b; }
+.card-heart.is-liked .card-heart-icon { fill: currentColor; transform: scale(1.06); }
+.card-heart:active .card-heart-icon { transform: scale(0.88); }
+.card-heart:focus-visible { outline: none; box-shadow: var(--focus); }
 .card-desc { color: var(--ink-muted); font-size: 0.92rem; margin: 0; flex: 1; line-height: 1.5; }
 .card-foot {
   display: flex; align-items: center; justify-content: space-between;
@@ -1307,6 +1328,7 @@ img { max-width: 100%; display: block; }
   }
   .card:hover .card-img img { transform: scale(1.02); }
   .card:hover .card-quick { opacity: 1; transform: translateY(0); }
+  .card-heart:hover { color: #c4333b; }
   .add:hover:not(:disabled) {
     background: linear-gradient(180deg, var(--clay-soft), var(--clay));
     color: #fff;

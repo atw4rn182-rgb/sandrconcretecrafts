@@ -236,8 +236,15 @@ class SetupActivity : AppCompatActivity() {
             goLogin()
             return
         }
+        val ready = if (setupStore.completedOnce) "&setup=ready" else ""
         startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse(PublicConfig.apiBaseUrl + "/admin/payments.html"))
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(
+                    PublicConfig.apiBaseUrl + "/admin/payments.html?app_code=" +
+                        BuildConfig.APP_VERSION_CODE + ready
+                )
+            )
         )
         finish()
     }

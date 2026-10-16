@@ -230,6 +230,9 @@
   let catalogReady = !liveMode;
   let catalogError = null;
   let activeCategory = "all";
+  // Storefront views that are not categories: "all", "favorites", "popular".
+  let activeView = "all";
+  let likeBusy = {};
   let productIndex = {};
   let catalogRequest = 0;
   let catalogStartPage = 1;
@@ -295,6 +298,25 @@
   function visibleProducts() {
     if (liveMode) return products.slice();
     var list = products.slice();
+    if (activeView === "favorites") {
+      var favorites = favoriteIds();
+      return list
+        .filter(function (item) {
+          return favorites.indexOf(item.id) !== -1;
+        })
+        .sort(function (a, b) {
+          return favorites.indexOf(a.id) - favorites.indexOf(b.id);
+        });
+    }
+    if (activeView === "popular") {
+      return list
+        .filter(function (item) {
+          return (item.likeCount || 0) > 0;
+        })
+        .sort(function (a, b) {
+          return (b.likeCount || 0) - (a.likeCount || 0);
+        });
+    }
     var p = prefs();
     if (!p.show_sold_out) {
       list = list.filter(function (item) {
@@ -472,10 +494,56 @@
     }
   }
 
+  function favoriteIds() {
+    return Cat && Cat.readFavoriteIds ? Cat.readFavoriteIds() : [];
+  }
+
+  function isLiked(id) {
+    return favoriteIds().indexOf(String(id)) !== -1;
+  }
+
+  function likesShared() {
+    return !!(Cat && Cat.likesAvailable && Cat.likesAvailable());
+  }
+
+  function viewChips() {
+    if (!Cat || !Cat.readFavoriteIds) return [];
+    var count = favoriteIds().length;
+    var chips = [
+      {
+        view: "favorites",
+        name: "♥ " + t("products.favorites") + (count ? " (" + count + ")" : ""),
+      },
+    ];
+    if (likesShared()) chips.push({ view: "popular", name: t("products.popular") });
+    return chips;
+  }
+
+  function filterChipHtml(label, href, attr, value, active, extraClass) {
+    return (
+      '<a class="filter-chip' +
+      (extraClass ? " " + extraClass : "") +
+      (active ? " is-active" : "") +
+      '" href="' +
+      escAttr(href) +
+      '" ' +
+      attr +
+      '="' +
+      escAttr(value) +
+      '" aria-pressed="' +
+      (active ? "true" : "false") +
+      '">' +
+      esc(label) +
+      "</a>"
+    );
+  }
+
   function renderFilters() {
     if (!filterWrap || !filterChips) return;
     var cats = collectCategories();
-    if (!cats.length) {
+    var views = viewChips();
+    if (activeView === "popular" && !likesShared()) activeView = "all";
+    if (!cats.length && !views.length) {
       filterWrap.hidden = true;
       filterChips.innerHTML = "";
       activeCategory = "all";
@@ -491,25 +559,37 @@
       activeCategory = "all";
     }
     filterWrap.hidden = false;
-    var chips = [{ id: "all", name: t("products.all") }].concat(cats);
-    filterChips.innerHTML = chips
-      .map(function (c) {
-        var active = activeCategory === c.id;
-        return (
-          '<a class="filter-chip' +
-          (active ? " is-active" : "") +
-          '" href="' +
-          escAttr(catalogHrefFor(c.id, 1)) +
-          '" data-category="' +
-          escAttr(c.id) +
-          '" aria-pressed="' +
-          (active ? "true" : "false") +
-          '">' +
-          esc(c.name) +
-          "</a>"
+    var html = filterChipHtml(
+      t("products.all"),
+      catalogHrefFor("all", 1, "all"),
+      "data-category",
+      "all",
+      activeView === "all" && activeCategory === "all"
+    );
+    html += views
+      .map(function (v) {
+        return filterChipHtml(
+          v.name,
+          catalogHrefFor("all", 1, v.view),
+          "data-view",
+          v.view,
+          activeView === v.view,
+          "filter-chip--view"
         );
       })
       .join("");
+    html += cats
+      .map(function (c) {
+        return filterChipHtml(
+          c.name,
+          catalogHrefFor(c.id, 1, "all"),
+          "data-category",
+          c.id,
+          activeView === "all" && activeCategory === c.id
+        );
+      })
+      .join("");
+    filterChips.innerHTML = html;
   }
 
   function loadCartRaw() {
@@ -681,14 +761,18 @@
       );
       return;
     }
+    var viewEmpty =
+      activeView === "favorites"
+        ? t("products.emptyFavorites")
+        : activeView === "popular"
+          ? t("products.emptyPopular")
+          : "";
     if (!products.length) {
       grid.innerHTML = "";
       hideCatalogNav();
       showCatalogStatus(
         "empty",
-        liveMode
-          ? t("products.emptyLive")
-          : t("products.empty"),
+        viewEmpty || (liveMode ? t("products.emptyLive") : t("products.empty")),
         false
       );
       return;
@@ -697,7 +781,7 @@
     if (!list.length) {
       grid.innerHTML = "";
       hideCatalogNav();
-      showCatalogStatus("empty", t("products.emptyCategory"), false);
+      showCatalogStatus("empty", viewEmpty || t("products.emptyCategory"), false);
       return;
     }
     showCatalogStatus(null);
@@ -765,9 +849,12 @@
       '">' +
       esc(p.name) +
       "</a></h3>" +
+      '<div class="card-meta">' +
       (p.itemNo
         ? '<span class="card-item">' + esc(t("card.itemNo", { n: p.itemNo })) + "</span>"
         : "") +
+      heartButtonHtml(p) +
+      "</div>" +
       lowStock +
       (String(p.desc || "").trim()
         ? '<p class="card-desc">' + esc(shortDesc(p.desc)) + "</p>"
@@ -793,6 +880,106 @@
         })
         .join("")
     );
+  }
+
+  var HEART_SVG =
+    '<svg class="card-heart-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+    '<path d="M12 20.4s-7.6-4.7-7.6-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.6 2.8c0 5.5-7.6 10.2-7.6 10.2z"/></svg>';
+
+  function heartCountText(p) {
+    var n = Math.max(0, Number(p && p.likeCount) || 0);
+    return likesShared() && n > 0 ? String(n) : "";
+  }
+
+  function heartButtonHtml(p) {
+    if (!Cat || !Cat.readFavoriteIds || !p || !p.id) return "";
+    var liked = isLiked(p.id);
+    var count = heartCountText(p);
+    return (
+      '<button type="button" class="card-heart' +
+      (liked ? " is-liked" : "") +
+      '" data-like="' +
+      escAttr(p.id) +
+      '" aria-pressed="' +
+      (liked ? "true" : "false") +
+      '" aria-label="' +
+      escAttr(t(liked ? "card.unlike" : "card.like", { name: p.name })) +
+      '">' +
+      HEART_SVG +
+      '<span class="card-heart-count"' +
+      (count ? ' aria-label="' + escAttr(t("card.likeCount", { n: count })) + '"' : "") +
+      ">" +
+      esc(count) +
+      "</span></button>"
+    );
+  }
+
+  function paintHearts(id) {
+    var product = findProduct(id);
+    if (!product || !grid) return;
+    var liked = isLiked(id);
+    var count = heartCountText(product);
+    grid.querySelectorAll(".card-heart").forEach(function (btn) {
+      if (btn.getAttribute("data-like") !== String(id)) return;
+      btn.classList.toggle("is-liked", liked);
+      btn.setAttribute("aria-pressed", liked ? "true" : "false");
+      btn.setAttribute(
+        "aria-label",
+        t(liked ? "card.unlike" : "card.like", { name: product.name })
+      );
+      var countEl = btn.querySelector(".card-heart-count");
+      if (countEl) {
+        countEl.textContent = count;
+        if (count) countEl.setAttribute("aria-label", t("card.likeCount", { n: count }));
+        else countEl.removeAttribute("aria-label");
+      }
+    });
+  }
+
+  function dropUnlikedFavoriteCard(id) {
+    if (activeView !== "favorites" || !grid) return;
+    products = products.filter(function (p) {
+      return p.id !== id;
+    });
+    catalogTotal = Math.max(0, catalogTotal - 1);
+    grid.querySelectorAll(".card").forEach(function (card) {
+      if (card.getAttribute("data-id") === String(id)) card.remove();
+    });
+    if (!products.length) renderProducts();
+  }
+
+  /** Optimistic heart; the server returns the real count (or we roll back). */
+  async function toggleLike(id) {
+    var product = findProduct(id);
+    if (!product || !Cat || !Cat.setFavorite || likeBusy[id]) return;
+    likeBusy[id] = true;
+    var wasLiked = isLiked(id);
+    var next = !wasLiked;
+    var before = Math.max(0, Number(product.likeCount) || 0);
+    Cat.setFavorite(id, next);
+    product.likeCount = Math.max(0, before + (next ? 1 : -1));
+    paintHearts(id);
+    var ok = true;
+    try {
+      if (likesShared()) {
+        var saved = await Cat.toggleProductLike(id, next);
+        product.likeCount = saved.likeCount;
+      }
+    } catch (err) {
+      ok = false;
+      Cat.setFavorite(id, wasLiked);
+      product.likeCount = before;
+    } finally {
+      likeBusy[id] = false;
+    }
+    paintHearts(id);
+    renderFilters();
+    if (!ok) {
+      toast(t("toast.likeFailed"));
+      return;
+    }
+    toast(t(next ? "toast.liked" : "toast.unliked"));
+    if (!next) dropUnlikedFavoriteCard(id);
   }
 
   function productImageTag(p, preset, opts) {
@@ -1737,11 +1924,13 @@
 
     if (filterChips) {
       filterChips.addEventListener("click", function (e) {
-        var chip = e.target.closest("[data-category]");
+        var chip = e.target.closest("[data-category],[data-view]");
         if (!chip) return;
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         if (chip.tagName === "A") e.preventDefault();
-        activeCategory = chip.getAttribute("data-category") || "all";
+        var view = chip.getAttribute("data-view");
+        activeView = view === "favorites" || view === "popular" ? view : "all";
+        activeCategory = view ? "all" : chip.getAttribute("data-category") || "all";
         if (liveMode) {
           catalogStartPage = 1;
           writeCatalogUrl(1);
@@ -1753,6 +1942,12 @@
     }
 
     grid.addEventListener("click", function (e) {
+      var likeBtn = e.target.closest("[data-like]");
+      if (likeBtn) {
+        e.stopPropagation();
+        toggleLike(likeBtn.getAttribute("data-like"));
+        return;
+      }
       var addBtn = e.target.closest("[data-add]");
       if (addBtn) {
         e.stopPropagation();
@@ -1888,15 +2083,18 @@
   function readCatalogLocation() {
     var page = 1;
     var category = "all";
+    var view = "all";
     try {
       var params = new URLSearchParams(window.location.search);
       page = parseInt(params.get("page") || "1", 10);
       category = params.get("category") || "all";
+      view = params.get("view") || "all";
     } catch (err) {
       page = 1;
     }
     if (!isFinite(page) || page < 1 || page > 10000) page = 1;
-    return { page: page, category: category };
+    if (view !== "favorites" && view !== "popular") view = "all";
+    return { page: page, category: category, view: view };
   }
 
   function resolveCategoryParam(raw) {
@@ -1907,9 +2105,12 @@
     return hit ? hit.id : "all";
   }
 
-  function catalogHrefFor(categoryId, page) {
+  function catalogHrefFor(categoryId, page, view) {
     var params = new URLSearchParams();
-    if (categoryId && categoryId !== "all") {
+    var targetView = view || activeView;
+    if (targetView === "favorites" || targetView === "popular") {
+      params.set("view", targetView);
+    } else if (categoryId && categoryId !== "all") {
       var cat = storefrontCategories.find(function (c) {
         return c.id === categoryId;
       });
@@ -1922,7 +2123,9 @@
 
   function writeCatalogUrl(page) {
     var params = new URLSearchParams();
-    if (activeCategory && activeCategory !== "all") {
+    if (activeView === "favorites" || activeView === "popular") {
+      params.set("view", activeView);
+    } else if (activeCategory && activeCategory !== "all") {
       var cat = storefrontCategories.find(function (c) {
         return c.id === activeCategory;
       });
@@ -1938,13 +2141,29 @@
   }
 
   function catalogQueryOptions(offset) {
+    var view = activeView !== "all";
     return {
       offset: offset,
       limit: pageSize(),
-      categoryId: activeCategory && activeCategory !== "all" ? activeCategory : "",
-      hideSoldOut: prefs().show_sold_out === false,
+      categoryId: !view && activeCategory && activeCategory !== "all" ? activeCategory : "",
+      hideSoldOut: activeView !== "favorites" && prefs().show_sold_out === false,
       featuredFirst: prefs().featured_first !== false,
+      sort: activeView === "popular" ? "popular" : "",
     };
+  }
+
+  async function fetchCatalogPage(opts) {
+    if (activeView === "favorites" && Cat.fetchStorefrontFavoritesPage) {
+      return Cat.fetchStorefrontFavoritesPage(opts);
+    }
+    var result = await Cat.fetchStorefrontProductPage(opts);
+    if (activeView === "popular" && !likesShared()) {
+      // Hearts aren't live yet (old ?view=popular link): show the whole shop instead.
+      activeView = "all";
+      writeCatalogUrl(Math.max(catalogStartPage, 1));
+      return Cat.fetchStorefrontProductPage(catalogQueryOptions(opts.offset));
+    }
+    return result;
   }
 
   function nextCatalogOffset() {
@@ -2091,7 +2310,7 @@
     setCatalogMore(t("products.loadingMore"));
     var failed = false;
     try {
-      var result = await Cat.fetchStorefrontProductPage(catalogQueryOptions(nextCatalogOffset()));
+      var result = await fetchCatalogPage(catalogQueryOptions(nextCatalogOffset()));
       if (gen !== catalogRequest) return;
       var added = [];
       (result.products || []).forEach(function (product) {
@@ -2156,9 +2375,10 @@
       }
       if (gen !== catalogRequest) return;
       var query = readCatalogLocation();
-      activeCategory = resolveCategoryParam(query.category);
+      activeView = query.view;
+      activeCategory = activeView === "all" ? resolveCategoryParam(query.category) : "all";
       catalogStartPage = query.page;
-      var result = await Cat.fetchStorefrontProductPage(
+      var result = await fetchCatalogPage(
         catalogQueryOptions((catalogStartPage - 1) * pageSize())
       );
       if (gen !== catalogRequest) return;

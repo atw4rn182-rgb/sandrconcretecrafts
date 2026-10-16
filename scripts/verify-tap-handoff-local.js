@@ -157,7 +157,7 @@ assert.doesNotMatch(payments, /intent:\/\/collect\?p=/);
 
 var html = read("admin/payments.html");
 assert.match(html, /tap-handoff\.js\?v=11/);
-assert.match(html, /payments\.js\?v=11/);
+assert.match(html, /payments\.js\?v=12/);
 assert.match(html, /tapHandoffDiag/);
 assert.match(html, /HANDOFF BUILD: v2 \/ p311/);
 assert.match(html, /0\.1\.10-test · Code 11/);

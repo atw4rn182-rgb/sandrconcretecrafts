@@ -364,8 +364,12 @@ class CollectActivity : AppCompatActivity() {
     }
 
     private fun openPayments(query: String?) {
-        val url = PublicConfig.apiBaseUrl + "/admin/payments.html" +
-            if (query.isNullOrBlank()) "" else "?$query"
+        // Admin uses app_code to tell a current app from an outdated install.
+        val params = listOfNotNull(
+            query?.takeIf { it.isNotBlank() },
+            "app_code=${BuildConfig.APP_VERSION_CODE}"
+        )
+        val url = PublicConfig.apiBaseUrl + "/admin/payments.html?" + params.joinToString("&")
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         finish()
     }

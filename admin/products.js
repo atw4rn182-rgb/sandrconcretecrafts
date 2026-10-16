@@ -16,6 +16,9 @@
   var matchTotal = 0;
   var searchTimer = null;
   var moreObserver = null;
+  var socialSelecting = false;
+  var socialPicked = {};
+  var socialOrder = [];
   var statusCounts = {
     all: 0,
     published: 0,
@@ -192,10 +195,14 @@
   }
 
   function cardMarkup(product, eager) {
+    var picked = !!socialPicked[product.id];
     return (
-      '<article class="product-card" data-product-id="' +
+      '<article class="product-card' +
+      (picked ? " is-social-picked" : "") +
+      '" data-product-id="' +
       SRCatalog.escapeHtml(product.id) +
       '">' +
+      '<span class="product-card-check" aria-hidden="true"></span>' +
       '<a class="product-card-media" href="/admin/product-edit.html?id=' +
       encodeURIComponent(product.id) +
       '">' +
@@ -322,6 +329,7 @@
       '<a class="action-sheet-btn" href="/admin/product-edit.html?id=' +
       encodeURIComponent(product.id) +
       '">Edit</a>' +
+      '<button type="button" class="action-sheet-btn" data-action="social">Post to Socials</button>' +
       '<button type="button" class="action-sheet-btn" data-action="publish">Publish</button>' +
       '<button type="button" class="action-sheet-btn" data-action="hide">Hide</button>' +
       '<button type="button" class="action-sheet-btn" data-action="sold_out">Mark Sold Out</button>' +
@@ -353,6 +361,10 @@
     var product = findLoaded(actionProductId);
     if (!product) return;
     closeActionSheet();
+    if (action === "social") {
+      if (window.SRSocialShare) SRSocialShare.open([product]);
+      return;
+    }
     if (action === "delete") {
       onDelete(product.id, product.title);
       return;
@@ -409,6 +421,108 @@
       renderStatusChips();
     } catch (err) {
       showFlash(err.message || "Couldn’t delete that product.", "err");
+    }
+  }
+
+  function socialMax() {
+    return (window.SRSocialShare && SRSocialShare.MAX_PRODUCTS) || 10;
+  }
+
+  function paintSocialBar() {
+    var bar = document.getElementById("socialSelectBar");
+    var count = document.getElementById("socialSelectCount");
+    var go = document.getElementById("socialSelectGo");
+    var toggle = document.getElementById("socialSelectBtn");
+    var n = socialOrder.length;
+    document.body.classList.toggle("social-selecting", socialSelecting);
+    if (bar) bar.hidden = !socialSelecting;
+    if (toggle) {
+      toggle.setAttribute("aria-pressed", socialSelecting ? "true" : "false");
+      toggle.textContent = socialSelecting ? "Done selecting" : "Post to Socials";
+    }
+    if (count) {
+      count.textContent = n
+        ? n + " selected" + (n >= socialMax() ? " · " + socialMax() + " max per post" : "")
+        : "Tap products to add them to one post";
+    }
+    if (go) {
+      go.disabled = !n;
+      go.textContent = n > 1 ? "Post " + n + " to Socials" : "Post to Socials";
+    }
+  }
+
+  function setSocialSelecting(on) {
+    socialSelecting = !!on;
+    if (!socialSelecting) {
+      socialPicked = {};
+      socialOrder = [];
+      document.querySelectorAll(".product-card.is-social-picked").forEach(function (card) {
+        card.classList.remove("is-social-picked");
+      });
+    }
+    paintSocialBar();
+  }
+
+  function toggleSocialPick(id) {
+    var product = findLoaded(id);
+    if (!product) return;
+    if (socialPicked[id]) {
+      delete socialPicked[id];
+      socialOrder = socialOrder.filter(function (picked) {
+        return picked !== id;
+      });
+    } else {
+      if (socialOrder.length >= socialMax()) {
+        showFlash("One post can include up to " + socialMax() + " products.", "err");
+        return;
+      }
+      socialPicked[id] = product;
+      socialOrder.push(id);
+    }
+    var card = document.querySelector('[data-product-id="' + id + '"]');
+    if (card) card.classList.toggle("is-social-picked", !!socialPicked[id]);
+    paintSocialBar();
+  }
+
+  function openSocialForPicked() {
+    var list = socialOrder
+      .map(function (id) {
+        return socialPicked[id];
+      })
+      .filter(Boolean);
+    if (list.length && window.SRSocialShare) SRSocialShare.open(list);
+  }
+
+  function bindSocialSelect() {
+    var toggle = document.getElementById("socialSelectBtn");
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        setSocialSelecting(!socialSelecting);
+      });
+    }
+    var cancel = document.getElementById("socialSelectCancel");
+    if (cancel) {
+      cancel.addEventListener("click", function () {
+        setSocialSelecting(false);
+      });
+    }
+    var go = document.getElementById("socialSelectGo");
+    if (go) go.addEventListener("click", openSocialForPicked);
+    var list = document.getElementById("productList");
+    if (list) {
+      // While selecting, a tap picks the product instead of opening the editor.
+      list.addEventListener(
+        "click",
+        function (event) {
+          if (!socialSelecting) return;
+          var card = event.target.closest(".product-card");
+          if (!card) return;
+          event.preventDefault();
+          event.stopPropagation();
+          toggleSocialPick(card.getAttribute("data-product-id"));
+        },
+        true
+      );
     }
   }
 
@@ -650,6 +764,7 @@
     var backdrop = document.getElementById("actionSheetBackdrop");
     if (close) close.addEventListener("click", closeActionSheet);
     if (backdrop) backdrop.addEventListener("click", closeActionSheet);
+    bindSocialSelect();
     load();
   });
 })();

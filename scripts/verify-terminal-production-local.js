@@ -41,9 +41,10 @@ var parser = read(
 
 // A. Production build has SIMULATED_READER=false
 assert.match(gradle, /buildTypes[\s\S]*release[\s\S]*SIMULATED_READER", "false"/);
-assert.match(gradle, /p4-production/);
-assert.match(gradle, /versionCode\.set\(12\)/);
-assert.match(gradle, /versionName\.set\("1\.0\.0"\)/);
+assert.match(gradle, /p5-production/);
+assert.match(gradle, /releaseVersionCode = 13/);
+assert.match(gradle, /versionCode\.set\(releaseVersionCode\)/);
+assert.match(gradle, /releaseVersionName = "1\.0\.1"/);
 
 // B. Test build retains SIMULATED_READER=true
 assert.match(gradle, /debug[\s\S]*SIMULATED_READER", "true"/);
@@ -160,6 +161,6 @@ assert.doesNotMatch(controller, /sk_live_|SERVICE_ROLE|whsec_/);
 assert.match(connectionToken, /requireActiveAdmin/);
 assert.doesNotMatch(connectionToken, /service_role|SERVICE_ROLE/);
 assert.match(posApp, /SR_POS_APP_CHANNEL \|\| "test"/);
-assert.match(posApp, /versionName: "1\.0\.0"/);
+assert.match(posApp, /versionName: "1\.0\.1"/);
 
 console.log("production Terminal dual-mode, mismatch, webhook, and isolation: ok");
