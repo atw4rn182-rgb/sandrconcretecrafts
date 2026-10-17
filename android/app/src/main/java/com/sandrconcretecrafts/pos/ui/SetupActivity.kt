@@ -156,7 +156,13 @@ class SetupActivity : AppCompatActivity() {
             permission.launch(TerminalPermissions.locationRequestPermissions)
             return
         }
-        if (view.action == SetupGate.Action.INIT_TERMINAL && !terminalStarted) {
+        // TERMINAL_FAILED also uses INIT_TERMINAL for its Try Again button; only
+        // the first connect screen may start Terminal without a tap.
+        if (
+            view.screen == SetupGate.Screen.TERMINAL_CONNECT &&
+            view.action == SetupGate.Action.INIT_TERMINAL &&
+            !terminalStarted
+        ) {
             startTerminal()
         }
     }

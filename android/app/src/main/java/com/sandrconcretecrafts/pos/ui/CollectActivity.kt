@@ -277,7 +277,7 @@ class CollectActivity : AppCompatActivity() {
                 binding.detail.text = if (BuildConfig.SIMULATED_READER) {
                     state.message
                 } else {
-                    "The card was not charged. You can try again."
+                    "The card was not charged.\n\n${state.message}"
                 }
                 binding.busy.visibility = View.GONE
                 binding.takePayment.visibility = View.GONE

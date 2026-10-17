@@ -29,8 +29,8 @@ fun releaseSigningConfigured(): Boolean {
         file(propOrEnv("SR_RELEASE_STORE_FILE")).exists()
 }
 
-val releaseVersionCode = 13
-val releaseVersionName = "1.0.1"
+val releaseVersionCode = 14
+val releaseVersionName = "1.0.2"
 
 android {
     namespace = "com.sandrconcretecrafts.pos"

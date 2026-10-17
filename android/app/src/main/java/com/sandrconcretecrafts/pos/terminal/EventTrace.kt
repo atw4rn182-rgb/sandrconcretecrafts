@@ -1,20 +1,24 @@
 package com.sandrconcretecrafts.pos.terminal
 
+import android.util.Log
 import com.sandrconcretecrafts.pos.BuildConfig
 import java.util.ArrayList
 import java.util.Collections
 
 /**
- * TEST-only chronological trace. Never stores secrets.
+ * Chronological Tap to Pay trace. Every build writes it to logcat (tag
+ * SRTapToPay); only TEST builds keep it for the on-screen panel. Never stores secrets.
  */
 object EventTrace {
     private const val LIMIT = 40
+    private const val LOG_TAG = "SRTapToPay"
     private val events = Collections.synchronizedList(ArrayList<String>())
     private var seq = 0
 
     fun add(event: String) {
-        if (!BuildConfig.SIMULATED_READER) return
         val safe = sanitize(event)
+        Log.i(LOG_TAG, safe)
+        if (!BuildConfig.SIMULATED_READER) return
         synchronized(events) {
             seq += 1
             events.add(String.format("%02d %s", seq, safe))

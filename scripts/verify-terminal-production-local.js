@@ -42,9 +42,9 @@ var parser = read(
 // A. Production build has SIMULATED_READER=false
 assert.match(gradle, /buildTypes[\s\S]*release[\s\S]*SIMULATED_READER", "false"/);
 assert.match(gradle, /p5-production/);
-assert.match(gradle, /releaseVersionCode = 13/);
+assert.match(gradle, /releaseVersionCode = 14/);
 assert.match(gradle, /versionCode\.set\(releaseVersionCode\)/);
-assert.match(gradle, /releaseVersionName = "1\.0\.1"/);
+assert.match(gradle, /releaseVersionName = "1\.0\.2"/);
 
 // B. Test build retains SIMULATED_READER=true
 assert.match(gradle, /debug[\s\S]*SIMULATED_READER", "true"/);
@@ -107,6 +107,20 @@ assert.doesNotMatch(controller, /sk_live_|whsec_/);
 assert.match(controller, /isSimulated = useSimulatedReader\(\)/);
 assert.match(controller, /SIMULATED_READER_FORBIDDEN|!useSimulatedReader\(\) && config\.isSimulated/);
 
+// M2. Connecting can never spin forever: stage timeouts, one result per attempt,
+// a readable Developer Options message, and the setup failure screen waits for
+// Try Again instead of auto-restarting (the 1.0.1 hang).
+assert.match(controller, /message\.contains\("Developer Options", ignoreCase = true\)/);
+assert.match(controller, /armTimeout\(id, "reader-discovery", DISCOVERY_TIMEOUT_MS/);
+assert.match(controller, /armTimeout\(id, "reader-connection", CONNECT_TIMEOUT_MS/);
+assert.match(controller, /private fun fail\([\s\S]*if \(!settle\(id\)\) return/);
+assert.match(controller, /Log\.e\(LOG_TAG/);
+assert.match(
+  read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/SetupActivity.kt"),
+  /view\.screen == SetupGate\.Screen\.TERMINAL_CONNECT &&\s*view\.action == SetupGate\.Action\.INIT_TERMINAL/
+);
+assert.match(collect, /The card was not charged\.\\n\\n\$\{state\.message\}/);
+
 // N. No automated live card collection during tests/deployment
 assert.doesNotMatch(viewModel, /onReady = \{[\s\S]{0,200}takePayment\(/);
 assert.doesNotMatch(viewModel, /onReady = \{[\s\S]{0,200}terminal\.collect\(/);
@@ -161,6 +175,6 @@ assert.doesNotMatch(controller, /sk_live_|SERVICE_ROLE|whsec_/);
 assert.match(connectionToken, /requireActiveAdmin/);
 assert.doesNotMatch(connectionToken, /service_role|SERVICE_ROLE/);
 assert.match(posApp, /SR_POS_APP_CHANNEL \|\| "test"/);
-assert.match(posApp, /versionName: "1\.0\.1"/);
+assert.match(posApp, /versionName: "1\.0\.2"/);
 
 console.log("production Terminal dual-mode, mismatch, webhook, and isolation: ok");

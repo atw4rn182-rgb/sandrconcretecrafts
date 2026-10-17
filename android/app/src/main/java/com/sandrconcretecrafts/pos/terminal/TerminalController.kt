@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.sandrconcretecrafts.pos.data.PublicConfig
 import com.sandrconcretecrafts.pos.data.SrApi
 import com.stripe.stripeterminal.Terminal
@@ -30,6 +31,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class TerminalController(
     private val application: Application,
@@ -74,7 +76,15 @@ class TerminalController(
     var backendLivemode: Boolean? = null
         private set
 
+    @Volatile
+    var lastTechnicalError: String? = null
+        private set
+
     private val readerClaimed = AtomicBoolean(false)
+    // Each connect() is one attempt; callbacks from a cancelled or timed-out
+    // attempt must not change the UI of the next one.
+    private val attempt = AtomicInteger(0)
+    private val settled = AtomicBoolean(false)
     private var phaseListener: ((String) -> Unit)? = null
 
     fun connect(onPhase: (String) -> Unit, onReady: () -> Unit, onError: (String) -> Unit) {
@@ -93,10 +103,14 @@ class TerminalController(
         }
         if (connecting) return
         connecting = true
+        val id = attempt.incrementAndGet()
+        settled.set(false)
         lastSafeError = null
         lastErrorCode = null
+        lastTechnicalError = null
         lastStage = "permission-check"
         readerClaimed.set(false)
+        EventTrace.add("CONNECT_ATTEMPT id=$id simulated=${useSimulatedReader()}")
         io.execute {
             try {
                 lastStage = "terminal-init"
@@ -140,21 +154,25 @@ class TerminalController(
                 notifyPhase(phaseCopy("Checking Tap to Pay support", "CONNECTING"))
                 assertTapToPaySupported()
                 lastStage = "reader-discovery"
-                main.post { startDiscovery(session.locationId, onReady, onError) }
+                main.post { startDiscovery(id, session.locationId, onReady, onError) }
             } catch (error: Exception) {
-                connecting = false
-                terminalStatus = TerminalStatus.Failed
-                if (lastStage == "connection-token") {
-                    EventTrace.add("CONNECTION_TOKEN_ERROR")
+                val stage = lastStage
+                if (stage != "connection-token") terminalStatus = TerminalStatus.Failed
+                if (stage == "connection-token") {
+                    tokenStatus = TokenStatus.Failed
+                    EventTrace.add("CONNECTION_TOKEN_ERROR class=${error.javaClass.simpleName}")
                 } else {
                     EventTrace.add("TERMINAL_INIT_ERROR class=${error.javaClass.simpleName}")
                 }
                 if (error is TerminalException) {
-                    onError(formatStripeError(lastStage, error))
+                    fail(id, stage, stripeCode(error), stripeMessage(error), onError)
                 } else {
-                    lastSafeError = sanitize(error.message ?: "Tap to Pay SDK did not start.")
-                    lastErrorCode = lastErrorCode ?: "INIT_FAILED"
-                    onError(formatStripeError(lastStage, lastErrorCode, lastSafeError))
+                    val code = when (stage) {
+                        "connection-token" -> "CONNECTION_TOKEN_FAILED"
+                        "device-support" -> "TAP_TO_PAY_UNSUPPORTED"
+                        else -> "INIT_FAILED"
+                    }
+                    fail(id, stage, code, error.message ?: "Tap to Pay SDK did not start.", onError)
                 }
             }
         }
@@ -165,6 +183,7 @@ class TerminalController(
         onSuccess: (PaymentIntent) -> Unit,
         onError: (String) -> Unit
     ) {
+        lastStage = "payment"
         main.post {
             Terminal.getInstance().retrievePaymentIntent(
                 clientSecret,
@@ -197,12 +216,16 @@ class TerminalController(
     }
 
     fun cancel() {
+        // Synchronous so an immediate connect() (Retry) starts a fresh attempt.
+        attempt.incrementAndGet()
+        connecting = false
+        readerClaimed.set(false)
+        val discovery = discoverCancelable
+        val payment = paymentCancelable
+        discoverCancelable = null
         main.post {
-            paymentCancelable?.cancel(noopCallback)
-            discoverCancelable?.cancel(noopCallback)
-            discoverCancelable = null
-            connecting = false
-            readerClaimed.set(false)
+            payment?.cancel(noopCallback)
+            discovery?.cancel(noopCallback)
         }
     }
 
@@ -275,8 +298,10 @@ class TerminalController(
         terminalStatus = TerminalStatus.Initialized
     }
 
-    private fun startDiscovery(locationId: String, onReady: () -> Unit, onError: (String) -> Unit) {
+    private fun startDiscovery(id: Int, locationId: String, onReady: () -> Unit, onError: (String) -> Unit) {
+        if (id != attempt.get()) return
         if (runCatching { Terminal.getInstance().connectedReader }.getOrNull() != null) {
+            if (!settle(id)) return
             connectionStatus = ConnectionPhase.Connected
             connecting = false
             onReady()
@@ -294,44 +319,44 @@ class TerminalController(
             isSimulated = useSimulatedReader()
         )
         if (!useSimulatedReader() && config.isSimulated) {
-            connecting = false
             discoveryStatus = DiscoveryStatus.Failed
-            lastErrorCode = "SIMULATED_READER_FORBIDDEN"
-            onError("SOURCE: ANDROID_PERMISSION_CHECK\nBLOCKED STAGE: READER_DISCOVERY\nProduction cannot use a simulated reader.")
+            fail(id, "reader-discovery", "SIMULATED_READER_FORBIDDEN", "Production cannot use a simulated reader.", onError)
             return
         }
         discoveryStatus = DiscoveryStatus.Searching
         notifyPhase(phaseCopy("Searching for simulated Tap to Pay reader", "CONNECTING"))
+        armTimeout(id, "reader-discovery", DISCOVERY_TIMEOUT_MS, onError)
         discoverCancelable = Terminal.getInstance().discoverReaders(
             config,
             object : DiscoveryListener {
                 override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
-                    EventTrace.add("DISCOVERY_SUCCESS reader_count=${readers.size}")
+                    EventTrace.add("DISCOVERY_UPDATE reader_count=${readers.size}")
+                    if (id != attempt.get() || settled.get()) return
                     val reader = readers.firstOrNull() ?: return
                     if (!readerClaimed.compareAndSet(false, true)) return
                     discoveryStatus = DiscoveryStatus.ReaderFound
                     notifyPhase(phaseCopy("Simulated reader found", "CONNECTING"))
-                    connectReader(reader, locationId, onReady, onError)
+                    connectReader(id, reader, locationId, onReady, onError)
                 }
             },
             object : Callback {
-                override fun onSuccess() = Unit
+                override fun onSuccess() {
+                    EventTrace.add("DISCOVERY_COMPLETE")
+                }
 
                 override fun onFailure(e: TerminalException) {
-                    connecting = false
+                    EventTrace.add("DISCOVERY_ERROR code=${e.errorCode}")
+                    if (id != attempt.get()) return
                     discoverCancelable = null
                     discoveryStatus = DiscoveryStatus.Failed
-                    lastStage = "reader-discovery"
-                    EventTrace.add("DISCOVERY_ERROR code=${e.errorCode}")
-                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK}")
-                    lastSafeError = friendly(e)
-                    onError(lastSafeError ?: friendly(e))
+                    fail(id, "reader-discovery", stripeCode(e), stripeMessage(e), onError)
                 }
             }
         )
     }
 
     private fun connectReader(
+        id: Int,
         reader: Reader,
         locationId: String,
         onReady: () -> Unit,
@@ -341,6 +366,7 @@ class TerminalController(
         connectionStatus = ConnectionPhase.Connecting
         EventTrace.add("READER_CONNECT_START")
         notifyPhase(phaseCopy("Connecting simulated reader", "CONNECTING"))
+        armTimeout(id, "reader-connection", CONNECT_TIMEOUT_MS, onError)
         val config = ConnectionConfiguration.TapToPayConnectionConfiguration(
             locationId,
             true,
@@ -351,26 +377,80 @@ class TerminalController(
             config,
             object : ReaderCallback {
                 override fun onSuccess(reader: Reader) {
+                    EventTrace.add("READER_CONNECT_SUCCESS")
+                    if (!settle(id)) return
                     connecting = false
                     discoverCancelable = null
                     connectionStatus = ConnectionPhase.Connected
-                    EventTrace.add("READER_CONNECT_SUCCESS")
                     notifyPhase(phaseCopy("Simulated reader connected", "READY"))
                     onReady()
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    connecting = false
+                    EventTrace.add("READER_CONNECT_ERROR code=${e.errorCode}")
+                    if (id != attempt.get()) return
                     readerClaimed.set(false)
                     connectionStatus = ConnectionPhase.Failed
-                    lastStage = "reader-connection"
-                    EventTrace.add("READER_CONNECT_ERROR code=${e.errorCode}")
-                    EventTrace.add("UI_ERROR_SOURCE=${ErrorSource.STRIPE_SDK}")
-                    lastSafeError = friendly(e)
-                    onError(lastSafeError ?: friendly(e))
+                    fail(id, "reader-connection", stripeCode(e), stripeMessage(e), onError)
                 }
             }
         )
+    }
+
+    private fun settle(id: Int): Boolean {
+        return id == attempt.get() && settled.compareAndSet(false, true)
+    }
+
+    private fun armTimeout(id: Int, stage: String, timeoutMs: Long, onError: (String) -> Unit) {
+        main.postDelayed({
+            if (id != attempt.get() || settled.get() || lastStage != stage) return@postDelayed
+            val seconds = timeoutMs / 1000
+            if (stage == "reader-discovery") {
+                discoveryStatus = DiscoveryStatus.Failed
+                fail(id, stage, "DISCOVERY_TIMEOUT", "Stripe Terminal did not find the Tap to Pay reader within $seconds seconds.", onError)
+            } else {
+                connectionStatus = ConnectionPhase.Failed
+                fail(id, stage, "READER_CONNECT_TIMEOUT", "Stripe Terminal did not finish connecting the Tap to Pay reader within $seconds seconds.", onError)
+            }
+        }, timeoutMs)
+    }
+
+    private fun fail(id: Int, stage: String, code: String, message: String, onError: (String) -> Unit) {
+        if (!settle(id)) return
+        connecting = false
+        lastStage = stage
+        discoverCancelable?.let { pending ->
+            discoverCancelable = null
+            main.post { pending.cancel(noopCallback) }
+        }
+        val safeMessage = sanitize(message)
+        val technical = formatStripeError(stage, code, safeMessage)
+        lastTechnicalError = technical
+        Log.e(LOG_TAG, "Tap to Pay failed\n$technical")
+        onError(userFacing(stage, code, safeMessage, technical))
+    }
+
+    private fun userFacing(stage: String, code: String, message: String, technical: String): String {
+        if (useSimulatedReader()) return technical
+        val human = when {
+            message.contains("Developer Options", ignoreCase = true) ->
+                "Developer options are turned on, so Stripe blocks Tap to Pay on this phone.\n\nTurn them off in Settings → System → Developer options → \"Use developer options\", then tap Try Again."
+            code == "DISCOVERY_TIMEOUT" || code == "READER_CONNECT_TIMEOUT" ->
+                "Tap to Pay took too long to connect. Check the internet connection, then tap Try Again.\n\n$message"
+            stage == "connection-token" ->
+                "Couldn't reach the S&R server to start Tap to Pay. Check the internet connection, then tap Try Again.\n\n$message"
+            stage == "payment" -> "The payment didn't go through.\n\n$message"
+            else -> "Tap to Pay couldn't connect.\n\n$message"
+        }
+        return "$human\n\nError code: $code"
+    }
+
+    private fun stripeCode(error: TerminalException): String {
+        return error.errorCode.toString().substringAfterLast('.').ifBlank { "TERMINAL_EXCEPTION" }
+    }
+
+    private fun stripeMessage(error: TerminalException): String {
+        return error.errorMessage.ifBlank { "Tap to Pay couldn’t finish. Please try again." }
     }
 
     private fun useSimulatedReader(): Boolean {
@@ -408,7 +488,8 @@ class TerminalController(
             "Reader discovery: ${label(discoveryStatus)}",
             "Reader connection: ${label(connectionStatus)}",
             lastErrorCode?.let { "Last error code: $it" },
-            lastSafeError?.let { "Last error: $it" }
+            lastSafeError?.let { "Last error: $it" },
+            if (useSimulatedReader()) null else lastTechnicalError
         ).filterNotNull().joinToString("\n")
     }
 
@@ -453,7 +534,12 @@ class TerminalController(
     }
 
     private fun friendly(error: TerminalException): String {
-        return formatStripeError(lastStage, error)
+        val code = stripeCode(error)
+        val message = sanitize(stripeMessage(error))
+        val technical = formatStripeError(lastStage, error)
+        lastTechnicalError = technical
+        Log.e(LOG_TAG, "Tap to Pay failed\n$technical")
+        return userFacing(lastStage, code, message, technical)
     }
 
     private fun formatStripeError(stage: String, error: TerminalException): String {
@@ -485,10 +571,6 @@ class TerminalController(
         ).joinToString("\n")
     }
 
-    private fun formatError(stage: String, code: String?, message: String?): String {
-        return formatStripeError(stage, code, message)
-    }
-
     private fun sanitize(raw: String): String {
         return raw
             .replace(Regex("(?i)(sk|rk|whsec|pst|pi|tml|eyJ)[_A-Za-z0-9\\-]{8,}"), "[redacted]")
@@ -496,6 +578,11 @@ class TerminalController(
     }
 
     companion object {
+        private const val LOG_TAG = "SRTapToPay"
+        private const val DISCOVERY_TIMEOUT_MS = 60_000L
+        // First production connect can download the Tap to Pay reader configuration.
+        private const val CONNECT_TIMEOUT_MS = 120_000L
+
         private val noopCallback = object : Callback {
             override fun onSuccess() = Unit
             override fun onFailure(e: TerminalException) = Unit
