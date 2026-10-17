@@ -184,11 +184,26 @@ class TerminalController(
         onError: (String) -> Unit
     ) {
         lastStage = "payment"
+        val retrieved = AtomicBoolean(false)
+        EventTrace.add("PAYMENT_RETRIEVE_START")
+        main.postDelayed({
+            if (!retrieved.compareAndSet(false, true)) return@postDelayed
+            val seconds = RETRIEVE_TIMEOUT_MS / 1000
+            val message = "Stripe did not return the payment within $seconds seconds. No card was charged."
+            val technical = formatStripeError("payment", "PAYMENT_RETRIEVE_TIMEOUT", message)
+            lastTechnicalError = technical
+            Log.e(LOG_TAG, "Tap to Pay failed\n$technical")
+            onError(userFacing("payment", "PAYMENT_RETRIEVE_TIMEOUT", message, technical))
+        }, RETRIEVE_TIMEOUT_MS)
         main.post {
             Terminal.getInstance().retrievePaymentIntent(
                 clientSecret,
                 object : PaymentIntentCallback {
                     override fun onSuccess(paymentIntent: PaymentIntent) {
+                        if (!retrieved.compareAndSet(false, true)) return
+                        EventTrace.add("PAYMENT_RETRIEVE_SUCCESS")
+                        // Present Card: Stripe's Tap to Pay screen owns this step and its cancel.
+                        EventTrace.add("PAYMENT_PROCESS_START")
                         paymentCancelable = Terminal.getInstance().processPaymentIntent(
                             paymentIntent,
                             CollectPaymentIntentConfiguration.Builder().build(),
@@ -208,6 +223,8 @@ class TerminalController(
                     }
 
                     override fun onFailure(e: TerminalException) {
+                        if (!retrieved.compareAndSet(false, true)) return
+                        EventTrace.add("PAYMENT_RETRIEVE_ERROR code=${e.errorCode}")
                         onError(friendly(e))
                     }
                 }
@@ -278,8 +295,13 @@ class TerminalController(
                 )
             },
             object : TerminalListener {
-                override fun onConnectionStatusChange(status: ConnectionStatus) = Unit
-                override fun onPaymentStatusChange(status: PaymentStatus) = Unit
+                override fun onConnectionStatusChange(status: ConnectionStatus) {
+                    EventTrace.add("CONNECTION_STATUS=$status")
+                }
+
+                override fun onPaymentStatusChange(status: PaymentStatus) {
+                    EventTrace.add("PAYMENT_STATUS=$status")
+                }
             },
             null
         )
@@ -377,12 +399,13 @@ class TerminalController(
             config,
             object : ReaderCallback {
                 override fun onSuccess(reader: Reader) {
-                    EventTrace.add("READER_CONNECT_SUCCESS")
+                    EventTrace.add(
+                        "READER_CONNECT_SUCCESS status=${runCatching { Terminal.getInstance().connectionStatus }.getOrNull()}"
+                    )
                     if (!settle(id)) return
                     connecting = false
                     discoverCancelable = null
                     connectionStatus = ConnectionPhase.Connected
-                    notifyPhase(phaseCopy("Simulated reader connected", "READY"))
                     onReady()
                 }
 
@@ -504,8 +527,13 @@ class TerminalController(
 
     private fun notifyPhase(message: String) {
         val listener = phaseListener ?: return
-        if (Looper.myLooper() == Looper.getMainLooper()) listener(message)
-        else main.post { listener(message) }
+        val id = attempt.get()
+        // Stripe callbacks run off the main thread, so a phase posted here can land
+        // after onReady/onError. Once the attempt has a result, a late phase would
+        // put the spinner back over the Ready or error screen.
+        val deliver = { if (id == attempt.get() && !settled.get()) listener(message) }
+        if (Looper.myLooper() == Looper.getMainLooper()) deliver()
+        else main.post { deliver() }
     }
 
     private fun label(status: Enum<*>): String {
@@ -582,6 +610,7 @@ class TerminalController(
         private const val DISCOVERY_TIMEOUT_MS = 60_000L
         // First production connect can download the Tap to Pay reader configuration.
         private const val CONNECT_TIMEOUT_MS = 120_000L
+        private const val RETRIEVE_TIMEOUT_MS = 30_000L
 
         private val noopCallback = object : Callback {
             override fun onSuccess() = Unit

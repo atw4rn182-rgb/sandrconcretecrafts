@@ -42,9 +42,9 @@ var parser = read(
 // A. Production build has SIMULATED_READER=false
 assert.match(gradle, /buildTypes[\s\S]*release[\s\S]*SIMULATED_READER", "false"/);
 assert.match(gradle, /p5-production/);
-assert.match(gradle, /releaseVersionCode = 14/);
+assert.match(gradle, /releaseVersionCode = 15/);
 assert.match(gradle, /versionCode\.set\(releaseVersionCode\)/);
-assert.match(gradle, /releaseVersionName = "1\.0\.2"/);
+assert.match(gradle, /releaseVersionName = "1\.0\.3"/);
 
 // B. Test build retains SIMULATED_READER=true
 assert.match(gradle, /debug[\s\S]*SIMULATED_READER", "true"/);
@@ -115,6 +115,12 @@ assert.match(controller, /armTimeout\(id, "reader-discovery", DISCOVERY_TIMEOUT_
 assert.match(controller, /armTimeout\(id, "reader-connection", CONNECT_TIMEOUT_MS/);
 assert.match(controller, /private fun fail\([\s\S]*if \(!settle\(id\)\) return/);
 assert.match(controller, /Log\.e\(LOG_TAG/);
+// 1.0.2 hang: a phase posted from Stripe's connectReader success landed after
+// onReady and put "READY / Connecting this phone as a card reader" back on screen.
+assert.match(controller, /id == attempt\.get\(\) && !settled\.get\(\)\) listener\(message\)/);
+assert.doesNotMatch(controller, /phaseCopy\("Simulated reader connected", "READY"\)/);
+assert.match(controller, /CONNECTION_STATUS=\$status/);
+assert.match(controller, /RETRIEVE_TIMEOUT_MS/);
 assert.match(
   read("android/app/src/main/java/com/sandrconcretecrafts/pos/ui/SetupActivity.kt"),
   /view\.screen == SetupGate\.Screen\.TERMINAL_CONNECT &&\s*view\.action == SetupGate\.Action\.INIT_TERMINAL/
@@ -175,6 +181,6 @@ assert.doesNotMatch(controller, /sk_live_|SERVICE_ROLE|whsec_/);
 assert.match(connectionToken, /requireActiveAdmin/);
 assert.doesNotMatch(connectionToken, /service_role|SERVICE_ROLE/);
 assert.match(posApp, /SR_POS_APP_CHANNEL \|\| "test"/);
-assert.match(posApp, /versionName: "1\.0\.2"/);
+assert.match(posApp, /versionName: "1\.0\.3"/);
 
 console.log("production Terminal dual-mode, mismatch, webhook, and isolation: ok");

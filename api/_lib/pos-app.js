@@ -23,12 +23,12 @@ var CHANNELS = {
   production: {
     // Versioned so a stale upload is never served as the current release. Until
     // this object exists in Storage, downloads use the GitHub release fallback.
-    object: "production/app-release-1.0.2.apk",
+    object: "production/app-release-1.0.3.apk",
     simulated: false,
     label: "Production — Real Tap to Pay",
     filename: "S-and-R-Tap-to-Pay.apk",
-    versionName: "1.0.2",
-    versionCode: 14,
+    versionName: "1.0.3",
+    versionCode: 15,
     buildId: "p5-production",
   },
 };

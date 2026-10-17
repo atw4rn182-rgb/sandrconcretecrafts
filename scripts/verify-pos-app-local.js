@@ -25,13 +25,13 @@ assert.strictEqual(liveManifest.simulated, false);
 assert.strictEqual(liveManifest.channel, "production");
 assert.match(liveManifest.label, /Production — Real Tap to Pay/);
 assert.doesNotMatch(liveManifest.filename, /TEST/);
-assert.strictEqual(liveManifest.versionCode, 14);
-assert.strictEqual(liveManifest.versionName, "1.0.2");
+assert.strictEqual(liveManifest.versionCode, 15);
+assert.strictEqual(liveManifest.versionName, "1.0.3");
 assert.strictEqual(liveManifest.buildId, "p5-production");
-assert.strictEqual(liveManifest.object, "production/app-release-1.0.2.apk");
+assert.strictEqual(liveManifest.object, "production/app-release-1.0.3.apk");
 assert.strictEqual(liveManifest.simulated, false);
 assert.match(posApp.productionFallbackUrl(), /staff-pos-production/);
-assert.match(posApp.productionFallbackUrl(), /[?&]v=14/);
+assert.match(posApp.productionFallbackUrl(), /[?&]v=15/);
 
 process.env.SR_POS_APP_CHANNEL = "nope";
 assert.strictEqual(posApp.currentManifest().channel, "test");
